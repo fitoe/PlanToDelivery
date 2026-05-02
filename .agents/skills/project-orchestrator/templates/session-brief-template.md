@@ -55,6 +55,8 @@ List only the files that should be read first next session.
   - `pass / partial / fail / not-run`
 - Evidence source:
   - `docs/orchestrator/milestones/...`
+- Browser evidence source:
+  - `docs/orchestrator/evidence/...`
 - Fresh verification still required:
   - `yes/no`
 - If yes, what must be run next:
@@ -107,6 +109,13 @@ List only long-lived or important processes.
   - `yes/no`
 - Safe to stop now:
   - `yes/no`
+
+## Browser Validation Notes
+- Playwright used this session:
+  - `yes/no`
+- Why it was used:
+- Artifact paths:
+- Follow-up browser validation needed:
 
 ## Environment Notes
 - Important env/config assumptions:

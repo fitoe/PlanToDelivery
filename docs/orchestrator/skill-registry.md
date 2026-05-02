@@ -29,3 +29,18 @@
 - `caveman`
   - Allowed stages: `execution`, `handoff`
   - Mode: `optional`
+
+## Browser Validation Capability
+- Name: `Playwright browser validation`
+- Purpose: Controlled browser assistance for UI validation, bug reproduction, and milestone browser evidence.
+- Allowed stages: `ui-definition`, `execution`, `debugging`, `verification`
+- Mode: `on-demand`
+- User approval required: `no`
+- Trigger conditions:
+  - critical pages or critical user flows
+  - browser-visible interaction bugs
+  - milestone browser acceptance
+  - need for screenshots, console, or network evidence
+- Reasons not to use outside allowed stages:
+  - not useful during discovery or decision closure
+  - avoid unnecessary browser overhead for non-UI or low-risk changes

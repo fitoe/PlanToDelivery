@@ -57,6 +57,8 @@
   - `pass`
 - Evidence source:
   - `.agents/skills/project-orchestrator/`
+- Browser evidence source:
+  - `docs/orchestrator/evidence/` (reserved for future M1 trial-use artifacts)
 - Fresh verification still required:
   - `yes`
 - If yes, what must be run next: Trial-use verification in `M1`
@@ -107,6 +109,13 @@
   - `no`
 - Safe to stop now:
   - `yes`
+
+## Browser Validation Notes
+- Playwright used this session:
+  - `no`
+- Why it was used:
+- Artifact paths:
+- Follow-up browser validation needed: `yes`, during `M1` trial-use for any browser-relevant scenario
 
 ## Environment Notes
 - Important env/config assumptions: None recorded yet
