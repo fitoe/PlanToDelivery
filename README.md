@@ -1,5 +1,7 @@
 # Project Orchestrator
 
+[简体中文说明](README.zh-CN.md)
+
 `project-orchestrator` is a local Codex skill package for running software projects with stronger process control.
 
 It is designed for long-running work that usually falls apart in execution: unclear scope, weak planning, incomplete testing, context loss between sessions, and constant mid-stream changes.
