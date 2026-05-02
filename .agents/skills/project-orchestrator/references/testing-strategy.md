@@ -133,7 +133,7 @@ Default order:
 3. add E2E for accepted critical flows
 4. expand E2E only where justified
 
-Playwright use may begin earlier for debugging or narrow browser-side validation, but broad browser suites should still wait until core flows stabilize.
+Playwright may begin early for debugging or narrow validation, but broad browser suites still wait until core flows stabilize.
 
 ## Regression Strategy
 

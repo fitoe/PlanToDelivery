@@ -4,36 +4,29 @@
 - Milestone ID:
 - Task ID:
 - Stage:
-  - `ui-definition / execution / debugging / verification`
-- Date:
 
-## Validation Target
+## Target
 - Page or flow:
-- Why browser validation is needed:
-- Why smaller checks are insufficient:
+- Why browser validation:
 
-## Validation Method
-- Manual controlled run or scripted:
+## Method
+- Mode:
   - `manual / scripted`
 - Entry URL or route:
-- Preconditions:
 - Key actions:
-- Expected browser-visible result:
+- Expected result:
 
 ## Evidence
 - Screenshot paths:
-- Console capture path:
-- Network capture path:
-- Other relevant artifacts:
+- Console path:
+- Network path:
 
 ## Result
 - Outcome:
   - `pass / partial / fail`
-- Observed behavior:
 - Notable mismatches:
 
 ## Follow-Up
 - Next action:
-- Should this be scripted for milestone verification:
+- Script it for milestone verification:
   - `yes/no`
-- If yes, where it should live:

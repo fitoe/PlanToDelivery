@@ -112,7 +112,7 @@ Examples:
 - `magicpath`
 
 ### Browser Validation Note
-Playwright may be used in this stage as a controlled browser aid for structure, state, and flow validation when text-only reasoning is insufficient.
+Playwright may validate UI structure, state, or flow when text-only reasoning is not enough.
 
 ### Visual Generation Note
 If the milestone needs route planning plus style frames or section slicing, use `imagegen` first, confirm the section map with the user, and only then hand off approved sections to `design-to-code`.
@@ -160,7 +160,7 @@ If the milestone needs route planning plus style frames or section slicing, use 
 - `design-to-code` when a UI milestone has approved section slices ready for code generation
 
 ### Browser Validation Note
-Playwright may be used here for narrow browser-side validation of critical pages or interactions. Do not broaden small implementation loops into full browser suites by default.
+Use Playwright narrowly for critical pages or interactions only.
 
 ## 10. Debugging
 
@@ -172,7 +172,7 @@ Playwright may be used here for narrow browser-side validation of critical pages
 - `context7` if bug involves library behavior that may have changed
 
 ### Browser Validation Note
-Use Playwright when the defect is browser-visible, interaction-specific, or requires console / network / screenshot evidence.
+Use Playwright when the defect needs browser evidence.
 
 ## 11. Verification
 
@@ -183,7 +183,7 @@ Use Playwright when the defect is browser-visible, interaction-specific, or requ
 - `superpowers:requesting-code-review` when additional review is needed
 
 ### Browser Validation Note
-Use Playwright here when milestone acceptance depends on browser behavior or when browser evidence is required.
+Use Playwright when milestone acceptance needs browser evidence.
 
 ## 12. Handoff
 

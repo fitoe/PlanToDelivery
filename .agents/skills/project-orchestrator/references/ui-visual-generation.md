@@ -1,125 +1,68 @@
 # UI Visual Generation
 
-Use this file when a milestone needs route planning, page planning, visual style framing, or section-by-section page generation.
+Use when a milestone needs route planning, style framing, and section-by-section page generation.
 
-This capability is for:
+## Purpose
 
-- deriving page routes and page responsibilities from project planning
-- generating style frames or page effect previews before code
-- micro-adjusting the visual direction with the user
-- splitting large pages into smaller sections for reliable code generation
-- keeping later pages visually consistent with an approved style direction
+- derive page routes and responsibilities from project planning
+- generate style frames / effect previews before code
+- split large pages into reliable section slices
+- keep later pages visually consistent with an approved style
 
-## Core Rule
+## Core Flow
 
-Do not jump directly from project plan to full-page code for large pages.
+1. route plan
+2. style frame / effect preview
+3. micro-adjust
+4. section map
+5. user confirms section boundaries
+6. `design-to-code` generates code per section
+7. stitch and verify
 
-Instead:
+## Use When
 
-1. derive route and page plan
-2. define visual direction
-3. generate a style frame or effect preview
-4. micro-adjust until approved
-5. split pages into section slices
-6. generate code one section at a time
-7. stitch sections into the final page
-8. verify with browser evidence
+- multiple pages or routes exist
+- page hierarchy must be planned first
+- style needs confirmation before code
+- a page is too large for one faithful pass
+- later pages must reuse the same visual system
 
-## When to Use
-
-Use this workflow when:
-
-- the project has multiple pages or routes
-- page hierarchy must be planned before implementation
-- a visual direction needs to be validated before code
-- a page is too large to implement faithfully in one pass
-- the same visual system must continue across later pages
-
-## Route Planning
-
-Before any visual generation, build a route plan with:
+## Route Plan Fields
 
 - route name
 - page purpose
 - primary user action
 - page dependencies
 - page priority
-- whether the page is a style anchor for later pages
+- style-anchor flag
 
-Keep the route plan in durable docs when it matters to milestone delivery.
+## Style Frame Rules
 
-## Visual Style Framing
+- use `imagegen` for style frames or effect previews
+- adjust before freezing style
+- reuse approved style for later pages unless changed explicitly
 
-If the project benefits from image-based style exploration, generate an effect preview or style frame first.
+## Section Rules
 
-Rules:
+- split into ordered, complete sections
+- never cut through the middle of a semantic block
+- prefer smaller slices for fidelity
+- keep repeated patterns consistent
+- if boundaries are unclear, re-cut before coding
 
-- use the style frame to confirm the overall visual direction
-- allow small micro-adjustments before freezing the style
-- once a style is approved, reuse it for subsequent pages unless a later milestone explicitly changes direction
-- do not treat the style frame as final code
+## Confirmation Gate
 
-## Section Slicing
+Do not start `design-to-code` until:
 
-For large or fidelity-sensitive pages:
+- route order is approved
+- section boundaries are approved
+- style continuity is approved
 
-- split the page into ordered sections
-- generate or implement each section separately
-- keep section boundaries explicit
-- preserve section continuity when stitching
+## Browser Validation
 
-Recommended section split inputs:
-
-- hero / header
-- navigation or control area
-- content block 1
-- content block 2
-- sidebar or support panel
-- footer / closing section
-
-Rules:
-
-- prefer smaller slices when fidelity is important
-- keep repeated visual patterns consistent across slices
-- do not let section boundaries drift without recording the change
-
-## Section Confirmation Gate
-
-After the section map is prepared:
-
-- stop before implementation
-- review the section boundaries with the user
-- confirm route order, section completeness, and style continuity
-- only start `design-to-code` after confirmation
-
-Do not begin code generation while section boundaries are still uncertain.
-
-## Relationship to Design-to-Code
-
-Use the `design-to-code` skill only after the section map is confirmed.
-
-Recommended sequence:
-
-1. route plan
-2. style frame / effect preview
-3. approve or adjust
-4. section map
-5. user confirmation of section boundaries
-6. section-by-section code generation via `design-to-code`
-7. stitch and verify
-
-## Relationship to Playwright
-
-After code generation, use browser validation when needed to:
-
-- confirm section order
-- confirm visual continuity
-- confirm critical interactions
-- confirm that later pages match the approved style
+Use Playwright after code generation when needed to confirm section order, continuity, and critical interactions.
 
 ## Evidence
-
-Retain evidence when it helps later recovery:
 
 - route plan
 - approved style direction

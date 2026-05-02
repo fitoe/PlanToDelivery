@@ -1,36 +1,32 @@
 # Playwright Debug Report
 
-## Bug Context
+## Context
 - Milestone ID:
 - Task ID:
 - Bug summary:
-- Why browser debugging was required:
 
 ## Reproduction
-- URL or entry route:
-- Preconditions:
-- Exact steps:
-- Expected result:
-- Actual result:
+- URL or route:
+- Steps:
+- Expected:
+- Actual:
 
-## Browser Evidence
+## Evidence
 - Screenshot paths:
-- Console findings:
-- Network findings:
-- Other browser-visible signals:
+- Console path:
+- Network path:
 
-## Root Cause Assessment
-- Likely category:
+## Root Cause
+- Category:
   - `implementation / test / environment / integration / spec drift / unknown`
 - Why:
 
-## Fix Validation
-- What changed:
-- Reproduction rerun:
+## Fix Check
+- Reproduced after fix:
   - `yes/no`
-- Result after fix:
+- Result:
   - `pass / partial / fail`
 
-## Next Step
+## Follow-Up
 - Remaining risk:
-- Additional verification needed:
+- More verification needed:
