@@ -1,7 +1,8 @@
-# PlanToDelivery 中文说明入口
+# README.zh-CN
 
-主文档已经切换到 [README.md](README.md)。
+本文件保留为中文别名页。
 
-如果你想看英文版摘要，请看 [README.en.md](README.en.md)。
+当前主文档为：
 
-这个文件保留为历史中文入口，避免旧链接失效。
+- [README.md](./README.md)（中文主文档）
+- [README.en.md](./README.en.md)（英文摘要）

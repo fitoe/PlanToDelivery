@@ -2,36 +2,36 @@
 
 PlanToDelivery is a Codex skill product for disciplined software project delivery.
 
-It is designed to help projects move from idea to implementation with:
+It is built around a local skill package, `project-orchestrator`, that helps move a software project from idea to implementation through:
 
-- stronger up-front planning
+- deep up-front planning
 - milestone-based execution
 - durable repository state
 - built-in testing and verification discipline
 - cross-session recovery
 - controlled skill routing
 
-## Repository Contents
+## What It Is
 
-- local skill package under `.agents/skills/project-orchestrator/`
-- reference guidance under `references/`
-- reusable templates under `templates/`
-- durable orchestration docs under `docs/orchestrator/`
-
-## Product Positioning
-
-PlanToDelivery is intended to behave more like:
+PlanToDelivery is closer to:
 
 - a project governor
-- a technical lead
 - a workflow controller
-- a recovery-friendly orchestration layer
+- a recovery-oriented orchestration layer
 
-and less like a generic code autocomplete tool.
+and not a generic code autocomplete tool or a single long prompt.
+
+## Repository Structure
+
+- `.agents/skills/project-orchestrator/`
+  - local skill package
+  - references
+  - templates
+  - agent metadata
+- `docs/orchestrator/`
+  - durable workflow and recovery state
 
 ## Core Workflow
-
-The orchestrator uses staged progression:
 
 1. `intake`
 2. `discovery`
@@ -47,19 +47,20 @@ The orchestrator uses staged progression:
 12. `handoff`
 13. `done`
 
+## Start Here
+
+- Main Chinese README: [README.md](./README.md)
+- Skill entrypoint: [`.agents/skills/project-orchestrator/SKILL.md`](./.agents/skills/project-orchestrator/SKILL.md)
+- Workflow reference: [workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
+
 ## Status
 
-This repository contains the first landed version of the local skill package.
+This repository already contains the first landed version of the product:
 
-What remains next:
+- local skill package
+- core references
+- core templates
+- durable orchestration docs
+- GitHub collaboration files
 
-- trial use on real or simulated projects
-- iterative refinement based on evidence
-
-## Main Documentation
-
-Chinese is the primary documentation language for this repository.
-
-- Primary README: [README.md](README.md)
-- Chinese alias: [README.zh-CN.md](README.zh-CN.md)
-- Skill entrypoint: [.agents/skills/project-orchestrator/SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
+Next major step: trial use on real or simulated project workflows.
