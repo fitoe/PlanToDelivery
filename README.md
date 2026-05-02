@@ -5,7 +5,7 @@
 [![Docs](https://img.shields.io/badge/docs-orchestrator-blue)](./docs/orchestrator/)
 [![README](https://img.shields.io/badge/README-English-lightgrey)](./README.en.md)
 
-[English](./README.en.md) | [中文别名页](./README.zh-CN.md)
+[English](./README.en.md)
 
 PlanToDelivery 是一个面向 Codex / agent 工作流的项目总控 skill 产品。
 
