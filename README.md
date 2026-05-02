@@ -7,51 +7,41 @@
 
 [English](./README.en.md)
 
-PlanToDelivery 是一个面向 Codex / agent 工作流的项目总控 skill 产品。
+PlanToDelivery 是一个面向 skill 用户的 Codex 项目总控产品。
 
-它的目标不是“帮你补几段代码”，而是把一个软件项目从需求澄清、规划、设计、实施、测试、验证，到交付收尾，收束成一套可持续推进的标准流程。它强调：
+它不是普通的提示词集合，也不是单次对话脚本，而是一套可复用的项目交付系统。  
+它帮助你把一个软件项目从需求澄清、规划、设计、实施、测试、验证，到交付收尾，稳定地推进成可恢复、可审计、可持续迭代的流程。
 
-- 前期充分规划，后期尽量少打断
-- milestone 驱动，而不是一口气失控推进
-- 文档落盘，而不是只依赖当前会话记忆
-- 测试、验证、handoff 内建，而不是事后补救
-- 可以跨会话恢复，可以接管半成品项目
+## 为什么需要它
 
-## 产品定位
+当你在做真实项目时，最常见的问题不是“不会写代码”，而是：
 
-PlanToDelivery 更像：
+- 前期规划不够，开发过程中不断跑偏
+- UI、测试、验证和收尾没有统一节奏
+- 会话太长，换新会话后难以继续
+- 中途临时加需求，执行节奏被打断
+- 状态只存在聊天里，无法可靠恢复
 
-- 项目总管家
-- 强约束状态机
-- skill 编排器
-- 文档驱动恢复层
-- 测试与验证守门员
+PlanToDelivery 的目标，就是把这些问题收束成一套标准流程。
 
-它不是：
+## 它适合谁
 
-- 普通 prompt 集合
-- 单次对话脚本
-- 只会写 spec 的模板包
-- “全自动完成所有决策”的黑盒代理
+适合你如果正在做：
 
-## 解决的问题
+- 需要深规划的 greenfield 项目
+- 已经做了一半、需要继续推进的半成品项目
+- 希望跨会话持续推进的中长期项目
+- 需要把 spec、plan、test、handoff 标准化的个人或团队
+- 希望 UI 设计、浏览器验证、代码实现、交付收尾能够串起来的人
 
-PlanToDelivery 主要解决这些常见失控点：
+## 它提供什么
 
-- 前期规划不充分，开发时不断跑偏
-- 测试零散，做到一半才发现无法验证
-- 会话一长就失控，换新会话后难以继续
-- 项目中途不断插入新需求，执行节奏被打断
-- 项目状态散落在聊天上下文里，无法可靠恢复
+### 1. 项目总控
 
-## 核心能力
-
-### 1. 项目接管
-
-- 接管全新项目
+- 接管新项目
 - 接管已有规划文档
-- 从半成品代码反推 current state
-- 产出 gap analysis，决定继续、补规划还是重规划
+- 从半成品代码反推当前状态
+- 输出 gap analysis，决定继续、补规划还是重规划
 
 ### 2. 全流程规划
 
@@ -62,36 +52,37 @@ PlanToDelivery 主要解决这些常见失控点：
 - milestone spec
 - implementation plan
 
-### 3. UI 规划
+### 3. UI 路由与视觉生成
 
-- 结构化 UI 规划
-- 风格方向提案
-- 页面级 / 组件级 / 交互规则级规格
-- UI implementation contract
+- 先规划路由和页面功能
+- 再做风格图 / 效果预览
+- 冻结风格后批量复用
+- 大页面按 section 切分
+- 由 section 逐块生成代码并拼装
 
-### 4. 测试与验证治理
+### 4. 浏览器验证
+
+- 用 Playwright 做关键页面验证
+- 复现浏览器 bug
+- 采集控制台、网络、截图证据
+- 为 milestone 验收提供证据链
+
+### 5. 交付治理
 
 - 风险矩阵
 - milestone test plan
 - regression plan
 - verification report
-- fresh verification gate
-
-### 5. 执行与恢复
-
-- 强阶段门禁
-- scope freeze
-- process management
 - session brief
 - final handoff
 
 ### 6. 可控扩展
 
-- 注册额外 skill
-- 按阶段按需启用
-- 渐进加载，避免一次性塞满上下文
+- 支持按阶段加载额外 skill
+- 支持 `imagegen`、`design-to-code`、`Playwright`
+- 支持渐进加载，不一次性塞满上下文
 
-## 工作流阶段
+## 核心工作流
 
 PlanToDelivery 以阶段状态机为核心：
 
@@ -112,184 +103,73 @@ PlanToDelivery 以阶段状态机为核心：
 默认原则：
 
 - 先判断当前阶段
-- 再检查是否满足门禁
-- 再决定该加载哪些 reference、template、skill
+- 再检查门禁
+- 再加载对应的 reference / template / skill
 
-## 技能包内容
+## 技能包结构
 
-本仓库目前落地的是本地 skill 包 `project-orchestrator`。
+```text
+.agents/skills/project-orchestrator/
+  SKILL.md
+  agents/openai.yaml
+  references/
+  templates/
 
-核心入口：
-
-- [`.agents/skills/project-orchestrator/SKILL.md`](./.agents/skills/project-orchestrator/SKILL.md)
-
-核心组成：
-
-- `references/`
-  - 流程约束、阶段门禁、routing、intake、testing、security、performance、integration 等专题 guidance
-- `templates/`
-  - spec、plan、test、verification、recovery、UI、security、observability 等模板
-- `agents/openai.yaml`
-  - skill 元数据
-
-## 仓库级 durable docs
-
-PlanToDelivery 的一个重要设计点，是把项目状态从“会话记忆”变成“仓库产物”。
-
-当前协议位于：
-
-- [`docs/orchestrator/`](./docs/orchestrator/)
-
-关键文件包括：
-
-- `session-brief.md`
-- `current-state.md`
-- `gap-analysis.md`
-- `product-spec.md`
-- `feature-breakdown.md`
-- `decision-log.md`
-- `roadmap.md`
-- `milestones/*`
-- `final-handoff.md`
-
-## 适用场景
-
-特别适合：
-
-- 需要深规划的 greenfield 项目
-- 已开发一半、需要补 intake 和 gap analysis 的项目
-- 需要 milestone 推进的中长期项目
-- 希望跨会话可靠续作的 agent 驱动开发
-- 希望把 spec、plan、test、handoff 标准化的个人或团队
-
-## 能力边界
-
-PlanToDelivery 能做的是：
-
-- 组织规划
-- 固化流程
-- 编排 skill
-- 维护 durable docs
-- 驱动执行、验证和恢复
-
-它不保证：
-
-- 零人工参与完成所有高影响决策
-- 在需求持续变化时依然零代价稳定推进
-- 不经过 trial-use 就天然适配所有项目
-
-一句话：
-
-**它追求的是高自治、强流程、可恢复，不是无边界全自动。**
+docs/orchestrator/
+  session-brief.md
+  current-state.md
+  gap-analysis.md
+  product-spec.md
+  feature-breakdown.md
+  decision-log.md
+  roadmap.md
+  milestones/
+```
 
 ## 通过 skills CLI 安装
 
-如果你使用的是支持 Agent Skills 生态的工具链，可以直接通过 `skills` CLI 从 GitHub 安装。
-
-常见方式：
+如果你使用的是支持 Agent Skills 生态的工具链，可以直接通过 `skills` CLI 安装本仓库：
 
 ```bash
-# 查看这个仓库里可发现的 skills
+# 查看可发现的 skills
 npx skills add https://github.com/fitoe/PlanToDelivery --list
 
-# 从仓库安装指定 skill
+# 安装指定 skill
 npx skills add https://github.com/fitoe/PlanToDelivery --skill project-orchestrator
 
-# 从本地仓库路径安装
+# 从本地仓库安装
 npx skills add .
 ```
 
-补充说明：
+说明：
 
-- 本仓库当前 skill 位于 `.agents/skills/project-orchestrator/`
-- `skills` CLI 会搜索 `.agents/skills/`，所以当前目录结构可被发现
-- 对 Codex 来说，`agents/openai.yaml` 是额外增强，不是 `skills.sh` 的最低要求
+- 当前 skill 位于 `.agents/skills/project-orchestrator/`
+- `skills` CLI 会搜索 `.agents/skills/`
+- `agents/openai.yaml` 是 Codex 侧的增强元数据，不是最低要求
 
-## 快速开始
+## 建议的使用顺序
 
-### 方式一：直接作为本地 skill 使用
-
-1. 打开本仓库
-2. 从 [`.agents/skills/project-orchestrator/SKILL.md`](./.agents/skills/project-orchestrator/SKILL.md) 进入
-3. 根据当前项目阶段，按需加载 `references/` 与 `templates/`
-4. 将 durable state 写入 `docs/orchestrator/`
-
-### 方式二：迁移到你的项目仓库
-
-可复制以下结构到你的目标项目：
-
-- `.agents/skills/project-orchestrator/`
-- `docs/orchestrator/`
-
-再从 `intake` 或 `discovery` 开始。
-
-## 推荐阅读顺序
-
-如果你第一次接触这个 skill，建议按这个顺序看：
-
-1. [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
-2. [workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
-3. [stage-gates.md](./.agents/skills/project-orchestrator/references/stage-gates.md)
-4. [skill-routing.md](./.agents/skills/project-orchestrator/references/skill-routing.md)
-5. [session-brief.md](./docs/orchestrator/session-brief.md)
-
-## GitHub 协作信息
-
-当前仓库已经补齐基础公开协作信息：
-
-- [Issue Templates](./.github/ISSUE_TEMPLATE/)
-- [Pull Request Template](./.github/PULL_REQUEST_TEMPLATE.md)
-- [Contributing Guide](./CONTRIBUTING.md)
-- [Security Policy](./SECURITY.md)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)
-- [Changelog](./CHANGELOG.md)
-
-如果你要参与改进，建议先看：
-
-1. [CONTRIBUTING.md](./CONTRIBUTING.md)
-2. 当前 `docs/orchestrator/session-brief.md`
-3. 对应阶段的 reference / template
+1. 先读 [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
+2. 再读 [workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
+3. 然后读 [stage-gates.md](./.agents/skills/project-orchestrator/references/stage-gates.md)
+4. 需要 UI、测试、浏览器验证时再按阶段加载对应 reference
+5. 把状态写回 `docs/orchestrator/`
 
 ## 当前状态
 
-当前仓库已经完成：
+这个仓库已经完成第一版落盘：
 
-- 第一版本地 skill 落盘
-- 核心 references 落盘
-- 核心 templates 落盘
-- 仓库级 durable docs 骨架落盘
-- GitHub 基础公开协作面补齐
+- 本地 skill 包已建立
+- 核心 references / templates 已建立
+- durable docs 协议已建立
+- GitHub 协作文件已补齐
+- Playwright、imagegen、design-to-code 的路由已接入
 
-下一阶段重点：
+下一步最重要的是：
 
-- `M1`: 用真实或模拟场景试跑
-- 根据 trial-use 结果修订 stage gates、routing、template 粒度和 durable docs 协议
+- 用真实或模拟项目试跑
+- 根据 trial-use 结果继续压缩、补洞、校准流程
 
-## 路线图
+## English Summary
 
-近期路线：
-
-- 完成 trial-use
-- 修补真实使用中暴露的流程缺口
-- 收敛模板噪音，强化高价值模板
-- 形成更稳定的 release / versioning 习惯
-
-中期路线：
-
-- 提炼更稳定的安装方式
-- 明确版本兼容策略
-- 补更清晰的试跑示例和最佳实践
-
-## 英文摘要
-
-PlanToDelivery is a local Codex skill product for disciplined software project delivery.
-
-It provides:
-
-- milestone-based planning and execution
-- durable repository state for cross-session recovery
-- strong stage gates and scope control
-- built-in testing, verification, and handoff discipline
-- controlled skill routing instead of unbounded orchestration
-
-For a shorter English overview, see [README.en.md](./README.en.md).
+See [README.en.md](./README.en.md) for a compact English overview.

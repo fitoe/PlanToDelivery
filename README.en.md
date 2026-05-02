@@ -1,37 +1,32 @@
 # PlanToDelivery
 
-PlanToDelivery is a Codex skill product for disciplined software project delivery.
+PlanToDelivery is a Codex project-governance product for skill users.
 
-It is built around a local skill package, `project-orchestrator`, that helps move a software project from idea to implementation through:
+It is not a prompt dump or a one-shot script. It is a reusable delivery system that helps move a software project from planning to implementation, testing, verification, and handoff with durable state and controlled skill routing.
 
-- deep up-front planning
-- milestone-based execution
-- durable repository state
-- built-in testing and verification discipline
-- cross-session recovery
-- controlled skill routing
+## Why it exists
 
-## What It Is
+Real projects usually fail for workflow reasons, not coding reasons:
 
-PlanToDelivery is closer to:
+- planning is too shallow
+- UI, testing, and verification are not coordinated
+- long conversations lose context
+- new sessions cannot resume cleanly
+- state lives in chat instead of the repository
 
-- a project governor
-- a workflow controller
-- a recovery-oriented orchestration layer
+PlanToDelivery turns those problems into a structured workflow.
 
-and not a generic code autocomplete tool or a single long prompt.
+## What it provides
 
-## Repository Structure
+- project intake and continuation
+- deep planning and milestone slicing
+- UI route planning and visual generation
+- section-by-section page generation support
+- browser validation with Playwright
+- durable docs for recovery and handoff
+- controlled extension with other skills
 
-- `.agents/skills/project-orchestrator/`
-  - local skill package
-  - references
-  - templates
-  - agent metadata
-- `docs/orchestrator/`
-  - durable workflow and recovery state
-
-## Core Workflow
+## Workflow
 
 1. `intake`
 2. `discovery`
@@ -47,20 +42,19 @@ and not a generic code autocomplete tool or a single long prompt.
 12. `handoff`
 13. `done`
 
-## Start Here
+## Start here
 
-- Main Chinese README: [README.md](./README.md)
-- Skill entrypoint: [`.agents/skills/project-orchestrator/SKILL.md`](./.agents/skills/project-orchestrator/SKILL.md)
+- Main README: [README.md](./README.md)
+- Skill entrypoint: [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
 - Workflow reference: [workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
 
 ## Status
 
-This repository already contains the first landed version of the product:
+The repository already contains the first landed version of:
 
-- local skill package
-- core references
-- core templates
+- `project-orchestrator`
+- core references and templates
 - durable orchestration docs
 - GitHub collaboration files
 
-Next major step: trial use on real or simulated project workflows.
+Next step: trial use on a real or simulated project.
