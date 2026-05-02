@@ -17,3 +17,11 @@
 - Browser role:
   - `ui-validation / debugging / verification / not-applicable`
 - Evidence expectations:
+
+## Visual Generation Capability
+- Uses image generation for style frames or effect previews:
+  - `yes/no`
+- Section-by-section code generation support:
+  - `yes/no`
+- Related skill:
+  - `design-to-code / imagegen / not-applicable`

@@ -25,6 +25,8 @@ Produce:
 - recommended option
 - user-approved final direction
 
+If a milestone needs route planning, page planning, style framing, or section-by-section page generation, also read `references/ui-visual-generation.md`.
+
 ## Fidelity Rules
 
 - core pages: high fidelity

@@ -101,6 +101,8 @@ Use when enabled and appropriate:
 - frontend/design-related skills
 - component-system skills
 - framework-specific UI skills
+- `imagegen` for style frames or effect previews
+- `design-to-code` for section-by-section page implementation
 
 Examples:
 - `build-web-apps:frontend-app-builder`
@@ -111,6 +113,9 @@ Examples:
 
 ### Browser Validation Note
 Playwright may be used in this stage as a controlled browser aid for structure, state, and flow validation when text-only reasoning is insufficient.
+
+### Visual Generation Note
+If the milestone needs route planning plus style frames or section slicing, use `imagegen` first and then hand off the approved sections to `design-to-code`.
 
 ## 5. Decision Closure
 
@@ -152,6 +157,7 @@ Playwright may be used in this stage as a controlled browser aid for structure, 
 - stack-specific domain skills
 - `context7` for current official docs
 - targeted UI/build/deployment/database skills if current task requires them
+- `design-to-code` when a UI milestone has approved section slices ready for code generation
 
 ### Browser Validation Note
 Playwright may be used here for narrow browser-side validation of critical pages or interactions. Do not broaden small implementation loops into full browser suites by default.
