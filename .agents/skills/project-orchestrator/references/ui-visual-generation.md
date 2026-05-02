@@ -83,9 +83,20 @@ Rules:
 - keep repeated visual patterns consistent across slices
 - do not let section boundaries drift without recording the change
 
+## Section Confirmation Gate
+
+After the section map is prepared:
+
+- stop before implementation
+- review the section boundaries with the user
+- confirm route order, section completeness, and style continuity
+- only start `design-to-code` after confirmation
+
+Do not begin code generation while section boundaries are still uncertain.
+
 ## Relationship to Design-to-Code
 
-Use the `design-to-code` skill when the section slices are ready for code generation.
+Use the `design-to-code` skill only after the section map is confirmed.
 
 Recommended sequence:
 
@@ -93,8 +104,9 @@ Recommended sequence:
 2. style frame / effect preview
 3. approve or adjust
 4. section map
-5. section-by-section code generation via `design-to-code`
-6. stitch and verify
+5. user confirmation of section boundaries
+6. section-by-section code generation via `design-to-code`
+7. stitch and verify
 
 ## Relationship to Playwright
 

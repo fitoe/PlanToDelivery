@@ -50,12 +50,13 @@
 - Purpose: Plan routes and pages, generate style frames or effect previews, slice large pages into sections, and hand approved slices to code generation.
 - Allowed stages: `ui-definition`, `execution`
 - Mode: `on-demand`
-- User approval required: `yes` before code generation when style direction changes or first page family is being established
+- User approval required: `yes` before code generation and after section boundaries are defined
 - Trigger conditions:
   - project needs page route planning
   - visual direction needs confirmation before code
   - page is too large to generate faithfully in one pass
   - later pages must keep the same style system
+  - section boundaries need confirmation before implementation
 - Reasons not to use outside allowed stages:
   - discovery and decision closure should stay text-led
   - do not generate visual assets before route and page purpose are clear

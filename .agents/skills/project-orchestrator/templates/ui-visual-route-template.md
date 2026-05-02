@@ -24,6 +24,18 @@
 | Page | Section order | Section name | Generation mode | Notes |
 | --- | --- | --- | --- | --- |
 
+## Section Confirmation Gate
+- Boundary review completed:
+  - `yes/no`
+- Route order approved:
+  - `yes/no`
+- Section boundaries approved:
+  - `yes/no`
+- Style continuity approved:
+  - `yes/no`
+- Allowed to start design-to-code:
+  - `yes/no`
+
 ## Code Generation Plan
 - Which sections will be generated first:
 - Which sections must stay visually consistent:

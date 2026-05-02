@@ -115,7 +115,7 @@ Examples:
 Playwright may be used in this stage as a controlled browser aid for structure, state, and flow validation when text-only reasoning is insufficient.
 
 ### Visual Generation Note
-If the milestone needs route planning plus style frames or section slicing, use `imagegen` first and then hand off the approved sections to `design-to-code`.
+If the milestone needs route planning plus style frames or section slicing, use `imagegen` first, confirm the section map with the user, and only then hand off approved sections to `design-to-code`.
 
 ## 5. Decision Closure
 
