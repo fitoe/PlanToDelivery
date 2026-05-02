@@ -4,38 +4,35 @@
 - ID:
 - Name:
 
-## Current Task
-- Task ID:
-- Task name:
+## Task
+- ID:
+- Name:
 - Status:
-  - `not-started / in-progress / blocked / verification / done`
 - Owner:
 - Started:
-- Last updated:
+- Updated:
 
-## What Changed
+## Changes
 - Summary:
-- Files touched:
-- Tests added/updated:
+- Files:
+- Tests:
 
-## Verification
-- Last command(s) run:
+## Verify
+- Commands:
 - Result:
-  - `pass / partial / fail / not-run`
-- Follow-up needed:
+- Follow-up:
 
-## Browser Evidence
-- Playwright used:
-  - `yes/no`
+## Browser
+- Used:
 - Why:
-- Artifact paths:
-- Follow-up browser validation needed:
+- Artifacts:
+- Follow-up:
 
 ## Blockers
-- Blocker:
+- Item:
 - Type:
-- Next action:
+- Next:
 
-## Next Step
-- Exact next action:
-- Why this is next:
+## Next
+- Exact:
+- Why:

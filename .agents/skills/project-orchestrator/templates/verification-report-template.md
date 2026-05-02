@@ -4,27 +4,24 @@
 - ID:
 - Name:
 
-## Verification Run
+## Run
 - Date:
 - Scope:
-- Commands run:
+- Commands:
 
-## Results
-- Overall result:
-  - `pass / partial / fail`
-- Passing checks:
-- Failing checks:
-- Known accepted gaps:
+## Result
+- Overall:
+- Pass:
+- Fail:
+- Gaps:
 
-## Playwright / Browser Evidence
+## Browser
 - Used:
-  - `yes/no`
-- Flows or pages covered:
-- Screenshot paths:
-- Console or network evidence:
-- Notable browser-side findings:
+- Flows/pages:
+- Screenshots:
+- Console/network:
+- Findings:
 
 ## Conclusion
-- Can milestone completion be claimed:
-  - `yes/no`
-- If no, next action:
+- Claim complete:
+- Next:
