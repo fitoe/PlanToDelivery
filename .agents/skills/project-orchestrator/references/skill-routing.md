@@ -109,6 +109,9 @@ Examples:
 - `design-to-code`
 - `magicpath`
 
+### Browser Validation Note
+Playwright may be used in this stage as a controlled browser aid for structure, state, and flow validation when text-only reasoning is insufficient.
+
 ## 5. Decision Closure
 
 ### Default Skills
@@ -150,6 +153,9 @@ Examples:
 - `context7` for current official docs
 - targeted UI/build/deployment/database skills if current task requires them
 
+### Browser Validation Note
+Playwright may be used here for narrow browser-side validation of critical pages or interactions. Do not broaden small implementation loops into full browser suites by default.
+
 ## 10. Debugging
 
 ### Default Skills
@@ -159,6 +165,9 @@ Examples:
 - `superpowers:test-driven-development` when a bug should be reproduced with failing tests
 - `context7` if bug involves library behavior that may have changed
 
+### Browser Validation Note
+Use Playwright when the defect is browser-visible, interaction-specific, or requires console / network / screenshot evidence.
+
 ## 11. Verification
 
 ### Default Skills
@@ -166,6 +175,9 @@ Examples:
 
 ### Supporting Skills
 - `superpowers:requesting-code-review` when additional review is needed
+
+### Browser Validation Note
+Use Playwright here when milestone acceptance depends on browser behavior or when browser evidence is required.
 
 ## 12. Handoff
 
@@ -233,6 +245,7 @@ Read:
 ## UI Definition
 Read:
 - `references/ui-planning.md`
+- `references/playwright-browser-validation.md` when UI structure, state, or flow needs browser confirmation
 - `templates/ui-style-directions-template.md`
 - `templates/ui-spec-template.md`
 - `templates/ui-implementation-contract-template.md`
@@ -255,6 +268,7 @@ Read:
 ## Milestone Plan
 Read:
 - `references/testing-strategy.md`
+- `references/playwright-browser-validation.md` when critical browser flows are in scope
 - `templates/implementation-plan-template.md`
 - `templates/milestone-test-plan-template.md`
 - `templates/risk-matrix-template.md`
@@ -265,18 +279,21 @@ Read:
 - active milestone plan
 - active task state
 - only task-relevant domain references
+- `references/playwright-browser-validation.md` when critical browser behavior is being checked
 
 ## Debugging
 Read:
 - active milestone plan
 - active verification report if present
 - domain-specific references only if bug source needs them
+- `references/playwright-browser-validation.md` when browser-visible reproduction or evidence capture is needed
 
 ## Verification
 Read:
 - `templates/verification-report-template.md`
 - active milestone test plan
 - relevant regression plan
+- `references/playwright-browser-validation.md` when milestone browser evidence is required
 
 ## Handoff
 Read:

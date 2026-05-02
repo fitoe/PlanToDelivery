@@ -16,6 +16,14 @@
 - Failing checks:
 - Known accepted gaps:
 
+## Playwright / Browser Evidence
+- Used:
+  - `yes/no`
+- Flows or pages covered:
+- Screenshot paths:
+- Console or network evidence:
+- Notable browser-side findings:
+
 ## Conclusion
 - Can milestone completion be claimed:
   - `yes/no`

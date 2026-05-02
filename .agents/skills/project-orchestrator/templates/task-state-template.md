@@ -24,6 +24,13 @@
   - `pass / partial / fail / not-run`
 - Follow-up needed:
 
+## Browser Evidence
+- Playwright used:
+  - `yes/no`
+- Why:
+- Artifact paths:
+- Follow-up browser validation needed:
+
 ## Blockers
 - Blocker:
 - Type:

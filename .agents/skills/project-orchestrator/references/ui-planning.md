@@ -47,3 +47,15 @@ Core pages and core components should define:
 - `ui-style-directions.md`
 - `ui-spec.md`
 - `ui-implementation-contract.md`
+
+## Browser-Aided Validation
+
+If UI work includes critical pages or interaction-heavy flows, browser-aided validation may be used during `ui-definition`.
+
+Use Playwright selectively to:
+- inspect structure in a live page
+- confirm key state coverage
+- validate flow feel or navigation expectations
+- collect screenshots that clarify implementation intent
+
+Do not turn UI planning into full browser automation by default.

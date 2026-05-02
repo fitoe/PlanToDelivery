@@ -24,6 +24,7 @@ Allowed when justified:
 - mock service
 - required background worker
 - watch-mode test process
+- intentionally retained browser-debug session only when recorded and justified
 
 ## Not Worth Backgrounding
 
@@ -31,3 +32,10 @@ Allowed when justified:
 - one-off build commands
 - one-off scripts
 - single-run lint or verification commands
+- one-off Playwright checks
+
+## Browser Process Discipline
+
+- Do not spawn multiple idle browser sessions casually.
+- Prefer a short-lived Playwright run over a persistent browser when evidence can be collected quickly.
+- If a browser session must stay alive for debugging continuity, record purpose and expected reuse in `session-brief.md`.

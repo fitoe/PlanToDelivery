@@ -22,6 +22,7 @@ Keep implementation aligned with approved planning while preserving speed and ve
 - add tests
 - run verification
 - patch small mismatches between plan and repo reality
+- use narrow browser validation for critical UI behavior when cheaper checks are insufficient
 
 ## Not Allowed During Execution
 
@@ -30,3 +31,13 @@ Keep implementation aligned with approved planning while preserving speed and ve
 - casual reopening of first-order decisions
 - process sprawl
 - hand-waving verification
+
+## Browser Validation Rule
+
+Use Playwright during execution only when it materially helps:
+
+- confirm critical page behavior
+- confirm key interaction slices
+- reproduce browser-visible bugs early
+
+Do not escalate every UI change into broad browser automation.

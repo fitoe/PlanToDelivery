@@ -97,6 +97,13 @@ Best for:
 - UI-to-backend path validation
 - smoke tests for milestone acceptance
 
+### Playwright browser validation
+Best for:
+- critical browser-side user flows
+- interaction-specific bug reproduction
+- browser evidence collection
+- milestone acceptance checks that need screenshots, console, or network evidence
+
 ## Coverage Strategy
 
 Default coverage target is high-value coverage, not universal blanket coverage.
@@ -125,6 +132,8 @@ Default order:
 2. stabilize main implementation path
 3. add E2E for accepted critical flows
 4. expand E2E only where justified
+
+Playwright use may begin earlier for debugging or narrow browser-side validation, but broad browser suites should still wait until core flows stabilize.
 
 ## Regression Strategy
 
@@ -166,6 +175,7 @@ Each milestone test plan should define:
 - planned unit coverage areas
 - planned integration coverage areas
 - planned E2E coverage areas
+- planned Playwright/browser validation areas
 - explicit out-of-scope testing
 - regression strategy
 - security testing needs
@@ -181,6 +191,11 @@ Keep milestone-level durable artifacts:
 - `Mx-test-plan.md`
 - `Mx-regression-plan.md`
 - `Mx-verification-report.md`
+
+When browser evidence matters, also record:
+- whether Playwright was used
+- which flows or pages it covered
+- where screenshots, logs, or network traces were saved
 
 ## Efficiency Rules
 

@@ -15,6 +15,13 @@
   - `unit / integration / e2e / manual verification`
 - Why:
 
+## Playwright / Browser Validation
+- Flow or page:
+- Why browser validation is needed:
+- Planned form:
+  - `manual controlled run / scripted`
+- Evidence expected:
+
 ## High-Risk Modules
 - Module:
 - Risk level:
