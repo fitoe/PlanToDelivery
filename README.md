@@ -1,5 +1,9 @@
 # Project Orchestrator
 
+[![Repository](https://img.shields.io/badge/GitHub-fitoe%2FPlanToDelivery-181717?logo=github)](https://github.com/fitoe/PlanToDelivery)
+[![Skill](https://img.shields.io/badge/Codex-Local%20Skill-10a37f)](./.agents/skills/project-orchestrator/SKILL.md)
+[![Docs](https://img.shields.io/badge/docs-orchestrator-blue)](./docs/orchestrator/)
+
 [简体中文说明](README.zh-CN.md)
 
 `project-orchestrator` is a local Codex skill package for running software projects with stronger process control.
@@ -11,6 +15,17 @@ This repository currently contains:
 - the local skill package under `.agents/skills/project-orchestrator/`
 - durable repository-state docs under `docs/orchestrator/`
 - planning, execution, testing, recovery, and handoff templates
+
+## Table of Contents
+
+- [What It Does](#what-it-does)
+- [Core Design](#core-design)
+- [Repository Layout](#repository-layout)
+- [Quick Start](#quick-start)
+- [How to Use the Skill](#how-to-use-the-skill)
+- [Current Status](#current-status)
+- [Intended Use](#intended-use)
+- [Next Step](#next-step)
 
 ## What It Does
 
@@ -69,6 +84,30 @@ docs/orchestrator/
   decision-log.md
   milestones/
 ```
+
+## Quick Start
+
+1. Open the repository in Codex.
+2. Load the local skill at `.agents/skills/project-orchestrator/`.
+3. Start from `docs/orchestrator/session-brief.md` if the repo already has state.
+4. If the repo is new or half-built, begin with the orchestrator `intake` stage.
+
+## How to Use the Skill
+
+Minimum workflow:
+
+1. Read `.agents/skills/project-orchestrator/SKILL.md`
+2. Determine current stage
+3. Load only the stage-relevant files from `references/`
+4. Use the matching document templates from `templates/`
+5. Keep state updated in `docs/orchestrator/`
+
+Useful entrypoints:
+
+- Skill entry: [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
+- Workflow guide: [references/workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
+- Routing guide: [references/skill-routing.md](./.agents/skills/project-orchestrator/references/skill-routing.md)
+- Recovery entrypoint: [docs/orchestrator/session-brief.md](./docs/orchestrator/session-brief.md)
 
 ## Current Status
 

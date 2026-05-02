@@ -1,5 +1,9 @@
 # Project Orchestrator
 
+[![Repository](https://img.shields.io/badge/GitHub-fitoe%2FPlanToDelivery-181717?logo=github)](https://github.com/fitoe/PlanToDelivery)
+[![Skill](https://img.shields.io/badge/Codex-Local%20Skill-10a37f)](./.agents/skills/project-orchestrator/SKILL.md)
+[![Docs](https://img.shields.io/badge/docs-orchestrator-blue)](./docs/orchestrator/)
+
 [English README](README.md)
 
 `project-orchestrator` 是一个本地 Codex skill 包，用来让软件项目以更强约束、更可恢复、更适合长周期协作的方式推进。
@@ -19,6 +23,18 @@
 - 本地 skill 包：`.agents/skills/project-orchestrator/`
 - 仓库级持久状态文档：`docs/orchestrator/`
 - 大量规划、执行、测试、恢复、交付模板
+
+## 目录
+
+- [仓库里有什么](#仓库里有什么)
+- [它的定位](#它的定位)
+- [核心流程](#核心流程)
+- [仓库结构](#仓库结构)
+- [快速开始](#快速开始)
+- [怎么使用这个 skill](#怎么使用这个-skill)
+- [适合什么项目](#适合什么项目)
+- [当前状态](#当前状态)
+- [下一步](#下一步)
 
 ## 它的定位
 
@@ -84,6 +100,30 @@ docs/orchestrator/
   decision-log.md
   milestones/
 ```
+
+## 快速开始
+
+1. 在 Codex 中打开这个仓库。
+2. 加载本地 skill：`.agents/skills/project-orchestrator/`
+3. 如果仓库已有状态文档，先从 `docs/orchestrator/session-brief.md` 开始。
+4. 如果是新项目或半成品项目，先从 `intake` 阶段进入。
+
+## 怎么使用这个 skill
+
+最小使用流程：
+
+1. 先读 `.agents/skills/project-orchestrator/SKILL.md`
+2. 判断当前项目所处阶段
+3. 只加载当前阶段需要的 `references/`
+4. 用对应的 `templates/` 生成或补齐文档
+5. 持续把状态更新到 `docs/orchestrator/`
+
+推荐入口：
+
+- Skill 主入口：[SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
+- 总流程说明：[references/workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
+- Skill 路由说明：[references/skill-routing.md](./.agents/skills/project-orchestrator/references/skill-routing.md)
+- 恢复入口：[docs/orchestrator/session-brief.md](./docs/orchestrator/session-brief.md)
 
 ## 适合什么项目
 
