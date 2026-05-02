@@ -182,6 +182,29 @@ PlanToDelivery 能做的是：
 
 **它追求的是高自治、强流程、可恢复，不是无边界全自动。**
 
+## 通过 skills CLI 安装
+
+如果你使用的是支持 Agent Skills 生态的工具链，可以直接通过 `skills` CLI 从 GitHub 安装。
+
+常见方式：
+
+```bash
+# 查看这个仓库里可发现的 skills
+npx skills add https://github.com/fitoe/PlanToDelivery --list
+
+# 从仓库安装指定 skill
+npx skills add https://github.com/fitoe/PlanToDelivery --skill project-orchestrator
+
+# 从本地仓库路径安装
+npx skills add .
+```
+
+补充说明：
+
+- 本仓库当前 skill 位于 `.agents/skills/project-orchestrator/`
+- `skills` CLI 会搜索 `.agents/skills/`，所以当前目录结构可被发现
+- 对 Codex 来说，`agents/openai.yaml` 是额外增强，不是 `skills.sh` 的最低要求
+
 ## 快速开始
 
 ### 方式一：直接作为本地 skill 使用
