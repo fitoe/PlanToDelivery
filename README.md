@@ -135,7 +135,7 @@ docs/orchestrator/
 npx skills add https://github.com/fitoe/PlanToDelivery --list
 
 # 安装指定 skill
-npx skills add https://github.com/fitoe/PlanToDelivery --skill project-orchestrator
+npx skills add https://github.com/fitoe/PlanToDelivery --skill PlanToDelivery
 
 # 从本地仓库安装
 npx skills add .
@@ -143,7 +143,8 @@ npx skills add .
 
 说明：
 
-- 当前 skill 位于 `.agents/skills/project-orchestrator/`
+- 当前 skill 名称是 `PlanToDelivery`
+- 物理目录位于 `.agents/skills/project-orchestrator/`
 - `skills` CLI 会搜索 `.agents/skills/`
 - `agents/openai.yaml` 是 Codex 侧的增强元数据，不是最低要求
 

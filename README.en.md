@@ -45,6 +45,7 @@ PlanToDelivery turns those problems into a structured workflow.
 ## Start here
 
 - Main README: [README.md](./README.md)
+- Skill name: `PlanToDelivery`
 - Skill entrypoint: [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
 - Workflow reference: [workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
 
@@ -52,7 +53,7 @@ PlanToDelivery turns those problems into a structured workflow.
 
 The repository already contains the first landed version of:
 
-- `project-orchestrator`
+- `PlanToDelivery`
 - core references and templates
 - durable orchestration docs
 - GitHub collaboration files

@@ -1,5 +1,5 @@
 ---
-name: project-orchestrator
+name: PlanToDelivery
 description: Use when the user wants an end-to-end project manager skill that can take a new, half-built, or partially planned software project from planning through implementation, testing, verification, and handoff with strong process control, milestone-based execution, cross-session recovery, controlled skill routing, and minimal user interruption.
 compatibility: Works with Codex and other agents that support the SKILL.md-based Agent Skills format and progressive loading from bundled references and templates.
 metadata:
@@ -7,7 +7,7 @@ metadata:
   version: "0.1.0"
 ---
 
-# Project Orchestrator
+# PlanToDelivery
 
 Coordinate a software project from idea to completed milestone or completed project closure.
 
