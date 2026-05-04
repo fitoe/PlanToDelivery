@@ -47,16 +47,18 @@
 
 ## Visual Generation Capability
 - Name: `UI visual route and section generation`
-- Purpose: Plan routes and pages, generate style frames or effect previews, slice large pages into sections, and hand approved slices to code generation.
+- Purpose: Plan routes and pages, generate style frames or effect previews, slice large pages into sections, produce the `Pre-Implementation Brief`, and hand approved slices to code generation.
 - Allowed stages: `ui-definition`, `execution`
 - Mode: `on-demand`
-- User approval required: `yes` before code generation and after section boundaries are defined
+- User approval required: `yes` before code generation and after section boundaries and brief are defined
 - Trigger conditions:
   - project needs page route planning
   - visual direction needs confirmation before code
   - page is too large to generate faithfully in one pass
   - later pages must keep the same style system
   - section boundaries need confirmation before implementation
+  - all confirmed visual pages must pass section breakdown -> brief -> confirmation before page code
 - Reasons not to use outside allowed stages:
   - discovery and decision closure should stay text-led
   - do not generate visual assets before route and page purpose are clear
+  - do not skip section slicing or brief confirmation before design-to-code

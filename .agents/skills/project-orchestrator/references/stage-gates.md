@@ -142,6 +142,15 @@ Exit only when:
 - core components have defined states
 - implementation contract exists
 
+If the project has confirmed UI direction but page code is not yet allowed, stay in `ui-definition` / `decision-closure` until all of these are true:
+- section breakdown exists
+- `Pre-Implementation Brief` exists
+- user has confirmed the brief
+- user has confirmed the section breakdown
+
+Do not enter page implementation with only a concept image, only a style frame, or only a route sketch.
+For confirmed UI work, the approved image design is the acceptance baseline; the text brief must not replace or reinterpret it.
+
 ## 5. Decision Closure
 
 ### Entry Conditions
@@ -262,6 +271,10 @@ Enter when all are true:
 - milestone test plan exists
 - high-impact decisions remain closed
 - scope freeze is active
+- for UI pages, section breakdown exists
+- for UI pages, `Pre-Implementation Brief` exists
+- for UI pages, user has confirmed the brief
+- for UI pages, user has confirmed the section breakdown
 
 ### Required Inputs
 - active milestone docs
@@ -281,6 +294,8 @@ Enter when all are true:
 - replacing existing dependencies with custom code without justification
 - starting duplicate long-lived processes without need
 - letting process sprawl accumulate
+- entering page code generation without the UI hard gates above
+- re-designing confirmed UI from the text brief instead of implementing the approved image design
 
 ### Exit Conditions
 Exit only when:

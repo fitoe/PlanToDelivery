@@ -8,6 +8,7 @@ Use when a milestone needs route planning, style framing, and section-by-section
 - generate style frames / effect previews before code
 - split large pages into reliable section slices
 - keep later pages visually consistent with an approved style
+- treat the confirmed image design as the source of truth for implementation and acceptance
 
 ## Core Flow
 
@@ -15,9 +16,11 @@ Use when a milestone needs route planning, style framing, and section-by-section
 2. style frame / effect preview
 3. micro-adjust
 4. section map
-5. user confirms section boundaries
-6. `design-to-code` generates code per section
-7. stitch and verify
+5. `section breakdown`
+6. `Pre-Implementation Brief`
+7. user confirms section boundaries and brief
+8. `design-to-code` generates code per section
+9. stitch and verify
 
 ## Use When
 
@@ -50,6 +53,13 @@ Use when a milestone needs route planning, style framing, and section-by-section
 - prefer smaller slices for fidelity
 - keep repeated patterns consistent
 - if boundaries are unclear, re-cut before coding
+- every section must state:
+  - section name
+  - layout relationship
+  - content scope
+  - media role
+  - reuse points
+  - key unknowns
 
 ## Confirmation Gate
 
@@ -58,6 +68,12 @@ Do not start `design-to-code` until:
 - route order is approved
 - section boundaries are approved
 - style continuity is approved
+- `Pre-Implementation Brief` is approved
+
+If the brief is not approved, do not generate page code.
+
+Implementation and acceptance must follow the confirmed image design, not re-design from the text brief.
+The brief may summarize the confirmed image, but it must not introduce new visual direction.
 
 ## Browser Validation
 

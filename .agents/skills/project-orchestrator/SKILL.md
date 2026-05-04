@@ -136,6 +136,19 @@ If this is a new project with meaningful UI, the visual track is mandatory befor
 - present them to the user for confirmation
 - do not begin page coding until a direction is approved
 
+If the project has UI and the visual direction is already confirmed, page implementation must still pass section slicing first:
+- split each page or route into sections before any code is written
+- each section must state:
+  - section name
+  - layout relationship
+  - content scope
+  - media role
+  - reuse points
+  - key unknowns
+- do not skip section slicing and jump directly to page code
+- `design-to-code` may run only after the section breakdown is complete, the `Pre-Implementation Brief` is written, and the user confirms both
+- implementation must follow the confirmed image design as the source of truth; the brief cannot re-design the UI
+
 Rules:
 - core pages high fidelity
 - secondary pages medium fidelity
@@ -156,6 +169,12 @@ Before roadmap or implementation, close all high-impact unresolved decisions:
 - testing strategy
 - milestone slicing
 - acceptance rules
+
+If the user says "先生成 ui 效果图，确认了再实施" or equivalent:
+- stay in `ui-definition` and `decision-closure`
+- do not enter execution
+- do not write page code
+- require confirmed section slices plus a confirmed `Pre-Implementation Brief` before any implementation starts
 
 Do not enter implementation with open high-impact decisions.
 
@@ -227,6 +246,16 @@ Do not allow implementation when any of these are missing:
 - current milestone implementation plan
 - current milestone test plan
 
+For any UI page implementation based on an approved visual direction, also require all of these before `design-to-code` or page code generation:
+
+- section breakdown
+- `Pre-Implementation Brief`
+- user confirmation of the brief
+- user confirmation of the section breakdown
+
+If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
+Do not use the text brief to reinterpret or replace the confirmed image design during implementation or acceptance.
+
 Do not mark work complete when any of these are missing:
 
 - fresh verification evidence
@@ -267,6 +296,15 @@ Use:
 Use:
 - `superpowers:writing-skills`
 - `skill-creator`
+
+## UI Implementation Example
+
+Example sequence for a confirmed UI project:
+1. user confirms visual direction
+2. output homepage / inner page section breakdown
+3. output `Pre-Implementation Brief`
+4. user confirms the brief
+5. only then start Astro / Vue page code
 
 ### Optional extensions
 Use only when relevant:

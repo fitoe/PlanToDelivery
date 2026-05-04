@@ -31,6 +31,7 @@ Keep implementation aligned with approved planning while preserving speed and ve
 - casual reopening of first-order decisions
 - process sprawl
 - hand-waving verification
+- page code generation before UI section breakdown and `Pre-Implementation Brief` approval
 
 ## Browser Validation Rule
 

@@ -29,6 +29,9 @@ For a new project with meaningful UI, generate the style directions with `imageg
 
 If a milestone needs route planning, page planning, style framing, or section-by-section page generation, also read `references/ui-visual-generation.md`.
 
+When visual direction is already confirmed, do not move to page code until section slicing and brief confirmation are complete.
+The confirmed image design remains the source of truth for implementation and acceptance.
+
 ## Fidelity Rules
 
 - core pages: high fidelity
@@ -51,6 +54,23 @@ Core pages and core components should define:
 - `ui-style-directions.md`
 - `ui-spec.md`
 - `ui-implementation-contract.md`
+- `section-breakdown.md`
+- `pre-implementation-brief.md`
+
+## Section Slicing
+
+For each page or route, output section slices before implementation.
+
+Each section must include:
+- section name
+- layout relationship
+- content scope
+- media role
+- reuse points
+- key unknowns
+
+Do not merge section slicing into code generation.
+Do not let the text brief redefine the visual design; it only records implementation constraints from the confirmed image.
 
 ## Browser-Aided Validation
 
