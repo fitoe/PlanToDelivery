@@ -26,6 +26,22 @@ Use when a milestone needs route planning, style framing, and section-by-section
 10. `design-to-code` generates code per section
 11. stitch and verify
 
+## Page Image Rules
+
+- one page at a time
+- every page must go through `small -> large -> prompt`
+- `small` means 2-3 same-page, materially different style directions for exploration only
+- `small` must not combine multiple routes in one image
+- every generated `small` and `large` image must be persisted, including unselected versions
+- the approved `large` image must be persisted with a structured prompt artifact intended for reproduction
+- the prompt artifact must be version-bound to the approved `large` image
+- section slicing is required only for complex pages
+- simple mobile pages or lightweight web pages may use fewer slices or no slices
+- when slicing is required, the section boundaries and order must be manually confirmed
+- any slice artifacts must be persisted and version-bound to the originating `large` image
+- `small`, `large`, `prompt`, and `slice` artifacts must remain traceable to the same page and version
+- do not discard historical image versions; preserve them for later reference and regeneration
+
 ## Use When
 
 - multiple pages or routes exist

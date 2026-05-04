@@ -139,6 +139,21 @@ If this is a new project with meaningful UI, the visual track is mandatory befor
 - after approval, generate the larger implementation-reference images and save them to repository docs
 - do not begin page coding until the implementation-reference images are approved
 
+For `gpt-image-2` page effect generation, apply the following rules:
+- one page at a time
+- every page must go through `small -> large -> prompt`
+- `small` means 2-3 same-page, materially different style directions for exploration only
+- `small` must not combine multiple routes in one image
+- every generated `small` and `large` image must be persisted, including unselected versions
+- the approved `large` image must be persisted with a structured prompt artifact that is intended for reproduction, not human readability
+- the prompt artifact must be version-bound to the approved `large` image
+- section slicing is required only for complex pages
+- simple mobile pages or lightweight web pages may use fewer slices or no slices
+- when slicing is required, the section boundaries and order must be manually confirmed
+- any slice artifacts must be persisted and version-bound to the originating `large` image
+- `small`, `large`, `prompt`, and `slice` artifacts must remain traceable to the same page and version
+- do not discard historical image versions; preserve them for later reference and regeneration
+
 If the project has UI and the visual direction is already confirmed, page implementation must still pass section slicing first:
 - split each page or route into sections before any code is written
 - save the section map and section-level artifacts to repository docs before code
