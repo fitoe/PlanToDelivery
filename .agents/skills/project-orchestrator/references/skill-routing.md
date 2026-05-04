@@ -209,6 +209,12 @@ Additional skills may be used only if they satisfy all of these:
 4. Their use does not explode context unnecessarily
 5. They are bounded to current need
 
+Missing dependency rule:
+
+- If a routed skill is required but not installed or not found, do not skip it.
+- First search the global skill installation source or registry.
+- If it is still unavailable, stop and prompt for permission to install it automatically before continuing.
+
 ## Registered Skill Format
 
 Use `docs/orchestrator/skill-registry.md` to record:

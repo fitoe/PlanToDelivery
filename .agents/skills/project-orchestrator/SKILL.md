@@ -273,6 +273,12 @@ Use only when relevant:
 
 Additional skills may be registered and used, but only through controlled routing.
 
+If a required dependency skill is not installed or cannot be found:
+
+- do not skip it silently
+- first search the global skill installation source or registry
+- if still unavailable, stop and ask whether to install it automatically before continuing
+
 For each additional skill define:
 - skill name
 - use conditions
@@ -361,6 +367,25 @@ Rules:
 - record long-lived process purpose, command, and port
 - clean up temporary processes before ending session unless they must persist
 
+## Git And Branch Management
+
+Use git to isolate work, not as the primary project memory.
+
+Rules:
+- keep `main` stable and merge only verified work into it
+- use short-lived branches for each stage, milestone, or focused task
+- prefer one branch per closed loop; delete it after merge
+- keep branch names explicit, such as `docs/...`, `feat/...`, or `chore/...`
+- for implementation work, prefer a dedicated worktree when parallel work or dirty state exists
+- never overwrite or reset user changes without explicit instruction
+- make small commits with one purpose each
+- keep state/document edits separate from code or behavior edits when practical
+- write durable project state into `docs/orchestrator/`, not only into commit history
+- before merge or handoff, verify the current branch, changed files, and latest task state
+- prefer squash merge for milestone work unless history preservation is important
+- if the worktree is dirty on arrival, inspect and preserve existing changes before proceeding
+- if a branch is no longer needed, remove it after merge and state sync
+
 ## Progressive Loading
 
 Do not load every reference or template file at once.
@@ -405,7 +430,7 @@ On new session:
 2. read active milestone task state
 3. read `decision-log.md`
 4. read milestone plan/spec as needed
-5. cross-check code and git status
+5. cross-check code, branch, and git status
 6. continue from exact next step
 
 ## Output Standard
