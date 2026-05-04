@@ -26,6 +26,7 @@ Use when a milestone needs route planning, style framing, and section-by-section
 - style needs confirmation before code
 - a page is too large for one faithful pass
 - later pages must reuse the same visual system
+- this is a new project with meaningful UI and no approved visual direction yet
 
 ## Route Plan Fields
 

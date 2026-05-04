@@ -25,6 +25,8 @@ Produce:
 - recommended option
 - user-approved final direction
 
+For a new project with meaningful UI, generate the style directions with `imagegen` before page implementation starts.
+
 If a milestone needs route planning, page planning, style framing, or section-by-section page generation, also read `references/ui-visual-generation.md`.
 
 ## Fidelity Rules

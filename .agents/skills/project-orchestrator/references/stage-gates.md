@@ -132,6 +132,7 @@ Skip only when project is meaningfully non-UI.
 - entering UI implementation with only visual mood and no structural definition
 - entering implementation with only wireframes and no state behavior for core pages
 - deferring core UI state definitions to implementation for core flows
+- for a new project with meaningful UI, skipping the visual track and jumping directly to page code
 
 ### Exit Conditions
 Exit only when:

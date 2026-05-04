@@ -131,6 +131,11 @@ If project has UI, do both tracks in parallel:
 - structural track: IA, pages, flows, states, components
 - visual track: 2-3 style directions for user approval
 
+If this is a new project with meaningful UI, the visual track is mandatory before page implementation:
+- generate style directions or mockups with `imagegen`
+- present them to the user for confirmation
+- do not begin page coding until a direction is approved
+
 Rules:
 - core pages high fidelity
 - secondary pages medium fidelity

@@ -116,6 +116,7 @@ Playwright may validate UI structure, state, or flow when text-only reasoning is
 
 ### Visual Generation Note
 If the milestone needs route planning plus style frames or section slicing, use `imagegen` first, confirm the section map with the user, and only then hand off approved sections to `design-to-code`.
+For a new project with meaningful UI, treat `imagegen` as required before any page implementation begins.
 
 ## 5. Decision Closure
 
