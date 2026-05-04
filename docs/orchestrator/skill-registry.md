@@ -54,11 +54,12 @@
 - Trigger conditions:
   - project needs page route planning
   - visual direction needs confirmation before code
+  - small inspiration images must be approved before large implementation-reference images are generated
   - page is too large to generate faithfully in one pass
   - later pages must keep the same style system
   - section boundaries need confirmation before implementation
-  - all confirmed visual pages must pass section breakdown -> brief -> confirmation before page code
+  - all confirmed visual pages must pass implementation-reference image -> section breakdown -> brief -> confirmation before page code
 - Reasons not to use outside allowed stages:
   - discovery and decision closure should stay text-led
   - do not generate visual assets before route and page purpose are clear
-  - do not skip section slicing or brief confirmation before design-to-code
+  - do not skip artifact persistence, section slicing, or brief confirmation before design-to-code

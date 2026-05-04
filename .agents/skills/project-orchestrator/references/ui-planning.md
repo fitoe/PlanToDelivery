@@ -22,10 +22,15 @@ Define:
 
 Produce:
 - 2-3 style directions
+- small inspiration images for each direction
 - recommended option
-- user-approved final direction
+- user-approved direction for expansion
+- large implementation-reference images for the approved direction
+- user-approved final implementation reference
 
 For a new project with meaningful UI, generate the style directions with `imagegen` before page implementation starts.
+Do not jump directly from a text brief to a large implementation image.
+Confirm the small inspiration direction first, then generate the larger implementation-reference images.
 
 If a milestone needs route planning, page planning, style framing, or section-by-section page generation, also read `references/ui-visual-generation.md`.
 
@@ -51,11 +56,16 @@ Core pages and core components should define:
 
 ## Output Files
 
-- `ui-style-directions.md`
-- `ui-spec.md`
-- `ui-implementation-contract.md`
-- `section-breakdown.md`
-- `pre-implementation-brief.md`
+- `docs/orchestrator/ui/ui-style-directions.md`
+- `docs/orchestrator/ui/ui-spec.md`
+- `docs/orchestrator/ui/ui-implementation-contract.md`
+- `docs/orchestrator/ui/section-breakdown.md`
+- `docs/orchestrator/ui/pre-implementation-brief.md`
+
+Persist visual artifacts to disk:
+- `docs/orchestrator/ui/inspirations/` for small idea frames
+- `docs/orchestrator/ui/references/` for approved implementation-reference images
+- `docs/orchestrator/ui/sections/` for section maps and section slice images
 
 ## Section Slicing
 
@@ -71,6 +81,7 @@ Each section must include:
 
 Do not merge section slicing into code generation.
 Do not let the text brief redefine the visual design; it only records implementation constraints from the confirmed image.
+Do not keep section slicing only in chat; write it to disk with image paths or slice references when available.
 
 ## Browser-Aided Validation
 

@@ -5,22 +5,26 @@ Use when a milestone needs route planning, style framing, and section-by-section
 ## Purpose
 
 - derive page routes and responsibilities from project planning
-- generate style frames / effect previews before code
+- generate small inspiration frames before code
+- generate approved large implementation-reference images before code
 - split large pages into reliable section slices
+- persist all visual and section artifacts to repository docs
 - keep later pages visually consistent with an approved style
 - treat the confirmed image design as the source of truth for implementation and acceptance
 
 ## Core Flow
 
 1. route plan
-2. style frame / effect preview
-3. micro-adjust
-4. section map
-5. `section breakdown`
-6. `Pre-Implementation Brief`
-7. user confirms section boundaries and brief
-8. `design-to-code` generates code per section
-9. stitch and verify
+2. 2-3 small inspiration frames
+3. user approves one direction for expansion
+4. large implementation-reference images
+5. micro-adjust and confirm the large reference
+6. section map
+7. persisted `section breakdown`
+8. persisted `Pre-Implementation Brief`
+9. user confirms reference, section boundaries, and brief
+10. `design-to-code` generates code per section
+11. stitch and verify
 
 ## Use When
 
@@ -42,7 +46,10 @@ Use when a milestone needs route planning, style framing, and section-by-section
 
 ## Style Frame Rules
 
-- use `imagegen` for style frames or effect previews
+- use `imagegen` for both inspiration frames and implementation-reference images
+- small inspiration frames are for style selection only
+- large implementation-reference images are for implementation and acceptance
+- save both stages to repository docs
 - adjust before freezing style
 - reuse approved style for later pages unless changed explicitly
 
@@ -53,6 +60,7 @@ Use when a milestone needs route planning, style framing, and section-by-section
 - prefer smaller slices for fidelity
 - keep repeated patterns consistent
 - if boundaries are unclear, re-cut before coding
+- persist the section map and any section slice images before coding
 - every section must state:
   - section name
   - layout relationship
@@ -66,7 +74,9 @@ Use when a milestone needs route planning, style framing, and section-by-section
 Do not start `design-to-code` until:
 
 - route order is approved
+- persisted implementation-reference images are approved
 - section boundaries are approved
+- persisted section artifacts exist
 - style continuity is approved
 - `Pre-Implementation Brief` is approved
 
@@ -82,7 +92,9 @@ Use Playwright after code generation when needed to confirm section order, conti
 ## Evidence
 
 - route plan
-- approved style direction
+- approved inspiration direction
+- approved implementation-reference images
 - section map
+- persisted section slice artifacts
 - screenshots
 - browser verification notes

@@ -4,6 +4,8 @@
 - Project:
 - Milestone or module:
 - Last updated:
+- Approved implementation reference:
+- Reference image path:
 
 ## Stack and Component Rules
 - Framework:
@@ -52,3 +54,8 @@
 ## Do Not Violate
 - Constraint:
 - Why:
+
+## Visual Source Rule
+- The approved implementation-reference image is the visual source of truth:
+  - `yes/no`
+- Notes:

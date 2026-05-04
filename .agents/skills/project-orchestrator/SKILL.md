@@ -132,12 +132,16 @@ If project has UI, do both tracks in parallel:
 - visual track: 2-3 style directions for user approval
 
 If this is a new project with meaningful UI, the visual track is mandatory before page implementation:
-- generate style directions or mockups with `imagegen`
+- generate 2-3 small inspiration frames with `imagegen`
+- save those inspiration frames to repository docs, not only in chat
 - present them to the user for confirmation
-- do not begin page coding until a direction is approved
+- do not generate large implementation-reference images until one inspiration direction is approved
+- after approval, generate the larger implementation-reference images and save them to repository docs
+- do not begin page coding until the implementation-reference images are approved
 
 If the project has UI and the visual direction is already confirmed, page implementation must still pass section slicing first:
 - split each page or route into sections before any code is written
+- save the section map and section-level artifacts to repository docs before code
 - each section must state:
   - section name
   - layout relationship
@@ -148,6 +152,19 @@ If the project has UI and the visual direction is already confirmed, page implem
 - do not skip section slicing and jump directly to page code
 - `design-to-code` may run only after the section breakdown is complete, the `Pre-Implementation Brief` is written, and the user confirms both
 - implementation must follow the confirmed image design as the source of truth; the brief cannot re-design the UI
+
+For page-oriented work, persist UI artifacts under repository docs:
+- inspiration images
+- implementation-reference images
+- section map
+- section slice records
+- `Pre-Implementation Brief`
+
+Default artifact locations:
+- `docs/orchestrator/ui/inspirations/`
+- `docs/orchestrator/ui/references/`
+- `docs/orchestrator/ui/sections/`
+- `docs/orchestrator/ui/`
 
 Rules:
 - core pages high fidelity
@@ -174,7 +191,7 @@ If the user says "先生成 ui 效果图，确认了再实施" or equivalent:
 - stay in `ui-definition` and `decision-closure`
 - do not enter execution
 - do not write page code
-- require confirmed section slices plus a confirmed `Pre-Implementation Brief` before any implementation starts
+- require approved implementation-reference images, confirmed section slices, and a confirmed `Pre-Implementation Brief` before any implementation starts
 
 Do not enter implementation with open high-impact decisions.
 
@@ -248,10 +265,13 @@ Do not allow implementation when any of these are missing:
 
 For any UI page implementation based on an approved visual direction, also require all of these before `design-to-code` or page code generation:
 
+- approved persisted implementation-reference images
 - section breakdown
+- persisted section slice artifacts
 - `Pre-Implementation Brief`
 - user confirmation of the brief
 - user confirmation of the section breakdown
+- user confirmation that the implementation-reference images are the visual source of truth
 
 If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
 Do not use the text brief to reinterpret or replace the confirmed image design during implementation or acceptance.
@@ -300,11 +320,13 @@ Use:
 ## UI Implementation Example
 
 Example sequence for a confirmed UI project:
-1. user confirms visual direction
-2. output homepage / inner page section breakdown
-3. output `Pre-Implementation Brief`
-4. user confirms the brief
-5. only then start Astro / Vue page code
+1. generate 2-3 small inspiration frames and save them to `docs/orchestrator/ui/inspirations/`
+2. user confirms one direction for expansion
+3. generate larger implementation-reference images and save them to `docs/orchestrator/ui/references/`
+4. output homepage / inner page section breakdown and save section artifacts under `docs/orchestrator/ui/sections/`
+5. output `Pre-Implementation Brief`
+6. user confirms the implementation-reference images, section breakdown, and brief
+7. only then start Astro / Vue page code
 
 ### Optional extensions
 Use only when relevant:

@@ -115,7 +115,7 @@ Examples:
 Playwright may validate UI structure, state, or flow when text-only reasoning is not enough.
 
 ### Visual Generation Note
-If the milestone needs route planning plus style frames or section slicing, use `imagegen` first, confirm the section map with the user, and only then hand off approved sections to `design-to-code`.
+If the milestone needs route planning plus style frames or section slicing, use `imagegen` first for small inspiration frames, confirm one direction, then generate larger implementation-reference images, then confirm the section map with the user, and only then hand off approved sections to `design-to-code`.
 For a new project with meaningful UI, treat `imagegen` as required before any page implementation begins.
 
 ## 5. Decision Closure
@@ -159,6 +159,7 @@ For a new project with meaningful UI, treat `imagegen` as required before any pa
 - `context7` for current official docs
 - targeted UI/build/deployment/database skills if current task requires them
 - `design-to-code` when a UI milestone has approved section slices ready for code generation
+- never use `design-to-code` before approved implementation-reference images, persisted section artifacts, and an approved `Pre-Implementation Brief` exist
 
 ### Browser Validation Note
 Use Playwright narrowly for critical pages or interactions only.
@@ -258,10 +259,14 @@ Read:
 ## UI Definition
 Read:
 - `references/ui-planning.md`
+- `references/ui-visual-generation.md` when page-oriented UI work is in scope
+- `references/ui-design-gate-testing.md` when validating or tightening the design-before-code workflow
 - `references/playwright-browser-validation.md` when UI structure, state, or flow needs browser confirmation
 - `templates/ui-style-directions-template.md`
 - `templates/ui-spec-template.md`
 - `templates/ui-implementation-contract-template.md`
+- `templates/section-breakdown-template.md`
+- `templates/pre-implementation-brief-template.md`
 
 ## Decision Closure
 Read:

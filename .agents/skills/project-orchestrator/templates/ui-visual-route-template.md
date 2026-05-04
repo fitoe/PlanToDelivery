@@ -9,11 +9,25 @@
 | Route | Page purpose | Primary user action | Priority | Style anchor |
 | --- | --- | --- | --- | --- |
 
-## Style Frame
+## Inspiration Frames
+- Direction candidates:
+- Small image paths:
+- Recommended option:
+- What each direction is testing:
+
+## Expansion Approval
+- Approved inspiration direction:
+- User approved for large references:
+  - `yes/no`
+- Notes:
+
+## Implementation Reference
 - Visual direction:
-- Reference image / generated frame:
+- Large reference image path:
 - What must be preserved:
 - What can be adjusted:
+- Approved:
+  - `yes/no`
 
 ## Approval Notes
 - User feedback:
@@ -27,7 +41,11 @@
 ## Section Confirmation Gate
 - Boundary review completed:
   - `yes/no`
+- Section artifacts written to disk:
+  - `yes/no`
 - Route order approved:
+  - `yes/no`
+- Large implementation reference approved:
   - `yes/no`
 - Section boundaries approved:
   - `yes/no`

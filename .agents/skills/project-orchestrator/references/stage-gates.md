@@ -127,12 +127,15 @@ Skip only when project is meaningfully non-UI.
 - `ui-style-directions.md`
 - `ui-spec.md`
 - `ui-implementation-contract.md`
+- persisted inspiration images for candidate directions
+- approved persisted implementation-reference images for pages that are moving toward implementation
 
 ### Prohibited
 - entering UI implementation with only visual mood and no structural definition
 - entering implementation with only wireframes and no state behavior for core pages
 - deferring core UI state definitions to implementation for core flows
 - for a new project with meaningful UI, skipping the visual track and jumping directly to page code
+- jumping from a small inspiration image directly to page code without producing and approving a larger implementation-reference image
 
 ### Exit Conditions
 Exit only when:
@@ -144,7 +147,9 @@ Exit only when:
 
 If the project has confirmed UI direction but page code is not yet allowed, stay in `ui-definition` / `decision-closure` until all of these are true:
 - section breakdown exists
+- persisted section slice artifacts exist
 - `Pre-Implementation Brief` exists
+- approved implementation-reference images exist
 - user has confirmed the brief
 - user has confirmed the section breakdown
 
@@ -272,7 +277,9 @@ Enter when all are true:
 - high-impact decisions remain closed
 - scope freeze is active
 - for UI pages, section breakdown exists
+- for UI pages, persisted section slice artifacts exist
 - for UI pages, `Pre-Implementation Brief` exists
+- for UI pages, approved implementation-reference images exist
 - for UI pages, user has confirmed the brief
 - for UI pages, user has confirmed the section breakdown
 

@@ -169,21 +169,33 @@ Plan UI in two parallel tracks:
 
 #### Visual track
 - 2-3 style directions
+- small inspiration frames saved to disk
 - recommended direction
-- user-selected direction
+- user-approved direction for expansion
+- large implementation-reference images saved to disk
+- user-approved final implementation reference
 
 ### UI Outputs
 
 Create or update:
-- `ui-style-directions.md`
-- `ui-spec.md`
-- `ui-implementation-contract.md`
+- `docs/orchestrator/ui/ui-style-directions.md`
+- `docs/orchestrator/ui/ui-spec.md`
+- `docs/orchestrator/ui/ui-implementation-contract.md`
+- `docs/orchestrator/ui/section-breakdown.md`
+- `docs/orchestrator/ui/pre-implementation-brief.md`
+
+Persist assets under:
+- `docs/orchestrator/ui/inspirations/`
+- `docs/orchestrator/ui/references/`
+- `docs/orchestrator/ui/sections/`
 
 ### UI Rule
 
 UI planning must guide implementation.
 
 Do not produce visual-only artifacts with no implementation contract.
+Do not jump from small inspiration frames directly to page code.
+Do not start page implementation until approved implementation-reference images, persisted section artifacts, and an approved `Pre-Implementation Brief` exist.
 
 ## 5. Decision Closure
 

@@ -32,6 +32,8 @@ Keep implementation aligned with approved planning while preserving speed and ve
 - process sprawl
 - hand-waving verification
 - page code generation before UI section breakdown and `Pre-Implementation Brief` approval
+- page code generation before approved persisted implementation-reference images exist
+- page code generation before section slice artifacts are written to disk
 
 ## Browser Validation Rule
 
