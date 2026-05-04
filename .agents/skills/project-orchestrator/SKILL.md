@@ -138,6 +138,7 @@ If this is a new project with meaningful UI, the visual track is mandatory befor
 - do not generate large implementation-reference images until one inspiration direction is approved
 - after approval, generate the larger implementation-reference images and save them to repository docs
 - do not begin page coding until the implementation-reference images are approved
+- do not enter execution for UI-bearing work until design images are produced and approved
 
 For `gpt-image-2` page effect generation, apply the following rules:
 - one page at a time
@@ -287,6 +288,8 @@ For any UI page implementation based on an approved visual direction, also requi
 - user confirmation of the brief
 - user confirmation of the section breakdown
 - user confirmation that the implementation-reference images are the visual source of truth
+
+Do not allow implementation when design images are not produced and approved.
 
 If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
 Do not use the text brief to reinterpret or replace the confirmed image design during implementation or acceptance.

@@ -196,6 +196,7 @@ UI planning must guide implementation.
 Do not produce visual-only artifacts with no implementation contract.
 Do not jump from small inspiration frames directly to page code.
 Do not start page implementation until approved implementation-reference images, persisted section artifacts, and an approved `Pre-Implementation Brief` exist.
+Do not allow implementation when design images are not produced and approved.
 
 ## 5. Decision Closure
 
@@ -314,6 +315,7 @@ Only blocking or validity-breaking changes may interrupt.
 ## 9. Execution
 
 Use when plan is approved and gates are clear.
+For UI-bearing work, `execution` is allowed only after design images exist, are persisted, and are user-approved.
 
 ### Execution Objectives
 

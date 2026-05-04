@@ -22,6 +22,11 @@
 - The immediate work target is the local orchestrator skill package itself.
 - The core references, templates, and basic agents metadata required for a first-pass package are present.
 
+## UI Design Status
+- `ui_design_status`: `draft`
+- Allowed values: `draft | rendered | approved`
+- Execution gate: only `approved` may transition into `execution` for UI-bearing work
+
 ## Known Gaps
 - Durable state docs now reflect the landed package at a basic level
 - Some optional or future-facing files from the original broad design are still unimplemented
