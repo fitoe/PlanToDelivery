@@ -22,6 +22,11 @@
 - The immediate work target is the local orchestrator skill package itself.
 - The core references, templates, and basic agents metadata required for a first-pass package are present.
 
+## Product Definition Status
+- `product_definition_status`: `draft`
+- Allowed values: `draft | approved`
+- Execution gate: only `approved` may feed `ui_definition`, `system_definition`, `roadmap`, and `execution`
+
 ## UI Design Status
 - `ui_design_status`: `draft`
 - Allowed values: `draft | rendered | approved`

@@ -23,8 +23,9 @@ Its responsibilities are:
 ```text
 intake
   -> discovery
-  -> full-definition
+  -> product-definition
   -> ui-definition (if applicable)
+  -> system-definition
   -> decision-closure
   -> roadmap
   -> milestone-spec
@@ -116,45 +117,44 @@ Do not leave discovery until project goal is concrete enough to evaluate:
 - milestone slicing
 - acceptance
 
-## 3. Full Definition
+## 3. Product Definition
 
-Use when high-level direction is known but implementable detail is not yet complete.
+Use when high-level direction is known but feature and interaction behavior are not yet locked.
 
-### Full Definition Objectives
+### Product Definition Objectives
 
-Push project definition to implementation-relevant detail.
+Push product behavior to implementation-guiding detail before system design.
 
 Must cover:
 - feature inventory
 - main flows
 - branch flows
 - failure flows
-- roles and permissions
-- data model intent
-- state transitions
-- page/API responsibilities
+- page responsibilities
+- route structure
+- component boundaries
 - loading/empty/error states
 - validation rules
-- external integration needs
-- testing expectations
-- observability expectations
-- deployment assumptions
+- acceptance expectations
+- interaction rules
 
-### Full Definition Outputs
+### Product Definition Outputs
 
 Create or update:
 - `feature-breakdown.md`
 - supporting planning artifacts as needed
 
-### Full Definition Rule
+### Product Definition Rule
 
 Do not stop at labels like "user management" or "dashboard".
 
-Every major feature should be understandable as behavior.
+Every major feature should be understandable as behavior and interaction.
 
 ## 4. UI Definition
 
 Use only when project contains meaningful user interfaces.
+
+Enter this stage after the product and interaction definition is concrete enough to render.
 
 ### UI Definition Objectives
 
@@ -198,7 +198,35 @@ Do not jump from small inspiration frames directly to page code.
 Do not start page implementation until approved implementation-reference images, persisted section artifacts, and an approved `Pre-Implementation Brief` exist.
 Do not allow implementation when design images are not produced and approved.
 
-## 5. Decision Closure
+## 5. System Definition
+
+Use after product behavior is defined and, for UI-bearing projects, after UI direction is approved.
+
+### System Definition Objectives
+
+Define the system around approved product and UI decisions.
+
+Must cover:
+- roles and permissions
+- data model intent
+- state transitions
+- page/API interfaces
+- architecture direction
+- external integration needs
+- testing expectations
+- observability expectations
+- deployment assumptions
+
+### System Definition Outputs
+
+Create or update:
+- supporting planning artifacts as needed
+
+### System Definition Rule
+
+System design must refine delivery details, not reopen approved product behavior or approved UI.
+
+## 6. Decision Closure
 
 Use after broad planning and before roadmap or implementation.
 
@@ -209,6 +237,7 @@ Close all high-impact decisions that would otherwise interrupt implementation.
 Must explicitly resolve:
 - technology stack
 - architecture direction
+- product interaction direction
 - UI direction
 - data model direction
 - permissions model
@@ -225,7 +254,7 @@ Create or update:
 
 No unresolved high-impact decision may remain open before `roadmap`.
 
-## 6. Roadmap
+## 7. Roadmap
 
 Use after planning is sufficiently closed.
 
@@ -253,7 +282,7 @@ A milestone must be independently:
 - testable
 - handoff-able
 
-## 7. Milestone Spec
+## 8. Milestone Spec
 
 Use for the active milestone only.
 
@@ -283,7 +312,7 @@ Create or update:
 
 Spec should be complete enough that implementation planning does not invent behavior.
 
-## 8. Milestone Plan
+## 9. Milestone Plan
 
 Use only after milestone spec is complete.
 
@@ -312,7 +341,7 @@ After entering this stage, scope freezes by default.
 
 Only blocking or validity-breaking changes may interrupt.
 
-## 9. Execution
+## 10. Execution
 
 Use when plan is approved and gates are clear.
 For UI-bearing work, `execution` is allowed only after design images exist, are persisted, and are user-approved.
@@ -352,7 +381,7 @@ During execution, update:
 - `milestones/Mx-task-state.md`
 - `session-brief.md`
 
-## 10. Debugging
+## 11. Debugging
 
 Use when progress is blocked by failing behavior, unstable tests, broken assumptions, or unclear defect source.
 
@@ -376,7 +405,7 @@ Classify failure first:
 
 Then repair accordingly.
 
-## 11. Verification
+## 12. Verification
 
 Use after implementation or repair work.
 
@@ -401,7 +430,7 @@ No stale evidence.
 No assumed passing state.
 No completion claim before fresh verification.
 
-## 12. Handoff
+## 13. Handoff
 
 Use whenever:
 - ending a work session
@@ -430,7 +459,7 @@ Create or update:
 - `milestones/Mx-task-state.md`
 - `final-handoff.md` when closing milestone or project
 
-## 13. Done
+## 14. Done
 
 Use only when current milestone or project closure is real.
 
@@ -509,8 +538,9 @@ Ask user only for:
 |------|-------------------|
 | `intake` | `superpowers:using-superpowers`, `karpathy-guidelines` |
 | `discovery` | `superpowers:brainstorming` |
-| `full-definition` | `superpowers:brainstorming` |
+| `product-definition` | `superpowers:brainstorming` |
 | `ui-definition` | `superpowers:brainstorming` plus UI-related registered skills when applicable |
+| `system-definition` | `superpowers:brainstorming` |
 | `decision-closure` | `superpowers:brainstorming` |
 | `roadmap` | `superpowers:brainstorming` |
 | `milestone-spec` | `superpowers:brainstorming` |

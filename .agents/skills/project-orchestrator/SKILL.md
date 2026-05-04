@@ -28,6 +28,7 @@ This skill is a project governor, not a universal implementation brain. Control 
 Require explicit user confirmation for:
 
 - Project goal
+- Product interaction direction
 - Technology stack
 - UI style direction
 - High-risk testing priorities
@@ -56,17 +57,18 @@ Operate in these stages:
 
 1. `intake`
 2. `discovery`
-3. `full-definition`
+3. `product-definition`
 4. `ui-definition`
-5. `decision-closure`
-6. `roadmap`
-7. `milestone-spec`
-8. `milestone-plan`
-9. `execution`
-10. `debugging`
-11. `verification`
-12. `handoff`
-13. `done`
+5. `system-definition`
+6. `decision-closure`
+7. `roadmap`
+8. `milestone-spec`
+9. `milestone-plan`
+10. `execution`
+11. `debugging`
+12. `verification`
+13. `handoff`
+14. `done`
 
 Always determine current stage before acting.
 
@@ -103,33 +105,31 @@ Clarify:
 
 If project is too large for one closed build, prepare to split into milestones.
 
-### 3. Full Definition
+### 3. Product Definition
 
-Define all important product details before implementation:
+Lock the product and interaction model before any system design or implementation:
 - feature inventory
 - primary flows
 - branch flows
 - error flows
-- permissions
-- data shapes
-- state transitions
-- interfaces
+- page inventory
+- route responsibilities
 - empty/loading/error states
 - validation
 - acceptance criteria
-- deployment assumptions
-- testing strategy
-- observability expectations
-- external integrations
-- change rules
+- component boundaries
+- interaction rules
+- change rules that affect user-facing behavior
 
-Do not stop at feature names. Push to implementable detail.
+Do not stop at feature names. Push to behavior and interaction detail.
 
 ### 4. UI Definition
 
 If project has UI, do both tracks in parallel:
 - structural track: IA, pages, flows, states, components
 - visual track: 2-3 style directions for user approval
+
+Use this stage only after the product and interaction definition is concrete enough to render.
 
 If this is a new project with meaningful UI, the visual track is mandatory before page implementation:
 - generate 2-3 small inspiration frames with `imagegen`
@@ -191,11 +191,27 @@ Rules:
 
 If project has no meaningful UI, skip this stage.
 
-### 5. Decision Closure
+### 5. System Definition
+
+Define system details only after product behavior and UI direction are fixed:
+- permissions model
+- data shapes
+- state transitions
+- interfaces
+- architecture direction
+- deployment assumptions
+- testing strategy
+- observability expectations
+- external integrations
+
+Do not let system design redefine approved product behavior or approved UI.
+
+### 6. Decision Closure
 
 Before roadmap or implementation, close all high-impact unresolved decisions:
 - stack
 - architecture direction
+- product interaction direction
 - UI direction
 - data model direction
 - permissions model
@@ -211,7 +227,7 @@ If the user says "先生成 ui 效果图，确认了再实施" or equivalent:
 
 Do not enter implementation with open high-impact decisions.
 
-### 6. Roadmap
+### 7. Roadmap
 
 Split project into milestones.
 
@@ -221,17 +237,17 @@ Prefer:
 
 Each milestone must be independently spec-able, executable, testable, and handoff-able.
 
-### 7. Milestone Spec
+### 8. Milestone Spec
 
 Create full spec for the current milestone.
 
-### 8. Milestone Plan
+### 9. Milestone Plan
 
 Create detailed implementation and testing plan for the current milestone.
 
 After entering `milestone-plan`, scope freezes by default.
 
-### 9. Execution
+### 10. Execution
 
 Execute the current milestone plan with:
 - TDD
@@ -242,15 +258,15 @@ Execute the current milestone plan with:
 
 After entering `execution`, scope remains frozen except for blocking or validity-breaking changes.
 
-### 10. Debugging
+### 11. Debugging
 
 If blocked by failing behavior, use systematic debugging. Do not guess-fix.
 
-### 11. Verification
+### 12. Verification
 
 Run milestone acceptance, targeted regression, and required cross-checks. Use fresh evidence only.
 
-### 12. Handoff
+### 13. Handoff
 
 Update durable state files:
 - task state
@@ -260,7 +276,7 @@ Update durable state files:
 - blockers
 - persistent processes
 
-### 13. Done
+### 14. Done
 
 Mark done only when:
 - acceptance criteria satisfied
@@ -273,11 +289,17 @@ Mark done only when:
 Do not allow implementation when any of these are missing:
 
 - `product-spec.md`
+- approved product/interaction definition
 - `decision-log.md` resolved for high-impact items
 - `roadmap.md`
 - current milestone spec
 - current milestone implementation plan
 - current milestone test plan
+
+For UI-bearing projects, also require all of these before `roadmap` or `execution`:
+
+- `docs/orchestrator/current-state.md` records `product_definition_status: approved`
+- `docs/orchestrator/current-state.md` records `ui_design_status: approved`
 
 For any UI page implementation based on an approved visual direction, also require all of these before `design-to-code` or page code generation:
 
@@ -372,6 +394,19 @@ For each additional skill define:
 Read `docs/orchestrator/skill-registry.md` when present.
 
 ## Planning Discipline
+
+Planning order for UI-bearing projects:
+1. `discovery`
+2. `product-definition`
+3. `ui-definition`
+4. `system-definition`
+5. `decision-closure`
+6. `roadmap`
+7. `milestone-spec`
+8. `milestone-plan`
+9. `execution`
+
+For UI-bearing projects, treat approved product behavior and approved UI as the source of truth. System design, milestone planning, and implementation must derive from them rather than redefining them.
 
 Use two decision layers:
 
