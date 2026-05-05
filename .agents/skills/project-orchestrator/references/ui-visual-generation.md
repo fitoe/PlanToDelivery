@@ -37,10 +37,13 @@ Use when a milestone needs route planning, style framing, and section-by-section
 - the prompt artifact must be version-bound to the approved `large` image
 - section slicing is required only for complex pages
 - simple mobile pages or lightweight web pages may use fewer slices or no slices
-- when slicing is required, the section boundaries and order must be manually confirmed
+- when slicing is required, do not cut directly from semantic guesswork; first produce a conservative slice preview with forbidden zones, candidate boundaries, merge decisions, and final slice ranges
+- when slicing is required, the section boundaries and order must be manually confirmed from that preview before final slices are accepted
 - any slice artifacts must be persisted and version-bound to the originating `large` image
 - `small`, `large`, `prompt`, and `slice` artifacts must remain traceable to the same page and version
 - do not discard historical image versions; preserve them for later reference and regeneration
+- persisted artifacts must live inside the project repository, not under `.codex/`, temp folders, or chat-only state
+- if a generation tool emits files into `.codex/` first, move or copy the final approved images and slice artifacts into repository paths before continuing
 
 ## Use When
 
@@ -73,9 +76,20 @@ Use when a milestone needs route planning, style framing, and section-by-section
 
 - split into ordered, complete sections
 - never cut through the middle of a semantic block
-- prefer smaller slices for fidelity
-- keep repeated patterns consistent
-- if boundaries are unclear, re-cut before coding
+- do not start by guessing semantic boundaries; first mark forbidden zones:
+  - titles and subtitles
+  - CTA/button clusters
+  - card bodies or card grids
+  - hero media focal areas
+  - forms and form labels
+  - person/product/illustration focal subjects
+  - any obvious section-theme center content
+- find candidate safe bands only after forbidden zones are marked
+- prefer boundaries through sparse buffer areas rather than through content centers
+- prefer larger slices with overlap or safety margin over tight cuts that risk clipping content
+- if boundaries are unclear, merge instead of forcing a cut
+- allowed final decisions per boundary are `cut`, `merge with previous`, `merge with next`, or `keep as one larger slice`
+- generate and persist a slice preview before accepting final section slices
 - persist the section map and any section slice images before coding
 - every section must state:
   - section name
@@ -91,6 +105,7 @@ Do not start `design-to-code` until:
 
 - route order is approved
 - persisted implementation-reference images are approved
+- persisted slice preview artifact exists and shows forbidden zones, candidate boundaries, and merge decisions
 - section boundaries are approved
 - persisted section artifacts exist
 - style continuity is approved
@@ -111,6 +126,11 @@ Use Playwright after code generation when needed to confirm section order, conti
 - approved inspiration direction
 - approved implementation-reference images
 - section map
+- persisted slice preview artifact
 - persisted section slice artifacts
 - screenshots
 - browser verification notes
+
+Repository evidence rule:
+- every evidence artifact must be referenced by a project-relative path
+- `.codex/` paths are temporary working paths only and do not satisfy persistence or confirmation gates

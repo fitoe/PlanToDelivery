@@ -150,13 +150,20 @@ For `gpt-image-2` page effect generation, apply the following rules:
 - the prompt artifact must be version-bound to the approved `large` image
 - section slicing is required only for complex pages
 - simple mobile pages or lightweight web pages may use fewer slices or no slices
-- when slicing is required, the section boundaries and order must be manually confirmed
+- when slicing is required, do not cut directly from semantic guesswork; first produce a conservative slice preview with forbidden zones, candidate boundaries, merge decisions, and final slice ranges
+- when slicing is required, section boundaries and order must be confirmed from the preview before any final slice artifacts are accepted
 - any slice artifacts must be persisted and version-bound to the originating `large` image
 - `small`, `large`, `prompt`, and `slice` artifacts must remain traceable to the same page and version
 - do not discard historical image versions; preserve them for later reference and regeneration
 
 If the project has UI and the visual direction is already confirmed, page implementation must still pass section slicing first:
 - split each page or route into sections before any code is written
+- use a conservative slicing protocol for complex pages:
+  - identify forbidden zones first: titles, CTA/button clusters, card bodies, hero/media focal areas, forms, and any section-theme center content
+  - identify candidate safe bands second; prefer boundaries that pass through sparse buffer areas rather than semantic centers
+  - allow `merge with previous`, `merge with next`, or `keep as one larger slice` when a safe boundary is unclear
+  - prefer larger slices with overlap or safety margin over tight cuts that risk clipping content
+  - generate a persisted preview artifact before accepting final section slices
 - save the section map and section-level artifacts to repository docs before code
 - each section must state:
   - section name
@@ -175,6 +182,11 @@ For page-oriented work, persist UI artifacts under repository docs:
 - section map
 - section slice records
 - `Pre-Implementation Brief`
+
+Persistence rules:
+- persisted UI artifacts must live inside the project repository, not under `.codex/`, user-home temp folders, or chat-only state
+- if a tool first writes to `.codex/` or another temporary workspace, copy the final approved artifacts into repository paths before treating the gate as satisfied
+- repository-relative paths must be recorded in the related docs so later sessions can reopen the exact files without depending on `.codex` state
 
 Default artifact locations:
 - `docs/orchestrator/ui/inspirations/`
@@ -305,6 +317,7 @@ For any UI page implementation based on an approved visual direction, also requi
 
 - approved persisted implementation-reference images
 - section breakdown
+- persisted slice preview artifact with forbidden zones, candidate boundaries, and merge/skip decisions
 - persisted section slice artifacts
 - `Pre-Implementation Brief`
 - user confirmation of the brief
@@ -312,6 +325,7 @@ For any UI page implementation based on an approved visual direction, also requi
 - user confirmation that the implementation-reference images are the visual source of truth
 
 Do not allow implementation when design images are not produced and approved.
+Do not treat `.codex/`-only artifacts as produced/persisted; required UI evidence must exist under project paths.
 
 If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
 Do not use the text brief to reinterpret or replace the confirmed image design during implementation or acceptance.
@@ -363,7 +377,7 @@ Example sequence for a confirmed UI project:
 1. generate 2-3 small inspiration frames and save them to `docs/orchestrator/ui/inspirations/`
 2. user confirms one direction for expansion
 3. generate larger implementation-reference images and save them to `docs/orchestrator/ui/references/`
-4. output homepage / inner page section breakdown and save section artifacts under `docs/orchestrator/ui/sections/`
+4. output homepage / inner page section slicing preview plus section breakdown and save artifacts under `docs/orchestrator/ui/sections/`
 5. output `Pre-Implementation Brief`
 6. user confirms the implementation-reference images, section breakdown, and brief
 7. only then start Astro / Vue page code

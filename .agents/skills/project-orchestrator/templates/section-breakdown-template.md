@@ -13,6 +13,8 @@
   - `yes/no`
 - Large implementation reference approved:
   - `yes/no`
+- Slice preview prepared:
+  - `yes/no`
 - Section boundaries approved:
   - `yes/no`
 - Allowed to start `Pre-Implementation Brief`:
@@ -20,7 +22,23 @@
 
 ## Section Artifacts
 - Section assets folder:
+- Slice preview artifact path:
+- Final slice artifact paths:
+- Repository-relative only:
+  - `yes/no`
 - Shared notes:
+
+## Slice Preview
+- Slicing mode:
+  - `none/simple/conservative`
+- Safety-margin policy:
+- Forbidden zones:
+  - `F1:`
+- Candidate boundaries:
+  - `B1:`
+- Boundary decisions:
+  - `cut / merge with previous / merge with next / keep as one larger slice`
+- Preview review notes:
 
 ## Sections
 
@@ -34,6 +52,7 @@
 - Reuse points:
 - Key unknowns:
 - Reference slice path:
+- Slice range or overlap notes:
 - Implementation notes:
 
 ## Open Risks
