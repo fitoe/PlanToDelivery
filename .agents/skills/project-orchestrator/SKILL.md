@@ -22,6 +22,8 @@ This skill is a project governor, not a universal implementation brain. Control 
 - Do not load all references at once. Read only what the current stage needs.
 - Repository state is source of truth. Git is cross-check, not sole memory.
 - No completion claims without fresh verification evidence.
+- `PlanToDelivery` owns orchestration and gates; specialized skills own their domain workflow.
+- Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
 
 ## First-Order Decisions
 
@@ -130,6 +132,9 @@ If project has UI, do both tracks in parallel:
 - visual track: 2-3 style directions for user approval
 
 Use this stage only after the product and interaction definition is concrete enough to render.
+
+For product design, page planning, design documentation, visual direction, or staged design images, route to `idea-to-design`.
+`PlanToDelivery` validates that required design artifacts exist and are approved; it does not replace the `idea-to-design` workflow.
 
 If this is a new project with meaningful UI, the visual track is mandatory before page implementation:
 - generate 2-3 small inspiration frames with `imagegen`
@@ -330,6 +335,8 @@ Do not treat `.codex/`-only artifacts as produced/persisted; required UI evidenc
 If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
 Do not use the text brief to reinterpret or replace the confirmed image design during implementation or acceptance.
 
+Before moving from `ui-definition` toward `execution`, complete a gate check using `templates/gate-check-template.md`.
+
 Do not mark work complete when any of these are missing:
 
 - fresh verification evidence
@@ -371,6 +378,14 @@ Use:
 - `superpowers:writing-skills`
 - `skill-creator`
 
+### Product and visual design
+Use:
+- `idea-to-design`
+
+### Design image to code
+Use:
+- `design-to-code`
+
 ## UI Implementation Example
 
 Example sequence for a confirmed UI project:
@@ -391,6 +406,8 @@ Use only when relevant:
 ## Controlled Skill Extensions
 
 Additional skills may be registered and used, but only through controlled routing.
+
+For `idea-to-design` and `design-to-code`, follow `references/cross-skill-contracts.md`.
 
 If a required dependency skill is not installed or cannot be found:
 
@@ -529,6 +546,11 @@ Read in this order:
 4. read only needed files from `templates/`
 5. on new session, read `docs/orchestrator/session-brief.md` first
 
+For stage transitions, read:
+- `references/cross-skill-contracts.md` when routing between skills
+- `templates/gate-check-template.md` before allowing the transition
+- `references/gate-enforcement-scenarios.md` when pressure exists to skip required planning, design, confirmation, or verification
+
 ## Repository State
 
 Use repository docs as durable state.
@@ -572,5 +594,6 @@ When guiding execution:
 - say why next action is allowed
 - say which skill to use next
 - say which durable files must be updated
+- show the gate decision when moving between major stages
 
 Do not dump all process theory each time. Stay stage-specific and concise.

@@ -21,6 +21,17 @@ Once in `milestone-plan` or `execution`, scope is frozen by default.
 ### Rule 5: Verification gates completion
 No milestone or project completion without fresh verification evidence.
 
+### Rule 6: Gate report before transition
+Before every major stage transition, write a gate check using `templates/gate-check-template.md`.
+Every required item must be marked `pass`, `fail`, or `n/a`.
+If any required item is `fail`, the transition is blocked.
+
+### Rule 7: Owning skill before domain work
+When a transition enters a specialized domain, name the owning skill in the gate check.
+Use `idea-to-design` for product and visual design work.
+Use `design-to-code` for approved design image to code implementation.
+Do not continue by executing the specialized workflow inside `PlanToDelivery`.
+
 ## 1. Intake
 
 ### Entry Conditions
@@ -129,6 +140,7 @@ Skip only when project is meaningfully non-UI.
 - `ui-implementation-contract.md`
 - persisted inspiration images for candidate directions
 - approved persisted implementation-reference images for pages that are moving toward implementation
+- gate check documenting whether `idea-to-design` outputs satisfy the current transition
 
 ### Prohibited
 - entering UI implementation with only visual mood and no structural definition
@@ -144,6 +156,7 @@ Exit only when:
 - secondary pages are defined enough for planned implementation
 - core components have defined states
 - implementation contract exists
+- gate check decision is `allowed`
 
 If the project has confirmed UI direction but page code is not yet allowed, stay in `ui-definition` / `decision-closure` until all of these are true:
 - section breakdown exists
@@ -282,6 +295,7 @@ Enter when all are true:
 - for UI pages, approved implementation-reference images exist
 - for UI pages, user has confirmed the brief
 - for UI pages, user has confirmed the section breakdown
+- gate check decision for entry into execution is `allowed`
 
 ### Required Inputs
 - active milestone docs
@@ -388,6 +402,7 @@ Enter when:
 - updated `session-brief.md`
 - updated `milestones/Mx-task-state.md`
 - `final-handoff.md` when closing milestone or project
+- latest gate check or next-step gate status if the next session will transition stages
 
 ### Prohibited
 - ending session with stale next-step info

@@ -2,6 +2,11 @@
 
 Use this file during `ui-definition`.
 
+Ownership rule:
+- use `idea-to-design` for product design docs, page planning, visual direction, and staged design images
+- use `design-to-code` only after approved design inputs are ready for implementation
+- use this file to validate required UI planning artifacts, not to replace the owning skill workflows
+
 ## Core Model
 
 Plan UI in two tracks:

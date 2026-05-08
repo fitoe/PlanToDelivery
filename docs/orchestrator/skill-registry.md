@@ -30,6 +30,35 @@
   - Allowed stages: `execution`, `handoff`
   - Mode: `optional`
 
+## Specialized Delivery Skills
+- `idea-to-design`
+  - Purpose: Turn ideas or partial product concepts into product design docs, task flows, page plans, visual direction, staged design images, and resumable design state.
+  - Allowed stages: `discovery`, `product-definition`, `ui-definition`, `decision-closure`
+  - Mode: `on-demand`
+  - User approval required: `yes` before treating design direction or implementation-reference images as approved
+  - Trigger conditions:
+    - product idea needs design shaping
+    - page routes or surfaces need planning
+    - visual direction or staged design images are needed
+    - existing design material needs formal design documentation
+  - Reasons not to use outside allowed stages:
+    - it does not implement code
+    - it does not own milestone execution or verification
+- `design-to-code`
+  - Purpose: Convert approved design images or sections into high-fidelity Vue/Astro/UnoCSS code with a confirmed pre-implementation brief and visual verification.
+  - Allowed stages: `execution`, `verification`
+  - Mode: `on-demand`
+  - User approval required: `yes` before code generation when the brief or visual source has not already been confirmed
+  - Trigger conditions:
+    - approved design image exists
+    - target page or section is in current milestone scope
+    - implementation needs high visual fidelity
+    - Playwright section diff verification is expected
+  - Reasons not to use outside allowed stages:
+    - it should not create product requirements
+    - it should not invent visual direction
+    - it requires approved design inputs
+
 ## Browser Validation Capability
 - Name: `Playwright browser validation`
 - Purpose: Controlled browser assistance for UI validation, bug reproduction, and milestone browser evidence.

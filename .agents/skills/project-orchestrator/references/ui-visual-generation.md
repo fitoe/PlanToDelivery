@@ -2,6 +2,11 @@
 
 Use when a milestone needs route planning, style framing, and section-by-section page generation.
 
+Ownership rule:
+- route product design, route/page planning, visual direction, and image iteration to `idea-to-design`
+- route approved design image to code implementation to `design-to-code`
+- use this reference as PlanToDelivery's validation and handoff checklist, not as a substitute workflow
+
 ## Purpose
 
 - derive page routes and responsibilities from project planning

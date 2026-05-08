@@ -54,6 +54,13 @@ Use only when relevant.
 - `find-skills`
 - `caveman`
 
+## Tier 6: Specialized Project Delivery Layer
+
+Use only through explicit stage gates.
+
+- `idea-to-design`
+- `design-to-code`
+
 ## Stage-to-Skill Routing
 
 ## 1. Intake
@@ -95,6 +102,7 @@ Use only when relevant.
 
 ### Default Skills
 - `superpowers:brainstorming`
+- `idea-to-design` when product design, page planning, design documentation, visual direction, or staged design images are needed
 
 ### Optional Registered Skills
 Use when enabled and appropriate:
@@ -102,21 +110,19 @@ Use when enabled and appropriate:
 - component-system skills
 - framework-specific UI skills
 - `imagegen` for style frames or effect previews
-- `design-to-code` for section-by-section page implementation
 
 Examples:
 - `build-web-apps:frontend-app-builder`
 - `build-web-apps:react-best-practices`
 - `build-web-apps:shadcn`
-- `design-to-code`
 - `magicpath`
 
 ### Browser Validation Note
 Playwright may validate UI structure, state, or flow when text-only reasoning is not enough.
 
 ### Visual Generation Note
-If the milestone needs route planning plus style frames or section slicing, use `imagegen` first for small inspiration frames, confirm one direction, then generate larger implementation-reference images, then confirm the section map with the user, and only then hand off approved sections to `design-to-code`.
-For a new project with meaningful UI, treat `imagegen` as required before any page implementation begins.
+If the milestone needs route planning, page planning, style direction, or design images, route to `idea-to-design`.
+`PlanToDelivery` should verify persisted outputs and approval state, not reproduce the full design workflow inside this routing file.
 
 ## 5. Decision Closure
 
@@ -211,6 +217,8 @@ Additional skills may be used only if they satisfy all of these:
 4. Their use does not explode context unnecessarily
 5. They are bounded to current need
 
+For `idea-to-design` and `design-to-code`, also read `references/cross-skill-contracts.md`.
+
 Missing dependency rule:
 
 - If a routed skill is required but not installed or not found, do not skip it.
@@ -260,6 +268,7 @@ Read:
 Read:
 - `references/ui-planning.md`
 - `references/ui-visual-generation.md` when page-oriented UI work is in scope
+- `references/cross-skill-contracts.md` when routing to `idea-to-design`
 - `references/ui-design-gate-testing.md` when validating or tightening the design-before-code workflow
 - `references/playwright-browser-validation.md` when UI structure, state, or flow needs browser confirmation
 - `templates/ui-style-directions-template.md`
@@ -271,11 +280,15 @@ Read:
 ## Decision Closure
 Read:
 - `references/stage-gates.md`
+- `references/cross-skill-contracts.md` when checking specialized skill handoff readiness
+- `references/gate-enforcement-scenarios.md` when user pressure or ambiguity may skip gates
 - `templates/decision-log-template.md`
+- `templates/gate-check-template.md` before any major stage transition
 
 ## Roadmap
 Read:
 - `references/workflow.md`
+- `templates/gate-check-template.md` before advancing from definition into roadmap
 - `templates/roadmap-template.md`
 
 ## Milestone Spec
@@ -296,6 +309,8 @@ Read:
 - active milestone spec
 - active milestone plan
 - active task state
+- `references/cross-skill-contracts.md` before routing to `design-to-code`
+- `references/gate-enforcement-scenarios.md` before starting implementation if any required approval may be missing
 - only task-relevant domain references
 - `references/playwright-browser-validation.md` when critical browser behavior is being checked
 
@@ -318,3 +333,4 @@ Read:
 - `templates/task-state-template.md`
 - `templates/session-brief-template.md`
 - `templates/final-handoff-template.md` when closing milestone or project
+- latest gate check when the next session may transition stages
