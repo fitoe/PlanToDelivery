@@ -79,8 +79,9 @@ PlanToDelivery 的目标，就是把这些问题收束成一套标准流程。
 ### 6. 可控扩展
 
 - 支持按阶段加载额外 skill
-- 支持 `imagegen`、`design-to-code`、`Playwright`
+- 支持 `idea-to-design`、`design-to-code`、`imagegen`、`Playwright`
 - 支持渐进加载，不一次性塞满上下文
+- 依赖产物和门禁证据，不强依赖某个 skill 的具体实现
 
 ## 核心工作流
 
@@ -104,16 +105,50 @@ PlanToDelivery 以阶段状态机为核心：
 
 - 先判断当前阶段
 - 再检查门禁
+- 优先读取 `quick-start.md` 和项目状态
+- 需要编排判断时再读取 `orchestration-core.md`
+- 需要写模板时先查 `templates/index.md`
 - 再加载对应的 reference / template / skill
+
+## 三 Skill 协作方式
+
+PlanToDelivery 可以作为总控，推荐这样协作：
+
+- `idea-to-design`：负责把想法整理成产品结构、页面规划、设计说明和视觉稿
+- `design-to-code`：负责把已批准设计源转成高还原代码，并处理缺图补足
+- `PlanToDelivery`：负责阶段、门禁、状态、验收和交付闭环
+
+三者不是硬耦合关系。PlanToDelivery 接受等价产物：
+
+- `Design-Spec.md` 或等价产品/设计文档
+- `state.json` 或等价可恢复设计状态
+- 已批准设计图，或等价持久化视觉来源
+- `Pre-Implementation Brief`，或等价代码实现 brief
+
+这意味着 `idea-to-design` 和 `design-to-code` 可以独立使用；在端到端项目里再由 PlanToDelivery 编排。
+
+## 轻量启动与省 Token
+
+当前版本默认采用轻量启动：
+
+- 先读 `quick-start.md`
+- 再读 `docs/orchestrator/project-state.json` 或 session brief
+- 只在门禁、路由或交接不清楚时读取 `orchestration-core.md`
+- 不默认加载全部 references 和 templates
+
+目标是保留完整交付能力，同时让新会话恢复更快、上下文更小。
 
 ## 技能包结构
 
 ```text
 .agents/skills/project-orchestrator/
   SKILL.md
+  quick-start.md
   agents/openai.yaml
   references/
+    orchestration-core.md
   templates/
+    index.md
 
 docs/orchestrator/
   session-brief.md
@@ -150,11 +185,12 @@ npx skills add .
 
 ## 建议的使用顺序
 
-1. 先读 [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
-2. 再读 [workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
-3. 然后读 [stage-gates.md](./.agents/skills/project-orchestrator/references/stage-gates.md)
-4. 需要 UI、测试、浏览器验证时再按阶段加载对应 reference
-5. 把状态写回 `docs/orchestrator/`
+1. 先读 [quick-start.md](./.agents/skills/project-orchestrator/quick-start.md)
+2. 再读 [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
+3. 编排判断优先读 [orchestration-core.md](./.agents/skills/project-orchestrator/references/orchestration-core.md)
+4. 需要具体阶段细节时再读对应 reference
+5. 需要创建文档时先读 [templates/index.md](./.agents/skills/project-orchestrator/templates/index.md)
+6. 把状态写回 `docs/orchestrator/`
 
 ## 当前状态
 
@@ -164,7 +200,8 @@ npx skills add .
 - 核心 references / templates 已建立
 - durable docs 协议已建立
 - GitHub 协作文件已补齐
-- Playwright、imagegen、design-to-code 的路由已接入
+- `idea-to-design`、`design-to-code`、Playwright、imagegen 的路由已接入
+- 轻量启动、artifact 契约和模板索引已补齐
 
 下一步最重要的是：
 

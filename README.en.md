@@ -25,6 +25,8 @@ PlanToDelivery turns those problems into a structured workflow.
 - browser validation with Playwright
 - durable docs for recovery and handoff
 - controlled extension with other skills
+- lightweight startup and progressive reference loading
+- artifact-based contracts instead of hard coupling to one skill implementation
 
 ## Workflow
 
@@ -42,12 +44,36 @@ PlanToDelivery turns those problems into a structured workflow.
 12. `handoff`
 13. `done`
 
+## Skill Collaboration
+
+PlanToDelivery can orchestrate the broader workflow:
+
+- `idea-to-design`: turns ideas into product structure, page planning, design docs, and visual assets
+- `design-to-code`: turns approved persisted design sources into implementation and can plan missing image assets
+- `PlanToDelivery`: owns stages, gates, durable state, verification, and handoff
+
+These skills remain independently usable. PlanToDelivery accepts equivalent artifacts when gate evidence is sufficient, such as an equivalent design document, resumable state, approved visual source, or implementation brief.
+
+## Lightweight Startup
+
+Current startup is intentionally compact:
+
+- start with `quick-start.md`
+- read project state or session brief first
+- use `orchestration-core.md` for routing, gates, and handoff decisions
+- use `templates/index.md` before loading individual templates
+- avoid loading all references by default
+
+The goal is to keep recovery fast and token usage low while preserving full delivery controls.
+
 ## Start here
 
 - Main README: [README.md](./README.md)
 - Skill name: `PlanToDelivery`
+- Quick start: [quick-start.md](./.agents/skills/project-orchestrator/quick-start.md)
 - Skill entrypoint: [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
-- Workflow reference: [workflow.md](./.agents/skills/project-orchestrator/references/workflow.md)
+- Orchestration core: [orchestration-core.md](./.agents/skills/project-orchestrator/references/orchestration-core.md)
+- Template index: [templates/index.md](./.agents/skills/project-orchestrator/templates/index.md)
 
 ## Status
 
@@ -57,5 +83,6 @@ The repository already contains the first landed version of:
 - core references and templates
 - durable orchestration docs
 - GitHub collaboration files
+- lightweight startup, artifact contracts, and template index
 
 Next step: trial use on a real or simulated project.
