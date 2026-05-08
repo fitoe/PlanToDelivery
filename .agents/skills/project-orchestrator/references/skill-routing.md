@@ -4,6 +4,10 @@ This file defines which skills the orchestrator should activate, when they shoul
 
 Use it after stage is known.
 
+For stage transition, gate, and cross-skill handoff decisions, prefer `references/orchestration-core.md` first. Load detailed references only when the compact core is not enough.
+
+Before loading templates, read `templates/index.md` and open only the exact template needed.
+
 ## Routing Principles
 
 - Route by stage, not by habit.
@@ -217,7 +221,7 @@ Additional skills may be used only if they satisfy all of these:
 4. Their use does not explode context unnecessarily
 5. They are bounded to current need
 
-For `idea-to-design` and `design-to-code`, also read `references/cross-skill-contracts.md`.
+For `idea-to-design` and `design-to-code`, first read `references/orchestration-core.md`. Read `references/cross-skill-contracts.md` only when equivalent artifact acceptance or detailed handoff contract is unclear.
 For artifact-based handoffs, also read `references/artifact-driven-workflow.md`.
 
 Missing dependency rule:

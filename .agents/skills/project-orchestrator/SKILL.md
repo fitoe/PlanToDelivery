@@ -20,6 +20,8 @@ This skill is a project governor, not a universal implementation brain. Control 
 - User confirms only first-order decisions. Lower-order decisions default to recommended options unless challenged.
 - Prefer existing code and existing dependencies over new code. Prefer mature libraries over custom implementation.
 - Do not load all references at once. Read only what the current stage needs.
+- Start with `quick-start.md`; use `references/orchestration-core.md` before detailed orchestration references.
+- Use `templates/index.md` before opening individual templates.
 - Repository state is source of truth. Git is cross-check, not sole memory.
 - No completion claims without fresh verification evidence.
 - `PlanToDelivery` owns orchestration and gates; specialized skills own their domain workflow.
@@ -81,7 +83,8 @@ Always determine current stage before acting.
 
 ### Session Start
 
-At the start of every session, run `references/session-start-protocol.md`.
+At the start of every session, run `quick-start.md`.
+Use `references/session-start-protocol.md` only when startup recovery, conflicting state, or resume rules need detail.
 Do not act on the user's latest request until current stage, owner skill, gate status, and next allowed action are known.
 
 ### 1. Intake
