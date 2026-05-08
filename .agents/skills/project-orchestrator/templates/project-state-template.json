@@ -1,0 +1,24 @@
+{
+  "schema_version": "project-state-v1",
+  "project_id": "",
+  "current_stage": "intake",
+  "current_owner_skill": "PlanToDelivery",
+  "quality_mode": "fast|standard|strict",
+  "active_milestone": "",
+  "active_flow": "",
+  "active_page": "",
+  "active_section": "",
+  "readiness": {
+    "design_ready": false,
+    "implementation_ready": false,
+    "verification_ready": false,
+    "handoff_ready": false
+  },
+  "next_allowed_skill": "",
+  "blocked_reason": "",
+  "required_gate": "",
+  "latest_gate_check": "",
+  "latest_manifest": "",
+  "latest_approval_record": "",
+  "updated_at": ""
+}

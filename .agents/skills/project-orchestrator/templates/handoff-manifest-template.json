@@ -1,0 +1,15 @@
+{
+  "schema_version": "handoff-manifest-v1",
+  "handoff_id": "HANDOFF-001",
+  "from_skill": "",
+  "to_skill": "",
+  "status": "draft|ready|accepted|blocked",
+  "summary": "",
+  "artifacts": [],
+  "approvals": [],
+  "open_questions": [],
+  "do_not_redo": [],
+  "next_recommended_action": "",
+  "created_at": "",
+  "updated_at": ""
+}

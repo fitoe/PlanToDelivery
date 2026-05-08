@@ -25,12 +25,14 @@ No milestone or project completion without fresh verification evidence.
 Before every major stage transition, write a gate check using `templates/gate-check-template.md`.
 Every required item must be marked `pass`, `fail`, or `n/a`.
 If any required item is `fail`, the transition is blocked.
+When the gate depends on design, implementation, or verification artifacts, consult artifact manifests and approval records.
 
 ### Rule 7: Owning skill before domain work
 When a transition enters a specialized domain, name the owning skill in the gate check.
 Use `idea-to-design` for product and visual design work.
 Use `design-to-code` for approved design image to code implementation.
 Do not continue by executing the specialized workflow inside `PlanToDelivery`.
+Equivalent artifacts from other sources may satisfy gates when manifests, approvals, and evidence paths are valid.
 
 ## 1. Intake
 

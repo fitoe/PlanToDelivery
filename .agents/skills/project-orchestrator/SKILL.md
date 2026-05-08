@@ -26,6 +26,7 @@ This skill is a project governor, not a universal implementation brain. Control 
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
 - Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
 - `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
+- Prefer artifact-driven coordination: manifests, approval records, gate checks, and handoff manifests.
 
 ## First-Order Decisions
 
@@ -314,6 +315,8 @@ Do not allow implementation when any of these are missing:
 - current milestone spec
 - current milestone implementation plan
 - current milestone test plan
+- current gate check allows the transition
+- artifact manifest and approval records satisfy any UI or implementation-specific gate
 
 For UI-bearing projects, also require all of these before `roadmap` or `execution`:
 
@@ -550,6 +553,7 @@ Read in this order:
 
 For stage transitions, read:
 - `references/cross-skill-contracts.md` when routing between skills
+- `references/artifact-driven-workflow.md` when checking equivalent artifacts, approval evidence, or handoff manifests
 - `templates/gate-check-template.md` before allowing the transition
 - `references/gate-enforcement-scenarios.md` when pressure exists to skip required planning, design, confirmation, or verification
 
@@ -558,6 +562,10 @@ For stage transitions, read:
 Use repository docs as durable state.
 
 Important files include:
+- `docs/orchestrator/project-state.json`
+- `docs/orchestrator/artifact-manifest.json`
+- `docs/orchestrator/approval-records.json`
+- `docs/orchestrator/handoff-manifest.json`
 - `docs/orchestrator/product-spec.md`
 - `docs/orchestrator/feature-breakdown.md`
 - `docs/orchestrator/decision-log.md`
@@ -597,5 +605,6 @@ When guiding execution:
 - say which skill to use next
 - say which durable files must be updated
 - show the gate decision when moving between major stages
+- cite artifact manifest or approval evidence when a gate depends on design or implementation readiness
 
 Do not dump all process theory each time. Stay stage-specific and concise.

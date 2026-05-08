@@ -218,6 +218,7 @@ Additional skills may be used only if they satisfy all of these:
 5. They are bounded to current need
 
 For `idea-to-design` and `design-to-code`, also read `references/cross-skill-contracts.md`.
+For artifact-based handoffs, also read `references/artifact-driven-workflow.md`.
 
 Missing dependency rule:
 
@@ -269,6 +270,7 @@ Read:
 - `references/ui-planning.md`
 - `references/ui-visual-generation.md` when page-oriented UI work is in scope
 - `references/cross-skill-contracts.md` when routing to `idea-to-design`
+- `references/artifact-driven-workflow.md` when accepting equivalent external design artifacts
 - `references/ui-design-gate-testing.md` when validating or tightening the design-before-code workflow
 - `references/playwright-browser-validation.md` when UI structure, state, or flow needs browser confirmation
 - `templates/ui-style-directions-template.md`
@@ -276,14 +278,19 @@ Read:
 - `templates/ui-implementation-contract-template.md`
 - `templates/section-breakdown-template.md`
 - `templates/pre-implementation-brief-template.md`
+- `templates/artifact-manifest-template.json`
+- `templates/approval-records-template.json`
+- `templates/handoff-manifest-template.json`
 
 ## Decision Closure
 Read:
 - `references/stage-gates.md`
 - `references/cross-skill-contracts.md` when checking specialized skill handoff readiness
 - `references/gate-enforcement-scenarios.md` when user pressure or ambiguity may skip gates
+- `references/artifact-driven-workflow.md`
 - `templates/decision-log-template.md`
 - `templates/gate-check-template.md` before any major stage transition
+- `templates/project-state-template.json`
 
 ## Roadmap
 Read:
@@ -311,6 +318,7 @@ Read:
 - active task state
 - `references/cross-skill-contracts.md` before routing to `design-to-code`
 - `references/gate-enforcement-scenarios.md` before starting implementation if any required approval may be missing
+- `references/artifact-driven-workflow.md` when checking implementation-ready artifacts
 - only task-relevant domain references
 - `references/playwright-browser-validation.md` when critical browser behavior is being checked
 
@@ -334,3 +342,4 @@ Read:
 - `templates/session-brief-template.md`
 - `templates/final-handoff-template.md` when closing milestone or project
 - latest gate check when the next session may transition stages
+- `templates/handoff-manifest-template.json` when transferring work between skills or sessions

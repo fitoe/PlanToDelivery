@@ -1,0 +1,16 @@
+{
+  "schema_version": "approval-records-v1",
+  "project_id": "",
+  "records": [
+    {
+      "decision_id": "DEC-001",
+      "decision_type": "project-goal|visual-direction|design-source|implementation-brief|acceptance|gate-bypass",
+      "status": "approved|rejected|deferred|superseded",
+      "approved_by": "user",
+      "evidence": "",
+      "related_artifacts": [],
+      "timestamp": "",
+      "notes": ""
+    }
+  ]
+}
