@@ -252,6 +252,12 @@ When multiple skills could apply:
 
 ## Reference and Template Loading by Stage
 
+## Session Start
+Read:
+- `references/session-start-protocol.md`
+- `references/artifact-driven-workflow.md` when artifact state exists
+- `templates/project-state-template.json` when initializing artifact-driven state
+
 ## Intake
 Read:
 - `references/intake-protocol.md`

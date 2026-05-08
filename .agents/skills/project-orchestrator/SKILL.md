@@ -79,6 +79,11 @@ Always determine current stage before acting.
 
 ## Required Workflow
 
+### Session Start
+
+At the start of every session, run `references/session-start-protocol.md`.
+Do not act on the user's latest request until current stage, owner skill, gate status, and next allowed action are known.
+
 ### 1. Intake
 
 Use this stage when:
@@ -546,10 +551,11 @@ Do not load every reference or template file at once.
 
 Read in this order:
 1. `SKILL.md`
-2. determine current stage
-3. read only stage-relevant files from `references/`
-4. read only needed files from `templates/`
-5. on new session, read `docs/orchestrator/session-brief.md` first
+2. on every session start, read `references/session-start-protocol.md`
+3. determine current stage
+4. read only stage-relevant files from `references/`
+5. read only needed files from `templates/`
+6. on new session, read `docs/orchestrator/session-brief.md` and `docs/orchestrator/project-state.json` first when present
 
 For stage transitions, read:
 - `references/cross-skill-contracts.md` when routing between skills
