@@ -24,6 +24,8 @@ This skill is a project governor, not a universal implementation brain. Control 
 - No completion claims without fresh verification evidence.
 - `PlanToDelivery` owns orchestration and gates; specialized skills own their domain workflow.
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
+- Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
+- `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
 
 ## First-Order Decisions
 

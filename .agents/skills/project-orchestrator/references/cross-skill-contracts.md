@@ -6,6 +6,8 @@ Main rule:
 - `PlanToDelivery` owns orchestration and gates.
 - `idea-to-design` owns product design and visual design artifacts.
 - `design-to-code` owns approved design image to code implementation.
+- orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
+- `idea-to-design` and `design-to-code` are recommended owners, not the only valid sources of equivalent artifacts.
 
 Do not duplicate a downstream skill's workflow inside `PlanToDelivery`. Route to the owning skill, then verify required artifacts.
 
@@ -41,12 +43,12 @@ Owns:
 - staged design images
 - design recovery state
 
-Required outputs for handoff:
-- `Design-Spec.md`
-- `state.json`
+Preferred outputs or equivalent artifacts for handoff:
+- `Design-Spec.md` or equivalent product/design document
+- `state.json` or equivalent resumable design state
 - approved core flows
 - approved core pages
-- approved design assets
+- approved design assets or equivalent persisted visual source
 - handoff notes or equivalent recovery notes
 
 ### `design-to-code`
@@ -60,7 +62,7 @@ Owns:
 - repair loop after visual mismatch
 
 Required inputs:
-- approved design image or section image
+- approved persisted design source, such as design image, section image, Figma context, or equivalent visual reference
 - page id / section id
 - source design path
 - confirmed implementation brief
@@ -78,11 +80,11 @@ Required outputs:
 ## Handoff: `idea-to-design` -> `PlanToDelivery`
 
 Before `PlanToDelivery` can move a UI-bearing project toward roadmap or implementation, verify:
-- formal design document exists
+- formal design document or equivalent product/design document exists
 - core task flows are approved
 - core pages are approved or explicitly scoped
 - design direction is approved
-- approved image assets exist for pages that will be implemented visually
+- approved design assets or equivalent persisted visual source exist for pages that will be implemented visually
 - `state.json` or equivalent recovery state is current
 - open design questions are either closed or explicitly out of current scope
 
@@ -97,7 +99,7 @@ If any item fails:
 
 Before routing to `design-to-code`, verify:
 - target page or section is in current milestone scope
-- approved design source path exists
+- approved persisted design source path exists
 - design source is the visual source of truth
 - `Pre-Implementation Brief` exists or will be produced by `design-to-code`
 - user confirmation requirement is satisfied before code generation
