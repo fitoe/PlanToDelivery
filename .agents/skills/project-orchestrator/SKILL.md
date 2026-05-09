@@ -20,6 +20,7 @@ This skill is a project governor, not a universal implementation brain. Control 
 - For UI-heavy projects, default to visible-first delivery: visible shell first, mock interactions second, real functionality in phases, hardening last.
 - When functionality is large and phased, visual coverage may lead functional coverage. Functional deferral should change capability, not visibility.
 - Use the operating motto: visible first, demo path first, mock honestly, wire functionality in phases, harden only what is real.
+- For Vue/Vite/uni-app H5 projects that enable the progress overlay, keep `public/orchestrator/project-progress.json` current before reporting checkpoint progress.
 - Each execution slice should produce user-visible progress unless invisible work is a blocker for that visible progress.
 - Mock honestly: marked mock/demo/placeholder states are acceptable; fake completion is not.
 - Do not let non-blocking lint, test, type, integration, or polish loops prevent visible progress. Classify, record, and defer non-blockers.
@@ -123,6 +124,13 @@ Use these safety rules:
 - Assess each checkpoint only against its declared layer.
 
 Before each execution checkpoint, report: Visible progress, Interaction progress, Functional progress, Deferred, and Next.
+
+If the Vue Progress Overlay is enabled for the target project, update the overlay JSON before the checkpoint report:
+- template source: `templates/progress-overlay/project-progress.template.json`
+- Vue component source: `templates/progress-overlay/vue/DeliveryProgressOverlay.vue`
+- target JSON path: `public/orchestrator/project-progress.json`
+- target component path: `src/components/DeliveryProgressOverlay.vue`
+- detailed guide: `references/vue-progress-overlay.md`
 
 ## Required Workflow
 
@@ -617,6 +625,7 @@ Read in this order:
 For stage transitions, read:
 - `references/cross-skill-contracts.md` when routing between skills
 - `references/artifact-driven-workflow.md` when checking equivalent artifacts, approval evidence, or handoff manifests
+- `references/vue-progress-overlay.md` when enabling or updating the Vue progress overlay
 - `templates/gate-check-template.md` before allowing the transition
 - `references/gate-enforcement-scenarios.md` when pressure exists to skip required planning, design, confirmation, or verification
 

@@ -41,6 +41,8 @@ Use this index before opening individual templates. Load only the template neede
 - `section-breakdown-template.md` - required before design-to-code on complex UI
 - `pre-implementation-brief-template.md` - required before UI implementation
 - `ui-implementation-contract-template.md` - recommended for handoff to code
+- `progress-overlay/project-progress.template.json` - optional when enabling Vue progress overlay
+- `progress-overlay/vue/DeliveryProgressOverlay.vue` - optional Vue/Vite/uni-app H5 floating progress overlay template
 
 ## Engineering And System
 
