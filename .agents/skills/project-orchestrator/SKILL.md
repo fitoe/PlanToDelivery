@@ -17,6 +17,12 @@ This skill is a project governor, not a universal implementation brain. Control 
 
 - Plan deeply up front. Reduce execution-time drift.
 - Complete one closed milestone at a time. If scope is too large, split it.
+- For UI-heavy projects, default to visible-first delivery: visible shell first, mock interactions second, real functionality in phases, hardening last.
+- When functionality is large and phased, visual coverage may lead functional coverage. Functional deferral should change capability, not visibility.
+- Use the operating motto: visible first, demo path first, mock honestly, wire functionality in phases, harden only what is real.
+- Each execution slice should produce user-visible progress unless invisible work is a blocker for that visible progress.
+- Mock honestly: marked mock/demo/placeholder states are acceptable; fake completion is not.
+- Do not let non-blocking lint, test, type, integration, or polish loops prevent visible progress. Classify, record, and defer non-blockers.
 - User confirms only first-order decisions. Lower-order decisions default to recommended options unless challenged.
 - Prefer existing code and existing dependencies over new code. Prefer mature libraries over custom implementation.
 - Do not load all references at once. Read only what the current stage needs.
@@ -78,6 +84,45 @@ Operate in these stages:
 14. `done`
 
 Always determine current stage before acting.
+
+## Visible-First Delivery Semantics
+
+Use these layered completion states for UI-heavy projects:
+
+- `Visual Complete`: page is reachable, layout and approved visual structure are present, mock data fills the UI, and no visible blocker prevents review.
+- `Interaction Complete`: key clicks, navigation, local state, demo flows, loading/empty/error visuals, and feedback are usable without requiring real backend completion.
+- `Functionally Complete`: real data, APIs, permissions, persistence, business rules, and true submissions work for the current milestone scope.
+- `Hardening Complete`: required full verification, regression, refactor, performance, accessibility, documentation, and release checks are done.
+
+Visual-first does not skip design approval. It starts only after UI scope and visual source are approved enough for the current slice.
+
+Select delivery mode explicitly when planning or entering execution:
+- `visual-first`: UI-heavy apps, admin systems, dashboards, mobile/H5 products, or projects where early dev review matters.
+- `function-first`: APIs, libraries, CLIs, backend-only features, or computation-heavy work.
+- `risk-first`: payment, auth, permissions, destructive operations, security-sensitive, or data-loss-sensitive work.
+- `compliance-first`: migration, regulated data, audit, production release, or formal acceptance work.
+
+Maintain lightweight status artifacts when visible-first mode is active:
+- Status Matrix: page/module rows with Visual, Interaction, Mock, Real, Hardening, Next.
+- Mock Ledger: mock area, current behavior, replace stage, and real source.
+- Deferred Work Ledger: item, reason, severity, revisit stage, and owner.
+
+Mock is planned delivery only when it is explicit. Never report mock, demo, pending, disabled, or placeholder behavior as real functionality.
+
+Use demo mode deliberately when useful: mock identity, mock data, no production API, and simulated submissions. Demo mode must have an exit condition before functional wiring, release, or production integration.
+
+For feature-rich UI projects, visual completeness may intentionally exceed functional completeness. Page shells, navigation, placeholders, mock interactions, and pending states may cover the broader product blueprint while real functionality is delivered by milestone.
+
+Use these safety rules:
+- Visual-first does not replace design approval.
+- Mock-first does not mean fake complete.
+- Placeholder is valid delivery when marked and planned.
+- Hidden functionality requires a recorded reason; functional deferral should change capability, not visibility.
+- After Visual Freeze, functional work may fix visual blockers but must not redesign page structure without a change request.
+- Hardening stabilizes committed scope; it must not add new feature or visual scope.
+- Assess each checkpoint only against its declared layer.
+
+Before each execution checkpoint, report: Visible progress, Interaction progress, Functional progress, Deferred, and Next.
 
 ## Required Workflow
 
@@ -278,11 +323,20 @@ After entering `milestone-plan`, scope freezes by default.
 ### 10. Execution
 
 Execute the current milestone plan with:
-- TDD
+- visible-first priority for UI-heavy work
+- TDD where it protects current real functionality
 - review gates
-- verification gates
+- verification gates sized to the current layer
 - controlled progress
 - durable state updates
+
+For UI-heavy milestones, execute in this order unless a blocker requires otherwise:
+1. `visual-shell`: pages/routes, layout, visual structure, mock data, placeholders, and visible states.
+2. `interaction-shell`: clicks, local state, mock flows, loading/empty/error visuals, and demo path feedback.
+3. `functional-wiring`: real APIs, adapters, persistence, permissions, business rules, and true submissions for the current milestone.
+4. `hardening`: full verification, regression, refactor, performance, accessibility, release checks, and debt burn-down.
+
+Feature-rich projects may implement broad visual coverage before broad real functionality. Unimplemented features should remain visible as marked mock, disabled, pending, demo, or placeholder states instead of disappearing.
 
 After entering `execution`, scope remains frozen except for blocking or validity-breaking changes.
 
@@ -368,10 +422,10 @@ Use:
 - `superpowers:writing-plans`
 
 ### Execution
-Use:
-- `superpowers:using-git-worktrees`
-- `superpowers:subagent-driven-development`
-- `superpowers:test-driven-development`
+Use selectively:
+- `superpowers:using-git-worktrees` when isolation is needed
+- `superpowers:subagent-driven-development` when the user allows delegation and tasks are independent
+- `superpowers:test-driven-development` for real functional logic, business rules, and bugfixes where behavior must be protected
 
 ### Quality
 Use:

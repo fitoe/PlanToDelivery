@@ -348,16 +348,58 @@ For UI-bearing work, `execution` is allowed only after design images exist, are 
 
 ### Execution Objectives
 
-Implement current milestone with minimal drift.
+Implement current milestone with minimal drift and maximum useful visible progress.
+
+For UI-heavy milestones, optimize for this layered order:
+1. `visual-shell`: visible pages, approved visual structure, navigation, mock data, visible empty/loading/pending states, placeholders.
+2. `interaction-shell`: demo path, local state, mock actions, dialogs/drawers/toasts, simulated submit, front-end filtering/pagination.
+3. `functional-wiring`: real API contracts, adapters, permissions, persistence, business rules, and true submission paths for the current milestone.
+4. `hardening`: full verification, regression, refactor, performance, accessibility, release checks, and debt burn-down.
+
+When functionality is phased, visual completeness may be broader than functional completeness. Future features should remain visible as mock, disabled, pending, demo, or placeholder states unless there is an explicit reason to hide them.
+
+### Visible-First Execution Rules
+
+Before each execution slice, name:
+- `goal_type`: `visual-shell | interaction-shell | functional-wiring | hardening | bugfix | refactor | release`
+- `Do Now`: work that belongs to this layer
+- `Defer`: real functionality, tests, hardening, polish, or integrations outside this layer
+- `user-visible outcome`: what the user can see or try after the slice
+
+Do not spread effort evenly across all features. Prefer:
+- primary demo path deep enough to feel usable
+- secondary paths visible and mock-interactive
+- future paths visible as placeholders or pending entries
+
+Do not extract shared components before 2-3 pages prove the pattern, the visual structure is approved, and extraction will not change layout.
+
+### Mock and Deferred Tracking
+
+Maintain lightweight ledgers when using mock-first UI:
+- Status Matrix: area/page, Visual, Interaction, Mock, Real, Hardening, Status, Next.
+- Mock Ledger: page, mock area, current behavior, replace stage, real source.
+- Deferred Work Ledger: item, reason, severity, visible impact, revisit stage, owner.
+
+Mock must be explicit. Mark mock/demo/pending behavior in code comments, task state, or handoff. Never report mock behavior as real functionality.
+
+Use stable labels for comments and notes when helpful:
+- `MOCK(visual-shell)`: fixture data or local demo behavior.
+- `DEFERRED(Mx-functional)`: planned future real capability.
+- `BASELINE(...)`: pre-existing lint/type/test issue not introduced by current work.
+- `TODO-now`, `TODO-next`, `TODO-later`: distinguish current-layer work from future-layer work.
+
+Prefer UI view models during visual and interaction layers. Map backend DTOs through adapters during functional wiring so API field changes do not churn approved UI structure.
+
+Do not let tests or component reuse override approved visual behavior. Priority order is: approved visual source, page visual contract, current reusable component, old implementation style.
 
 ### Default Execution Stack
 
-Use:
-- `superpowers:using-git-worktrees`
-- `superpowers:subagent-driven-development`
-- `superpowers:test-driven-development`
-- `superpowers:requesting-code-review`
-- `superpowers:verification-before-completion`
+Use selectively:
+- `superpowers:using-git-worktrees` when isolation is needed
+- `superpowers:subagent-driven-development` when the user allows delegation and tasks are independent
+- `superpowers:test-driven-development` for real functional logic, business rules, and bugfixes where behavior must be protected
+- `superpowers:requesting-code-review` at meaningful checkpoints, not after every tiny visual edit
+- `superpowers:verification-before-completion` before claiming a layer or milestone is complete
 
 ### Execution Rule
 

@@ -34,6 +34,21 @@ Use `design-to-code` for approved design image to code implementation.
 Do not continue by executing the specialized workflow inside `PlanToDelivery`.
 Equivalent artifacts from other sources may satisfy gates when manifests, approvals, and evidence paths are valid.
 
+### Rule 8: Visible-first is a delivery mode, not a design shortcut
+Visible-first execution may start only after the current slice has enough approved UI scope and visual source. It does not skip design approval, page scope, or implementation-reference gates.
+
+### Rule 9: Layer-specific completion
+Assess each checkpoint only against its declared layer. Visual-shell is not blocked by unwired real APIs; functional completion cannot be claimed with mock-only behavior; hardening must not expand scope.
+
+### Rule 10: Functional deferral does not imply visual absence
+When functionality is deferred, keep the UI visible as marked mock, disabled, pending, demo, or placeholder state unless there is a recorded reason to hide it.
+
+### Rule 11: No fake completion
+Mock, demo, placeholder, disabled, or pending behavior may satisfy visual-shell or interaction-shell gates only. It cannot satisfy functional completion, release, or hardening gates unless explicitly accepted as demo-only scope.
+
+### Rule 12: Freeze by layer
+After Visual Freeze, do not redesign layout, IA, module order, or major visual language during functional work unless a change request is recorded. During hardening, stabilize committed scope; do not add new page, feature, or visual scope.
+
 ## 1. Intake
 
 ### Entry Conditions
@@ -306,9 +321,10 @@ Enter when all are true:
 
 ### Required Outputs
 - code changes
-- tests
+- tests or layer-appropriate verification evidence
 - updated `milestones/Mx-task-state.md`
 - updated `session-brief.md`
+- for visible-first UI work: status matrix updates, mock ledger updates, deferred work ledger updates, and layer-specific completion status
 - verification evidence as work progresses
 
 ### Prohibited
@@ -319,6 +335,9 @@ Enter when all are true:
 - letting process sprawl accumulate
 - entering page code generation without the UI hard gates above
 - re-designing confirmed UI from the text brief instead of implementing the approved image design
+- claiming functional completion for mock-only/demo-only behavior
+- hiding deferred functionality without a recorded reason
+- letting non-blocking full lint/type/test failures stop visual-shell progress when touched code is not responsible
 
 ### Exit Conditions
 Exit only when:
