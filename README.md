@@ -89,17 +89,18 @@ PlanToDelivery 以阶段状态机为核心：
 
 1. `intake`
 2. `discovery`
-3. `full-definition`
+3. `product-definition`
 4. `ui-definition`
-5. `decision-closure`
-6. `roadmap`
-7. `milestone-spec`
-8. `milestone-plan`
-9. `execution`
-10. `debugging`
-11. `verification`
-12. `handoff`
-13. `done`
+5. `system-definition`
+6. `decision-closure`
+7. `roadmap`
+8. `milestone-spec`
+9. `milestone-plan`
+10. `execution`
+11. `debugging`
+12. `verification`
+13. `handoff`
+14. `done`
 
 默认原则：
 

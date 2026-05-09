@@ -21,10 +21,10 @@
 
 ## Optional Extensions
 - `context7`
-  - Allowed stages: `intake`, `full-definition`, `decision-closure`, `execution`, `debugging`
+  - Allowed stages: `intake`, `product-definition`, `system-definition`, `decision-closure`, `execution`, `debugging`
   - Mode: `on-demand`
 - `find-skills`
-  - Allowed stages: `intake`, `full-definition`
+  - Allowed stages: `intake`, `product-definition`, `system-definition`
   - Mode: `on-demand`
 - `caveman`
   - Allowed stages: `execution`, `handoff`
