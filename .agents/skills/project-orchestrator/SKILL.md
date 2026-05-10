@@ -25,6 +25,13 @@ This skill is a project governor, not a universal implementation brain. Control 
 - Mock honestly: marked mock/demo/placeholder states are acceptable; fake completion is not.
 - Do not let non-blocking lint, test, type, integration, or polish loops prevent visible progress. Classify, record, and defer non-blockers.
 - User confirms only first-order decisions. Lower-order decisions default to recommended options unless challenged.
+- Autonomous Completion Contract / 连续交付执行契约 is the default execution mode after the user says “贾维斯继续/完成/推进/不要停/直接完成这个项目”: keep executing the next safest valuable slice until the active milestone is done; if whole-project completion is explicitly requested and the roadmap/scope is known, continue milestone by milestone until project closure.
+- Checkpoints are status updates, not stopping points. A completed slice, passing test/build, successful commit/push, clean git status, context handoff, or routine stage summary is never by itself a reason to stop or ask “是否继续”.
+- No option-ending in execution: do not end with “下一步可以 A/B/C” for routine choices. Select the best next slice yourself, state it briefly, and immediately continue unless a hard stop condition exists.
+- During autopilot, make reversible implementation decisions yourself, record assumptions/deferred questions in durable state, and keep moving. Batch non-blocking questions into checkpoint/handoff notes instead of interrupting execution.
+- Soft blockers do not stop the project: classify them, record debt/blocker evidence, downgrade or reroute to mock/local/demo/placeholder/contract work when honest, then continue visible or acceptance-closing progress.
+- User mid-run questions are interrupt communication, not queue cancellation. Answer compactly and resume the active execution queue unless the user explicitly says pause/stop/change direction.
+- Hard stops only: explicit pause/stop; destructive or irreversible operations; credentials/token/captcha/permissions needed; production operations or user-data risk; security/payment/privacy/permission boundary risk; major product/UI/stack/scope/acceptance change; invalid hard gate that cannot be repaired autonomously; repeated verification failure with no new hypothesis; conflict with explicit user instruction; final acceptance.
 - Prefer existing code and existing dependencies over new code. Prefer mature libraries over custom implementation.
 - Do not load all references at once. Read only what the current stage needs.
 - Start with `quick-start.md`; use `references/orchestration-core.md` before detailed orchestration references.

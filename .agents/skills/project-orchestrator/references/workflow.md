@@ -580,6 +580,18 @@ Ask user only for:
 - stack decision
 - final acceptance
 
+### Rule: Autopilot means continue, not just report
+When the user asks to complete or continue directly, keep executing the next allowed action after every checkpoint until milestone/project closure. Do not ask “是否继续” or stop because one slice is done. A successful test, commit, push, clean working tree, or stage summary is a progress signal, not a stop signal. If a hard gate blocks progress, repair missing state/artifacts when possible; only ask the user when the block needs a first-order decision, credential, destructive approval, production/user-data approval, or final acceptance.
+
+### Rule: No option-ending during execution
+Do not end execution with “下一步可以 A/B/C” for routine choices. Select the highest-value safe next slice yourself in this order: unblock execution, complete visible/demo path, close acceptance, wire real functionality, verify/harden, burn severe debt, update state, continue.
+
+### Rule: Soft blockers reroute work
+Non-blocking lint/type/test failures, unavailable non-core APIs, missing edge-state details, and future-scope functionality should be classified and recorded, then converted to mock/local/demo/placeholder/contract work when honest. Soft blockers do not pause the project.
+
+### Rule: Interrupt questions do not cancel the queue
+If the user asks a question mid-run, answer compactly and resume the active execution queue unless the user explicitly says pause, stop, or change direction.
+
 ## Recommended Stage-to-Skill Routing
 
 | Stage | Primary skill(s) |
