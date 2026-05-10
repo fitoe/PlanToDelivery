@@ -180,9 +180,13 @@ Plan UI in two parallel tracks:
 Create or update:
 - `docs/orchestrator/ui/ui-style-directions.md`
 - `docs/orchestrator/ui/ui-spec.md`
-- `docs/orchestrator/ui/ui-implementation-contract.md`
-- `docs/orchestrator/ui/section-breakdown.md`
-- `docs/orchestrator/ui/pre-implementation-brief.md`
+- `docs/orchestrator/ui/ui-implementation-contract.md` or equivalent Level 3 blueprint package
+- `implementation-blueprint.json`
+- `page-matrix.json`
+- `component-blueprint.json`
+- `debt-ledger.json`
+- `docs/orchestrator/ui/section-breakdown.md` only when required by complexity or fidelity target
+- `docs/orchestrator/ui/pre-implementation-brief.md` only when required by blueprint or fidelity target
 
 Persist assets under:
 - `docs/orchestrator/ui/inspirations/`
@@ -195,8 +199,8 @@ UI planning must guide implementation.
 
 Do not produce visual-only artifacts with no implementation contract.
 Do not jump from small inspiration frames directly to page code.
-Do not start page implementation until approved implementation-reference images, persisted section artifacts, and an approved `Pre-Implementation Brief` exist.
-Do not allow implementation when design images are not produced and approved.
+Do not start page implementation until approved implementation-reference images or equivalent visual sources exist and either a valid Level 3 blueprint package exists or the detailed fidelity path explicitly requires and provides section artifacts plus an approved `Pre-Implementation Brief`.
+Do not allow implementation when design images or equivalent approved visual sources are not produced and approved.
 
 ## 5. System Definition
 

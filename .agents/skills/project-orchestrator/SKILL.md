@@ -35,6 +35,7 @@ This skill is a project governor, not a universal implementation brain. Control 
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
 - Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
 - `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
+- For UI implementation, prefer the new blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json`; `design-to-code` consumes that package before opening detailed visual contracts or images.
 - Prefer artifact-driven coordination: manifests, approval records, gate checks, and handoff manifests.
 
 ## First-Order Decisions
@@ -225,25 +226,19 @@ For `gpt-image-2` page effect generation, apply the following rules:
 - `small`, `large`, `prompt`, and `slice` artifacts must remain traceable to the same page and version
 - do not discard historical image versions; preserve them for later reference and regeneration
 
-If the project has UI and the visual direction is already confirmed, page implementation must still pass section slicing first:
-- split each page or route into sections before any code is written
-- use a conservative slicing protocol for complex pages:
+If the project has UI and the visual direction is already confirmed, page implementation should prefer the Level 3 blueprint handoff first:
+- `idea-to-design` prepares `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` as the low-context implementation entrypoint
+- `design-to-code` starts from Blueprint Intake, then Foundation Pass, Coverage Pass, Refinement Pass, and Fidelity Pass
+- broad route/page coverage may proceed from the blueprint without re-analyzing every design image
+- section slicing is required only for complex pages, high-fidelity targets, or pages whose blueprint/visual contract requires it
+- when slicing is required, use a conservative slicing protocol:
   - identify forbidden zones first: titles, CTA/button clusters, card bodies, hero/media focal areas, forms, and any section-theme center content
   - identify candidate safe bands second; prefer boundaries that pass through sparse buffer areas rather than semantic centers
   - allow `merge with previous`, `merge with next`, or `keep as one larger slice` when a safe boundary is unclear
   - prefer larger slices with overlap or safety margin over tight cuts that risk clipping content
   - generate a persisted preview artifact before accepting final section slices
-- save the section map and section-level artifacts to repository docs before code
-- each section must state:
-  - section name
-  - layout relationship
-  - content scope
-  - media role
-  - reuse points
-  - key unknowns
-- do not skip section slicing and jump directly to page code
-- `design-to-code` may run only after the section breakdown is complete, the `Pre-Implementation Brief` is written, and the user confirms both
-- implementation must follow the confirmed image design as the source of truth; the brief cannot re-design the UI
+- required section maps, briefs, and slice artifacts must be saved to repository docs before claiming `L4 core-fidelity` for that page
+- implementation must follow the confirmed visual source and blueprint as the source of truth; briefs cannot re-design the UI
 
 For page-oriented work, persist UI artifacts under repository docs:
 - inspiration images
@@ -304,7 +299,8 @@ If the user says "先生成 ui 效果图，确认了再实施" or equivalent:
 - stay in `ui-definition` and `decision-closure`
 - do not enter execution
 - do not write page code
-- require approved implementation-reference images, confirmed section slices, and a confirmed `Pre-Implementation Brief` before any implementation starts
+- require approved implementation-reference images or equivalent visual sources plus a valid Level 3 blueprint package before broad implementation starts
+- require confirmed section slices and page briefs only for pages whose complexity or fidelity target needs them
 
 Do not enter implementation with open high-impact decisions.
 
@@ -339,10 +335,16 @@ Execute the current milestone plan with:
 - durable state updates
 
 For UI-heavy milestones, execute in this order unless a blocker requires otherwise:
-1. `visual-shell`: pages/routes, layout, visual structure, mock data, placeholders, and visible states.
-2. `interaction-shell`: clicks, local state, mock flows, loading/empty/error visuals, and demo path feedback.
+1. `visual-shell`: pages/routes, layout, visual structure, mock data, placeholders, and visible states. When a Level 3 blueprint package exists, route to `design-to-code` for Foundation Pass and Coverage Pass first.
+2. `interaction-shell`: clicks, local state, mock flows, loading/empty/error visuals, and demo path feedback. Use Refinement Pass outputs and page maturity updates to choose what to deepen.
 3. `functional-wiring`: real APIs, adapters, persistence, permissions, business rules, and true submissions for the current milestone.
 4. `hardening`: full verification, regression, refactor, performance, accessibility, release checks, and debt burn-down.
+
+Map blueprint-driven `design-to-code` maturity to delivery layers:
+- `L0 route-ready` and `L1 skeleton-ready` contribute to visual-shell progress.
+- `L2 content-ready` and `L3 system-styled` can satisfy broad non-core visual coverage when mock/fallbacks are honest.
+- `L4 core-fidelity` is required before claiming core page visual acceptance.
+- `L5 functional-ready` contributes to functional completion only when real behavior is in scope.
 
 Feature-rich projects may implement broad visual coverage before broad real functionality. Unimplemented features should remain visible as marked mock, disabled, pending, demo, or placeholder states instead of disappearing.
 
@@ -393,18 +395,21 @@ For UI-bearing projects, also require all of these before `roadmap` or `executio
 - `docs/orchestrator/current-state.md` records `product_definition_status: approved`
 - `docs/orchestrator/current-state.md` records `ui_design_status: approved`
 
-For any UI page implementation based on an approved visual direction, also require all of these before `design-to-code` or page code generation:
+For any UI page implementation based on an approved visual direction, prefer the Level 3 blueprint gate before `design-to-code` or page code generation:
 
-- approved persisted implementation-reference images
-- section breakdown
-- persisted slice preview artifact with forbidden zones, candidate boundaries, and merge/skip decisions
-- persisted section slice artifacts
-- `Pre-Implementation Brief`
-- user confirmation of the brief
-- user confirmation of the section breakdown
-- user confirmation that the implementation-reference images are the visual source of truth
+- approved persisted implementation-reference images or equivalent visual sources
+- `implementation-blueprint.json`
+- `page-matrix.json`
+- `component-blueprint.json`
+- `debt-ledger.json`
+- `visual-contracts/<page-id>.json` for binding core pages
+- `design-to-code-inputs/manifest.json`
+- `pre-implementation-briefs/<page-id>.md` where required by the blueprint or fidelity target
+- checker-passing handoff evidence when an `idea-to-design` checker is available
 
-Do not allow implementation when design images are not produced and approved.
+Section breakdown, slice preview artifacts, and section slice artifacts are required when the blueprint, page complexity, or target fidelity says they are required. They must not block broad Foundation/Coverage work for simple pages or pages whose current target is only `L0-L3` maturity.
+
+Do not allow implementation when design images or equivalent approved visual sources are not produced and approved.
 Do not treat `.codex/`-only artifacts as produced/persisted; required UI evidence must exist under project paths.
 
 If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
@@ -466,11 +471,11 @@ Use:
 Example sequence for a confirmed UI project:
 1. generate 2-3 small inspiration frames and save them to `docs/orchestrator/ui/inspirations/`
 2. user confirms one direction for expansion
-3. generate larger implementation-reference images and save them to `docs/orchestrator/ui/references/`
-4. output homepage / inner page section slicing preview plus section breakdown and save artifacts under `docs/orchestrator/ui/sections/`
-5. output `Pre-Implementation Brief`
-6. user confirms the implementation-reference images, section breakdown, and brief
-7. only then start Astro / Vue page code
+3. generate larger implementation-reference images or equivalent visual sources and save them to repository docs
+4. route to `idea-to-design` for Level 3 handoff: `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`, visual contracts, and design-to-code input manifest
+5. run/record the handoff checker or equivalent gate evidence
+6. route to `design-to-code` for Blueprint Intake -> Foundation -> Coverage -> Refinement -> Fidelity
+7. use section slicing and detailed briefs only where required for complex/high-fidelity pages, then claim `L4 core-fidelity` only for verified core pages
 
 ### Optional extensions
 Use only when relevant:
