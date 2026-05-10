@@ -323,6 +323,7 @@ Enter when all are true:
 - scope freeze is active
 - for UI pages, either the blueprint path or detailed fidelity path from UI Definition is satisfied
 - for UI pages using blueprint path, post-visual `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` exist or equivalent artifacts are recorded, with approved visual freeze metadata
+- for features with non-trivial behavior, dependency choices, APIs, state, mock-to-real transitions, or verification risk, `IdeaToTech` outputs exist or equivalent technical planning is recorded: `technical-decisions.json`, `feature-recipes.json`, and `verification-matrix.json`
 - for UI pages using detailed fidelity path, section breakdown, persisted section slice artifacts, required brief, and required user confirmations exist
 - for UI pages, approved implementation-reference images or equivalent visual sources exist
 - gate check decision for entry into execution is `allowed`

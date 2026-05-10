@@ -35,7 +35,8 @@ This skill is a project governor, not a universal implementation brain. Control 
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
 - Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
 - `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
-- For UI implementation, prefer the new post-visual blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` only after Visual Freeze and Post-Visual Extraction; `design-to-code` consumes that package before opening detailed visual contracts or images.
+- `IdeaToTech` is the recommended owner for implementation-ready technical blueprints: dependency decisions, feature recipes, API/state/mock plans, and verification matrix.
+- For UI implementation, prefer the new post-visual blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` only after Visual Freeze and Post-Visual Extraction; `IdeaToTech` produces `technical-decisions.json`, `feature-recipes.json`, and `verification-matrix.json`; `design-to-code` consumes both packages before coding.
 - Prefer artifact-driven coordination: manifests, approval records, gate checks, and handoff manifests.
 
 ## First-Order Decisions
@@ -463,6 +464,10 @@ Use:
 ### Product and visual design
 Use:
 - `idea-to-design`
+
+### Functional and technical implementation planning
+Use:
+- `IdeaToTech`
 
 ### Design image to code
 Use:

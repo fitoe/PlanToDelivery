@@ -1,13 +1,14 @@
 # Cross-Skill Contracts
 
-Use this file when `PlanToDelivery` coordinates `idea-to-design` and `design-to-code`.
+Use this file when `PlanToDelivery` coordinates `idea-to-design`, `IdeaToTech`, and `design-to-code`.
 
 Main rule:
 - `PlanToDelivery` owns orchestration, stage gates, milestone state, and completion claims.
 - `idea-to-design` owns product design, visual design, and implementation-ready design handoff artifacts.
+- `IdeaToTech` owns functional/technical implementation blueprints, dependency decisions, feature recipes, API/state/mock plans, and verification matrix.
 - `design-to-code` owns blueprint-driven UI implementation and targeted fidelity verification.
 - orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
-- `idea-to-design` and `design-to-code` are recommended owners, not the only valid sources of equivalent artifacts.
+- `idea-to-design`, `IdeaToTech`, and `design-to-code` are recommended owners, not the only valid sources of equivalent artifacts.
 
 Do not duplicate a downstream skill's workflow inside `PlanToDelivery`. Route to the owning skill, then verify required artifacts.
 
@@ -130,7 +131,32 @@ If any required item fails:
 
 ---
 
-## Handoff: `PlanToDelivery` -> `design-to-code`
+## 3. IdeaToTech -> PlanToDelivery
+
+`IdeaToTech` owns implementation-ready technical planning. `PlanToDelivery` validates that technical decisions are explicit enough to enter execution.
+
+Required default package:
+- `technical-decisions.json`
+- `feature-recipes.json`
+- `verification-matrix.json`
+
+Optional expanded package:
+- `api-contracts.json`
+- `state-management-plan.json`
+- `mock-to-real-plan.json`
+- `integration-plan.json`
+- `technical-spikes/<decision-id>.md`
+
+Gate checks:
+- `technical_gate.status` is `open`
+- dependency decisions are `lock_now`, explicitly `defer_to_implementation`, or out of current scope
+- `spike_first` decisions have spike results or are not in current milestone
+- `blocked` decisions are resolved or user-waived
+- feature recipes define service/store/composable/component boundaries for current scope
+- verification matrix distinguishes mock acceptance from real acceptance
+- no secrets, tokens, passwords, or private connection strings are persisted
+
+## 4. PlanToDelivery -> design-to-code
 
 Before routing to `design-to-code`, prefer the blueprint path:
 - target pages/routes are in current milestone scope
