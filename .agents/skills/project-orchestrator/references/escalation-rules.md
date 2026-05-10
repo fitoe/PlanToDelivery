@@ -62,6 +62,9 @@ When the user asks for direct completion or uninterrupted execution:
 4. If unsure whether to ask, default to: choose the safest reversible option, document it, continue.
 5. Never end execution with routine A/B/C options while a safe next slice exists.
 6. A completed slice, passing test/build, successful commit/push, or clean git state is not a stopping condition.
+7. Product, design, visual direction, and first-order scope gates may require user confirmation; development, implementation, verification, commit, and handoff checkpoints auto-continue after reporting.
+8. If a hard blocker requires waiting, report `状态：阻塞`, `后台执行：否`, and `当前未后台执行：...`; also list safe alternative tasks if any exist.
+9. If waiting for design/visual confirmation, do not cross the confirmation line, but continue non-directional prep work such as docs, mocks, checks, debt cleanup, or next-plan preparation.
 
 ## Principle
 

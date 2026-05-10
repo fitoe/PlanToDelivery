@@ -131,11 +131,99 @@ Use Playwright during execution only when it materially helps:
 
 Do not escalate every UI change into broad browser automation.
 
-## Messaging / Heartbeat Rule
+## Jarvis Progress Reporting Contract
 
-For Weixin or other chat execution:
+Use this contract for project execution over Weixin/WeChat or any chat gateway where the user relies on status updates.
 
-- send compact checkpoints at meaningful verified slices;
-- send a heartbeat every 3-5 minutes during long work;
-- if the user asks a question mid-run, answer compactly and resume the queue unless they explicitly pause/stop/change direction;
-- do not spam every file edit or command.
+### Fixed states
+
+Every progress report must include exactly one state label:
+
+- `推进中`: editing files, generating assets, writing docs, implementing pages, fixing issues.
+- `等待工具`: build/test/image generation/network/long command is running or being awaited.
+- `汇报点`: a small phase just completed and is being summarized; this is not a stopping point.
+- `阻塞`: user decision, credential, permission, captcha, destructive risk, or invalid hard gate blocks the next unsafe action.
+- `已暂停`: only after the user explicitly says pause/stop/先别做.
+
+### Required fields
+
+Default structured report:
+
+```text
+状态：推进中 / 等待工具 / 汇报点 / 阻塞 / 已暂停
+后台执行：是 / 否
+过去 1 分钟完成：...
+当前正在：...
+下一步：...
+下一次汇报：约 ... 后
+```
+
+If `后台执行：否`, also include:
+
+```text
+当前未后台执行：原因...
+```
+
+Never leave the user guessing whether the agent is still working or has stopped at a report point.
+
+### Cadence
+
+- When there is meaningful progress, send at most one merged progress report per 1-minute trailing-edge window.
+- If there is no visible completion because a tool, build, image generation, network request, or deep debugging loop is still running, send a waiting heartbeat after it exceeds 2 minutes.
+- Do not allow 5+ minutes of silence while work is still running. If platform delivery failed, the next successful message must briefly summarize the missed interval.
+- Routine progress reports must include `下一次汇报`: normally about 1 minute later; for long tools, state that a waiting heartbeat will be sent if the wait exceeds 2 minutes.
+
+### Weixin rate-limit behavior
+
+If Weixin/iLink rate limiting or send failures appear:
+
+- do not stop the project;
+- do not retry noisy progress messages indefinitely;
+- reduce frequency and merge updates;
+- downgrade routine updates to an ultra-compact status bar when necessary;
+- prioritize only hard blockers, phase completion, failures, and user-decision requests;
+- after delivery recovers, send one compact recap of what happened during the limited period.
+
+Ultra-compact fallback style:
+
+```text
+状态：推进中｜后台执行：是｜当前：...｜下一次：约1分钟后
+```
+
+### Report points and continuation
+
+A report point is not a stop condition. After reporting, immediately continue to the next safest valuable slice unless a hard stop exists.
+
+Completed slice, successful build/test, commit/push, clean git status, handoff note, or routine stage summary must not become “是否继续” prompts.
+
+### Inserted user questions
+
+When the user asks a mid-run question:
+
+- simple progress/file/screenshot/explanation question: answer compactly, then resume the active queue;
+- new requirement, direction change, pause intent, or major decision: switch state and confirm as needed;
+- do not clear the execution queue just because an explanation was sent.
+
+### Soft blocker handling
+
+For soft blockers, retry or narrow the failure 1-2 times. If still blocked:
+
+- record the issue in debt/TODO/blocker/handoff state;
+- report impact scope;
+- switch to the next safe task that can continue honestly;
+- when reporting a blocker, also name alternative work that can still proceed.
+
+Only hard blockers stop execution.
+
+### Milestone and checkpoint behavior
+
+- Git checkpoint, push, and clean worktree are not stop conditions.
+- Development/implementation/verification milestones auto-continue after summary.
+- Product/design/visual direction gates require user confirmation before crossing the direction line.
+- While waiting for a design/visual confirmation, do only non-directional prep work such as docs, mocks, checks, debt cleanup, or next-plan preparation.
+
+### Style modes
+
+- Default: structured small summary.
+- Rate-limited: ultra-compact status bar.
+- Phase complete: short phase summary plus automatic next action when no hard stop exists.

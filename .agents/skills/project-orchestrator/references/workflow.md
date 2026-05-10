@@ -429,6 +429,19 @@ During execution, update:
 - `milestones/Mx-task-state.md`
 - `session-brief.md`
 
+### Progress Reporting During Execution
+
+Use the Jarvis progress-reporting contract from `references/execution-contract.md` for chat execution:
+
+- every report includes `状态`, `后台执行`, recent progress, current work, next step, and next expected report time;
+- use the five states: `推进中`, `等待工具`, `汇报点`, `阻塞`, `已暂停`;
+- if work is not running, explicitly say `后台执行：否` and `当前未后台执行：...`;
+- merge ordinary progress into one report per 1-minute window;
+- when long tools or debugging have no visible result, send a waiting heartbeat after 2 minutes;
+- if Weixin is rate-limited, reduce to compact merged status bars and continue work;
+- report points, commits, pushes, clean git state, and successful verification are not stop conditions;
+- design/visual/product direction gates wait for confirmation, but use the wait time for safe non-directional prep work.
+
 ## 11. Debugging
 
 Use when progress is blocked by failing behavior, unstable tests, broken assumptions, or unclear defect source.
