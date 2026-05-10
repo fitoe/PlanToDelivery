@@ -55,6 +55,8 @@ Preferred outputs or equivalent artifacts for Level 3 handoff:
 - `DESIGN.md`
 - `tokens.json`
 - `visual-source-contract.json`
+- recorded Visual Freeze approval and Post-Visual Extraction status in `state.json`
+- `visual-proposals.json` for image-generated product-like elements
 - `visual-contracts/<page-id>.json`
 - `implementation-blueprint.json`
 - `page-matrix.json`
@@ -113,7 +115,8 @@ Before `PlanToDelivery` can move a UI-bearing project toward roadmap or implemen
 - open design questions are either closed or explicitly out of current scope
 
 For formal UI implementation, also verify the Level 3 blueprint package:
-- `implementation-blueprint.json` exists and is the low-context downstream entrypoint
+- `implementation-blueprint.json` exists and is the post-visual low-context downstream entrypoint
+- `implementation-blueprint.json.visual_freeze_ref.status` is `approved` and `post_visual_extraction_status` is `complete`
 - `page-matrix.json` lists planned routes/pages and maturity targets
 - `component-blueprint.json` lists foundation/repeated/page-local/deferred component tiers
 - `debt-ledger.json` exists, even if empty
@@ -131,7 +134,8 @@ If any required item fails:
 
 Before routing to `design-to-code`, prefer the blueprint path:
 - target pages/routes are in current milestone scope
-- `implementation-blueprint.json` exists or an equivalent blueprint is recorded
+- `implementation-blueprint.json` exists or an equivalent post-visual blueprint is recorded
+- blueprint includes approved visual freeze metadata and complete Post-Visual Extraction status
 - `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` exist or equivalent artifacts are recorded
 - target framework and repo conventions are known
 - implementation gate is open or a user waiver is recorded

@@ -180,7 +180,9 @@ Plan UI in two parallel tracks:
 Create or update:
 - `docs/orchestrator/ui/ui-style-directions.md`
 - `docs/orchestrator/ui/ui-spec.md`
-- `docs/orchestrator/ui/ui-implementation-contract.md` or equivalent Level 3 blueprint package
+- `docs/orchestrator/ui/ui-implementation-contract.md` or equivalent post-visual Level 3 blueprint package
+- Visual Freeze approval evidence
+- Post-Visual Extraction evidence
 - `implementation-blueprint.json`
 - `page-matrix.json`
 - `component-blueprint.json`

@@ -35,7 +35,7 @@ This skill is a project governor, not a universal implementation brain. Control 
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
 - Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
 - `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
-- For UI implementation, prefer the new blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json`; `design-to-code` consumes that package before opening detailed visual contracts or images.
+- For UI implementation, prefer the new post-visual blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` only after Visual Freeze and Post-Visual Extraction; `design-to-code` consumes that package before opening detailed visual contracts or images.
 - Prefer artifact-driven coordination: manifests, approval records, gate checks, and handoff manifests.
 
 ## First-Order Decisions
@@ -398,7 +398,9 @@ For UI-bearing projects, also require all of these before `roadmap` or `executio
 For any UI page implementation based on an approved visual direction, prefer the Level 3 blueprint gate before `design-to-code` or page code generation:
 
 - approved persisted implementation-reference images or equivalent visual sources
-- `implementation-blueprint.json`
+- recorded Visual Freeze approval for the visual source
+- Post-Visual Extraction refreshed tokens, visual contracts, briefs, and blueprint files from the approved visual source
+- `implementation-blueprint.json` with approved `visual_freeze_ref`
 - `page-matrix.json`
 - `component-blueprint.json`
 - `debt-ledger.json`

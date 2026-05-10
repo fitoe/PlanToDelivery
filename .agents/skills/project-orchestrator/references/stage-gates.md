@@ -157,7 +157,7 @@ Skip only when project is meaningfully non-UI.
 - `ui-implementation-contract.md` or equivalent Level 3 blueprint package
 - persisted inspiration images for candidate directions
 - approved persisted implementation-reference images or equivalent visual sources for pages that are moving toward implementation
-- for formal UI implementation: `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json`
+- for formal UI implementation: post-visual `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`, Visual Freeze approval, and Post-Visual Extraction evidence
 - gate check documenting whether `idea-to-design` outputs satisfy the current transition
 
 ### Prohibited
@@ -180,7 +180,9 @@ If the project has confirmed UI direction but page code is not yet allowed, stay
 
 Blueprint path for broad implementation:
 - approved implementation-reference images or equivalent visual sources exist
-- `implementation-blueprint.json` exists
+- Visual Freeze approval is recorded for the approved visual source
+- Post-Visual Extraction refreshed tokens, visual contracts, briefs, and compact blueprint files
+- `implementation-blueprint.json` exists and includes approved `visual_freeze_ref`
 - `page-matrix.json` exists and lists target routes/pages and maturity targets
 - `component-blueprint.json` exists
 - `debt-ledger.json` exists
@@ -320,7 +322,7 @@ Enter when all are true:
 - high-impact decisions remain closed
 - scope freeze is active
 - for UI pages, either the blueprint path or detailed fidelity path from UI Definition is satisfied
-- for UI pages using blueprint path, `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` exist or equivalent artifacts are recorded
+- for UI pages using blueprint path, post-visual `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` exist or equivalent artifacts are recorded, with approved visual freeze metadata
 - for UI pages using detailed fidelity path, section breakdown, persisted section slice artifacts, required brief, and required user confirmations exist
 - for UI pages, approved implementation-reference images or equivalent visual sources exist
 - gate check decision for entry into execution is `allowed`
