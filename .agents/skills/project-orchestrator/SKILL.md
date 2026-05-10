@@ -101,7 +101,7 @@ Always determine current stage before acting.
 
 Use these layered completion states for UI-heavy projects:
 
-- `Visual Complete`: page is reachable, layout and approved visual structure are present, mock data fills the UI, and no visible blocker prevents review.
+- `Visual Complete`: page is reachable, layout and approved visual structure are present, mock data fills the UI, and no visible blocker prevents review. For binding visual sources, route reachability or smoke success alone is not visual completion; screenshot-to-source parity must show the approved page type, module order, card anatomy, density, and action hierarchy are preserved or deviations are recorded.
 - `Interaction Complete`: key clicks, navigation, local state, demo flows, loading/empty/error visuals, and feedback are usable without requiring real backend completion.
 - `Functionally Complete`: real data, APIs, permissions, persistence, business rules, and true submissions work for the current milestone scope.
 - `Hardening Complete`: required full verification, regression, refactor, performance, accessibility, documentation, and release checks are done.
@@ -134,7 +134,8 @@ Use these safety rules:
 - Hardening stabilizes committed scope; it must not add new feature or visual scope.
 - Assess each checkpoint only against its declared layer.
 
-Before each execution checkpoint, report: Visible progress, Interaction progress, Functional progress, Deferred, and Next.
+- Before each execution checkpoint, report: Visible progress, Interaction progress, Functional progress, Deferred, and Next.
+- For UI checkpoints with approved/binding visual sources, explicitly label design parity separately from route/smoke status: `route reachable`, `interaction smoke`, `design parity PASS/WARN/FAIL`, and `visual debt`. Do not merge these into a single “done” claim.
 
 If the Vue Progress Overlay is enabled for the target project, update the overlay JSON before the checkpoint report:
 - template source: `templates/progress-overlay/project-progress.template.json`
