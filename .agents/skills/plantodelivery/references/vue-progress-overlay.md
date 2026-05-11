@@ -71,7 +71,9 @@ import DeliveryProgressOverlay from '@/components/DeliveryProgressOverlay.vue'
 </template>
 ```
 
-For uni-app H5, place the component in the root page or shell page that remains mounted during development.
+The template uses VueUse (`@vueuse/core`) for dragging, viewport size, and saved position. If the target project does not already depend on VueUse, add it or replace those composables before mounting.
+
+For uni-app H5, place the component in the root page or shell page that remains mounted during development. `src/App.vue` may be lifecycle-only and may not render the overlay; verify the actual mounted shell. In some uni-app H5 dev servers, `public/orchestrator/project-progress.json` is reachable as `/public/orchestrator/project-progress.json` rather than `/orchestrator/project-progress.json`; probe the URL and override the `src` prop if needed.
 
 The component also has `devOnly` enabled by default. When production can be detected, it does not render, poll, or navigate.
 
@@ -168,18 +170,19 @@ Use `focus` to tell the browser which page is currently useful to watch while th
 - `focus.route`: internal route to inspect, including query/hash when useful.
 - `focus.pageName`: human-readable page name.
 - `focus.activity`: what the agent is changing now.
-- `focus.reason`: why this page is the right page to watch.
+- `focus.reason`: why this page is the right page to watch. This is JSON metadata; the compact overlay does not show it by default.
 - `focus.status`: `ready`, `pending`, or `blocked`.
-- `focus.version`: increment when the focus target changes or the same route needs a fresh one-shot follow.
+- `focus.version`: increment when the focus target changes or when the same route should be followed again.
 
-The expanded overlay shows a `Follow` control:
+The expanded overlay shows a compact `跟随页面` control:
 
 - off by default
 - browser-local only; never written back to JSON
-- one-shot: selecting it jumps once to `focus.route`
-- after the one-shot jump, follow is automatically turned off
-- if the user manually leaves the focus route before the next poll, follow is also turned off
-- unavailable when `focus.status` is not `ready`, project status is `blocked`/`paused`, or the route is unsafe
+- selecting it immediately navigates to `focus.route`
+- after selecting it, follow stays enabled instead of auto-canceling
+- while enabled, changes to `focus.route` or `focus.version` navigate again automatically
+- if the user manually leaves the last followed route, follow turns off
+- unavailable when the route is unsafe or missing
 
 Safe follow routes:
 
@@ -193,6 +196,20 @@ For Vue Router projects, pass a router-like object when desired:
 ```
 
 Without a router prop, the component uses `window.history.pushState` and dispatches `popstate`.
+
+## Overlay UI Behavior
+
+The shipped component is intentionally compact. The collapsed button shows only the milestone percentage. The expanded panel emphasizes:
+
+1. milestone progress and current task
+2. current focus page and follow control
+3. next action
+4. blockers, only when present
+5. compact check status and updated time
+
+Do not add project-wide dashboards, nested task lists, layer-by-layer percentages, recent logs, debt lists, route debug text, or verbose reasons to the default expanded panel. Those fields may remain in JSON for automation, but the default UI should keep important work-state information obvious.
+
+The button is draggable via VueUse (`useDraggable`) and persists its position in localStorage. Clamp the position into the viewport on mount, resize, and open/close so a stale saved position cannot hide the button.
 
 ## Checks, Tasks, And Debt
 
@@ -254,6 +271,9 @@ After copying into a target Vue project:
 5. Confirm the overlay updates within the polling interval.
 6. Confirm stale indicator appears if the JSON path is temporarily unavailable.
 7. Set `focus.status` to `ready` and `focus.route` to a safe internal route.
-8. Enable `Follow` and confirm the dev browser navigates once.
-9. Manually navigate away and confirm `Follow` turns off.
-10. Confirm the component is gated behind `import.meta.env.DEV` and does not render in production.
+8. Enable `跟随页面` and confirm the dev browser navigates and the switch remains on.
+9. Increment `focus.version` or change `focus.route`; confirm it follows again while enabled.
+10. Manually navigate away and confirm follow turns off.
+11. Drag the collapsed progress button, refresh, and confirm it remains visible in the viewport.
+12. Confirm the expanded panel stays compact and highlights only progress, current page, next action, and blockers.
+13. Confirm the component is gated behind `import.meta.env.DEV` and does not render in production.
