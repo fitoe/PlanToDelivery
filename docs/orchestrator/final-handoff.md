@@ -5,12 +5,12 @@
 - Closure date: 2026-05-02
 
 ## Delivered
-- Summary: Landed a usable first-pass local `project-orchestrator` skill package and aligned the core durable repository docs with that package.
+- Summary: Landed a usable first-pass local `plantodelivery` skill package and aligned the core durable repository docs with that package.
 - Major files/areas:
-  - `.agents/skills/project-orchestrator/SKILL.md`
-  - `.agents/skills/project-orchestrator/references/`
-  - `.agents/skills/project-orchestrator/templates/`
-  - `.agents/skills/project-orchestrator/agents/openai.yaml`
+  - `.agents/skills/plantodelivery/SKILL.md`
+  - `.agents/skills/plantodelivery/references/`
+  - `.agents/skills/plantodelivery/templates/`
+  - `.agents/skills/plantodelivery/agents/openai.yaml`
   - `docs/orchestrator/`
 
 ## Verification Summary

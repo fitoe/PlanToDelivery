@@ -1,6 +1,6 @@
 # Vue Progress Overlay MVP Implementation Plan
 
-> **For Hermes:** Implement directly in this repository, then sync the updated `project-orchestrator` skill to global `plantodelivery`.
+> **For Hermes:** Implement directly in this repository, then sync the updated `plantodelivery` skill to global `plantodelivery`.
 
 **Goal:** Add a Vue-only progress overlay MVP to PlanToDelivery with one Vue component template and one JSON progress template.
 
@@ -27,7 +27,7 @@
 **Objective:** Provide a minimal valid JSON file that PlanToDelivery can copy into target Vue projects.
 
 **Files:**
-- Create: `.agents/skills/project-orchestrator/templates/progress-overlay/project-progress.template.json`
+- Create: `.agents/skills/plantodelivery/templates/progress-overlay/project-progress.template.json`
 
 **Steps:**
 1. Include `schemaVersion`, `updatedAt`, `project`, `milestone`, `layers`, `blockers`, and `recent`.
@@ -39,7 +39,7 @@
 **Objective:** Provide a self-contained Vue 3 component that reads the progress JSON and renders a floating overlay.
 
 **Files:**
-- Create: `.agents/skills/project-orchestrator/templates/progress-overlay/vue/DeliveryProgressOverlay.vue`
+- Create: `.agents/skills/plantodelivery/templates/progress-overlay/vue/DeliveryProgressOverlay.vue`
 
 **Steps:**
 1. Use `<script setup lang="ts">`.
@@ -54,8 +54,8 @@
 **Objective:** Teach PlanToDelivery when and how to use the overlay templates.
 
 **Files:**
-- Modify: `.agents/skills/project-orchestrator/SKILL.md`
-- Create: `.agents/skills/project-orchestrator/references/vue-progress-overlay.md`
+- Modify: `.agents/skills/plantodelivery/SKILL.md`
+- Create: `.agents/skills/plantodelivery/references/vue-progress-overlay.md`
 
 **Steps:**
 1. Add core principle and execution rule for progress overlay.
@@ -69,10 +69,10 @@
 **Commands:**
 
 ```bash
-python -m json.tool .agents/skills/project-orchestrator/templates/progress-overlay/project-progress.template.json >/tmp/progress.json
+python -m json.tool .agents/skills/plantodelivery/templates/progress-overlay/project-progress.template.json >/tmp/progress.json
 python - <<'PY'
 from pathlib import Path
-p = Path('.agents/skills/project-orchestrator/templates/progress-overlay/vue/DeliveryProgressOverlay.vue')
+p = Path('.agents/skills/plantodelivery/templates/progress-overlay/vue/DeliveryProgressOverlay.vue')
 text = p.read_text(encoding='utf-8')
 assert '<script setup lang="ts">' in text
 assert '<template>' in text
@@ -87,7 +87,7 @@ git status --short
 **Commit:**
 
 ```bash
-git add docs/superpowers/specs/2026-05-10-vue-progress-overlay-design.md docs/plans/2026-05-10-vue-progress-overlay-mvp.md .agents/skills/project-orchestrator/SKILL.md .agents/skills/project-orchestrator/references/vue-progress-overlay.md .agents/skills/project-orchestrator/templates/progress-overlay/
+git add docs/superpowers/specs/2026-05-10-vue-progress-overlay-design.md docs/plans/2026-05-10-vue-progress-overlay-mvp.md .agents/skills/plantodelivery/SKILL.md .agents/skills/plantodelivery/references/vue-progress-overlay.md .agents/skills/plantodelivery/templates/progress-overlay/
 git commit -m "feat: add vue progress overlay templates"
 git push
 ```

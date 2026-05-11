@@ -12,8 +12,8 @@ Add a minimal Vue progress overlay capability to PlanToDelivery so monitored Vue
 
 The MVP supports Vue only and ships as two templates:
 
-- `.agents/skills/project-orchestrator/templates/progress-overlay/vue/DeliveryProgressOverlay.vue`
-- `.agents/skills/project-orchestrator/templates/progress-overlay/project-progress.template.json`
+- `.agents/skills/plantodelivery/templates/progress-overlay/vue/DeliveryProgressOverlay.vue`
+- `.agents/skills/plantodelivery/templates/progress-overlay/project-progress.template.json`
 
 When used in a target project, these become:
 
@@ -145,7 +145,7 @@ When a target project enables the Vue Progress Overlay:
 ## Acceptance Criteria
 
 - The PlanToDelivery skill documents the Vue overlay capability.
-- The two MVP templates exist in the project-orchestrator skill template directory.
+- The two MVP templates exist in the plantodelivery skill template directory.
 - The JSON template is valid JSON.
 - The Vue template is self-contained and does not require external UI libraries.
 - The component handles missing/failed JSON safely.

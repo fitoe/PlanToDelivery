@@ -12,7 +12,7 @@ Initial public landing of the PlanToDelivery repository.
 
 Included:
 
-- local `project-orchestrator` skill package
+- local `plantodelivery` skill package
 - core `references/` guidance
 - core `templates/`
 - durable `docs/orchestrator/` protocol skeleton

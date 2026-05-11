@@ -8,7 +8,7 @@
 
 ### M0
 - Name: `Orchestrator Adoption`
-- Goal: Land a usable first-pass local `project-orchestrator` skill package with durable repository state docs.
+- Goal: Land a usable first-pass local `plantodelivery` skill package with durable repository state docs.
 - User value delivered: Future sessions can load and iterate the skill package reliably.
 - Dependencies: None
 - Status: `done`

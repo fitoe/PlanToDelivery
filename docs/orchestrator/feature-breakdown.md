@@ -5,7 +5,7 @@
 - Last updated: 2026-05-02
 
 ## Current Context
-- The repository currently focuses on landing the local `project-orchestrator` skill package itself.
+- The repository currently focuses on landing the local `plantodelivery` skill package itself.
 - This breakdown therefore describes the skill package as the current delivery target.
 
 ## Feature Areas

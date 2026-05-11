@@ -13,6 +13,9 @@ Keep implementation aligned with approved planning while preserving speed, verif
 - Follow TDD for new real behavior and bug fixes when it protects current scope.
 - Keep scope frozen unless a valid escalation trigger occurs.
 - Update durable state as work progresses.
+- Use trust-first execution during active development: do not run full lint, full type-check, or full build after every small edit.
+- Treat full lint, full type-check, and full build as stage-gate verification commands, not routine edit-loop commands.
+- Expand verification at meaningful checkpoints or when high-risk foundations change.
 - Use `software-development:project-execution-continuity` as the default sub-rule for chat/messaging execution, heartbeat updates, interruption handling, API preflight, and non-blocking fallback work.
 - Continue one execution slice after another until the active milestone is complete, then enter verification and handoff without waiting for the user.
 - If the user requested whole-project completion and roadmap/scope is known, after handoff immediately select or create the next milestone and continue unless a hard gate requires user input.
@@ -28,7 +31,7 @@ Run this loop whenever execution is open and the user asked to continue/complete
 while active milestone is not done:
   choose next safest valuable slice
   execute the slice
-  run narrow verification for touched behavior
+  run narrow verification only when the slice reaches a meaningful checkpoint or a concrete risk signal appears
   classify blockers as hard or soft
   commit/push meaningful checkpoint when verified and appropriate
   update durable state, debt, blocker, and next-step records
@@ -98,12 +101,47 @@ When a blocker does not invalidate current scope, record it and reroute:
 
 Soft blockers must be visible in task state, mock/debt ledger, or handoff notes. Never report downgraded mock/demo behavior as real completion.
 
+## Verification Timing
+
+During active editing, preserve implementation flow and trust model-generated local code unless a concrete signal shows breakage.
+
+Do not run these commands as routine edit-loop checks:
+- full lint
+- full type-check
+- full build
+- broad regression or E2E suites
+
+Run focused or full verification at these checkpoints:
+- visual slice completion
+- interaction slice completion
+- functional slice completion
+- milestone hardening
+- merge readiness
+- release or production-readiness review
+
+Escalate verification earlier only for high-risk foundation changes:
+- dependency manifests or lockfiles
+- build, bundler, lint, test, or TypeScript configuration
+- shared types, public APIs, routing foundations, or cross-module contracts
+- auth, permissions, payment, security, privacy, data mutation, schema, migration, or persistence code
+- broad refactors with cross-module blast radius
+
+Before running a stage-gate command, do a quick self-check for obvious issues:
+- unused imports or variables introduced by the current work
+- unconnected functions, routes, or components
+- unresolved placeholders in touched paths
+- changed public contracts without matching consumers
+- config or dependency changes that require expanded verification
+
+If a stage-gate check fails, classify it before fixing. Current-scope blockers interrupt execution; unrelated baseline, environment, third-party, or deferred failures should be recorded and routed without hijacking the current layer.
+
 ## Allowed During Execution
 
 - clarify plan-local detail by deciding it autonomously when reversible
 - implement approved scope
 - add tests
-- run verification
+- run verification at meaningful checkpoints
+- defer full lint, full type-check, and full build until stage gates unless risk requires earlier escalation
 - patch small mismatches between plan and repo reality
 - use narrow browser validation for critical UI behavior when cheaper checks are insufficient
 - send compact checkpoint or heartbeat updates while continuing work
@@ -115,6 +153,7 @@ Soft blockers must be visible in task state, mock/debt ledger, or handoff notes.
 - casual reopening of first-order decisions
 - process sprawl
 - hand-waving verification
+- running full lint, full type-check, full build, or broad regression after every small edit without a stage-gate or risk trigger
 - ending with routine options instead of continuing the obvious next safe slice
 - treating commit/push/test-pass/clean-tree as completion when acceptance remains
 - page code generation before UI section breakdown and `Pre-Implementation Brief` approval when those are required by the active UI gate

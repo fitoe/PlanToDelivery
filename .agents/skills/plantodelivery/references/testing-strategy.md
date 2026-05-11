@@ -32,6 +32,35 @@ Layer-specific assessment rule: judge each checkpoint only against its declared 
 
 Mock exit rule: before functional-wiring, release, or production integration, each mock item must be replaced, explicitly kept as demo-only, or deferred with user-visible acceptance.
 
+## Deferred Verification Model
+
+Default to trust-first, checkpoint-based verification during active development.
+
+The development loop should preserve flow:
+- trust model-generated local code unless there is a concrete signal of breakage
+- do not run full lint, full type-check, or full build after every small edit
+- use code review, editor diagnostics, and cheap sanity checks during active editing
+- defer broad verification until a meaningful checkpoint
+
+Full lint, full type-check, and full build are stage-gate tools, not routine edit-loop tools.
+
+Meaningful checkpoints are:
+- visual slice completion
+- interaction slice completion
+- functional slice completion
+- milestone verification and handoff
+- merge, release, or production-readiness review
+
+Run earlier verification only when the change touches high-risk foundations:
+- dependency manifests or lockfiles
+- build, Vite, bundler, lint, test, or TypeScript configuration
+- shared types, public APIs, routing foundations, or cross-module contracts
+- auth, permissions, payments, security, privacy, or data mutation paths
+- database schema, migrations, persistence adapters, or destructive operations
+- large refactors that touch many modules
+
+When verification is deferred, record any known risk in the task state, test plan, deferred work ledger, or handoff notes. Deferred verification is acceptable only when the current layer can still be described honestly.
+
 ## Core Testing Model
 
 Testing is organized by both:
@@ -223,7 +252,9 @@ When browser evidence matters, also record:
 ## Efficiency Rules
 
 ### Allowed efficiency moves
+- trust model-generated local code during active development unless a concrete failure signal appears
 - run focused test subsets during local implementation loops
+- defer full lint, full type-check, and full build until meaningful checkpoints
 - defer broad regression until meaningful checkpoints
 - defer E2E until core flows stabilize
 - prioritize high-value risk areas first
@@ -234,6 +265,7 @@ When browser evidence matters, also record:
 - skipping written test planning for real functionality
 - relying only on manual testing for critical real logic
 - using full-suite runs for every small edit without reason
+- treating full lint, full type-check, or full build as mandatory edit-loop commands
 - blocking visible progress on non-blocking historical or third-party failures
 - claiming functional coverage because a mock or demo path looks correct
 - claiming coverage because "it seems simple"

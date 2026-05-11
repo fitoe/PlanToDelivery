@@ -71,10 +71,10 @@ The goal is to keep recovery fast and token usage low while preserving full deli
 
 - Main README: [README.md](./README.md)
 - Skill name: `PlanToDelivery`
-- Quick start: [quick-start.md](./.agents/skills/project-orchestrator/quick-start.md)
-- Skill entrypoint: [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
-- Orchestration core: [orchestration-core.md](./.agents/skills/project-orchestrator/references/orchestration-core.md)
-- Template index: [templates/index.md](./.agents/skills/project-orchestrator/templates/index.md)
+- Quick start: [quick-start.md](./.agents/skills/plantodelivery/quick-start.md)
+- Skill entrypoint: [SKILL.md](./.agents/skills/plantodelivery/SKILL.md)
+- Orchestration core: [orchestration-core.md](./.agents/skills/plantodelivery/references/orchestration-core.md)
+- Template index: [templates/index.md](./.agents/skills/plantodelivery/templates/index.md)
 
 ## Status
 

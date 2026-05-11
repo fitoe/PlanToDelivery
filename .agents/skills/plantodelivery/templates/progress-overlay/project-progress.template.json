@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.1",
+  "updatedAt": "2026-05-11T00:00:00+08:00",
+  "project": {
+    "name": "Project Name",
+    "progress": 0,
+    "stage": "intake",
+    "status": "active"
+  },
+  "milestone": {
+    "id": "M1",
+    "name": "Milestone Name",
+    "progress": 0,
+    "currentTask": "Current task",
+    "nextAction": "Next action"
+  },
+  "layers": {
+    "visual": 0,
+    "interaction": 0,
+    "functional": 0,
+    "hardening": 0
+  },
+  "focus": {
+    "route": "",
+    "pageName": "",
+    "activity": "",
+    "reason": "",
+    "status": "pending",
+    "version": 0,
+    "updatedAt": ""
+  },
+  "checks": {
+    "lastRun": "",
+    "status": "deferred",
+    "reason": "Full checks deferred until a meaningful checkpoint.",
+    "updatedAt": ""
+  },
+  "tasks": [],
+  "debts": [],
+  "blockers": [],
+  "recent": []
+}

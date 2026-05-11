@@ -1,7 +1,7 @@
 # Gap Analysis
 
 ## Target State
-The repository should support a durable `project-orchestrator` workflow that can:
+The repository should support a durable `plantodelivery` workflow that can:
 
 - understand the real project scope
 - manage milestone-based planning

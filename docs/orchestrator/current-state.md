@@ -8,7 +8,7 @@
 - Last verified: 2026-05-09
 
 ## Confirmed Present
-- Local skill directory: `.agents/skills/project-orchestrator/`
+- Local skill directory: `.agents/skills/plantodelivery/`
 - Orchestrator references and templates: present
 - Durable orchestrator docs directory: bootstrapped
 

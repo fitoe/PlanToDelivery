@@ -2,7 +2,7 @@
 
 ## Project
 - Name: `PlanToDelivery`
-- Current goal: Finish landing the `project-orchestrator` skill package in this repository.
+- Current goal: Finish landing the `plantodelivery` skill package in this repository.
 - Current repository/root: `C:\Users\纪中庆\projects\PlanToDelivery`
 - Current branch/worktree: `codex/visible-first-flow`
 - Last updated: 2026-05-09
@@ -37,13 +37,13 @@
   - `docs/orchestrator/current-state.md`
   - `docs/orchestrator/gap-analysis.md`
 - Secondary:
-  - `.agents/skills/project-orchestrator/SKILL.md`
-  - `.agents/skills/project-orchestrator/references/workflow.md`
+  - `.agents/skills/plantodelivery/SKILL.md`
+  - `.agents/skills/plantodelivery/references/workflow.md`
 - Ignore for now:
   - `docs/orchestrator/final-handoff.md`
 
 ## Current Reality
-- Implemented since last major checkpoint: Local `project-orchestrator` skill skeleton created under `.agents/skills/`, and visible-first delivery flow added in commit `7222b14`.
+- Implemented since last major checkpoint: Local `plantodelivery` skill skeleton created under `.agents/skills/`, and visible-first delivery flow added in commit `7222b14`.
 - Still incomplete: final consistency cleanup, real-world validation, and iteration based on actual use.
 - Known doc/code drift: Repo-level orchestrator docs are bootstrap artifacts for this skill package, not a separate product plan.
 - Current confidence level:
@@ -55,7 +55,7 @@
 - Last verification result:
   - `pass`
 - Evidence source:
-  - `.agents/skills/project-orchestrator/`
+  - `.agents/skills/plantodelivery/`
   - `README.md`
   - `README.en.md`
   - `docs/orchestrator/skill-registry.md`
@@ -82,7 +82,7 @@
 ### Recently locked decisions
 - Decision: Use a single orchestrator skill with references/templates rather than multiple coordinating skills.
 - Result: Confirmed
-- Where recorded: `.agents/skills/project-orchestrator/SKILL.md`
+- Where recorded: `.agents/skills/plantodelivery/SKILL.md`
 
 ### Open high-impact decisions
 - Decision: Trial-use target for `M1`
@@ -144,8 +144,8 @@
 1. Read:
    - `docs/orchestrator/session-brief.md`
 2. Read:
-   - `.agents/skills/project-orchestrator/SKILL.md`
-   - `.agents/skills/project-orchestrator/references/skill-routing.md`
+   - `.agents/skills/plantodelivery/SKILL.md`
+   - `.agents/skills/plantodelivery/references/skill-routing.md`
 3. Verify:
    - no legacy combined definition-stage references remain
 4. Continue with:
@@ -157,9 +157,9 @@
 2. Read:
    - `docs/orchestrator/current-state.md`
 3. Read:
-   - `.agents/skills/project-orchestrator/SKILL.md`
+   - `.agents/skills/plantodelivery/SKILL.md`
 4. Read only if needed:
-   - `.agents/skills/project-orchestrator/references/*.md`
+   - `.agents/skills/plantodelivery/references/*.md`
 5. Cross-check:
    - skill file set and durable state docs
 6. Resume:

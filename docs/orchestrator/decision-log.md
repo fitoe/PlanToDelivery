@@ -6,7 +6,7 @@
 - Topic: Orchestrator structure
 - Status: `confirmed`
 - Type: `first-order`
-- Decision: Use a single `project-orchestrator` skill with staged references/templates.
+- Decision: Use a single `plantodelivery` skill with staged references/templates.
 - Why: Minimizes fragmentation while preserving progressive loading.
 
 ## Pending Decisions

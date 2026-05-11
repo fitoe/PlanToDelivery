@@ -1,6 +1,6 @@
 # Workflow
 
-This file defines the operating workflow for `project-orchestrator`.
+This file defines the operating workflow for `plantodelivery`.
 
 Use it after reading `SKILL.md` and only when workflow-level guidance is needed.
 

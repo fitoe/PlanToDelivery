@@ -1,7 +1,7 @@
 # PlanToDelivery
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-fitoe%2FPlanToDelivery-181717?logo=github)](https://github.com/fitoe/PlanToDelivery)
-[![Codex Skill](https://img.shields.io/badge/Codex-Local%20Skill-10a37f)](./.agents/skills/project-orchestrator/SKILL.md)
+[![Codex Skill](https://img.shields.io/badge/Codex-Local%20Skill-10a37f)](./.agents/skills/plantodelivery/SKILL.md)
 [![Docs](https://img.shields.io/badge/docs-orchestrator-blue)](./docs/orchestrator/)
 [![README](https://img.shields.io/badge/README-English-lightgrey)](./README.en.md)
 
@@ -142,7 +142,7 @@ PlanToDelivery 可以作为总控，推荐这样协作：
 ## 技能包结构
 
 ```text
-.agents/skills/project-orchestrator/
+.agents/skills/plantodelivery/
   SKILL.md
   quick-start.md
   agents/openai.yaml
@@ -180,17 +180,17 @@ npx skills add .
 说明：
 
 - 当前 skill 名称是 `PlanToDelivery`
-- 物理目录位于 `.agents/skills/project-orchestrator/`
+- 物理目录位于 `.agents/skills/plantodelivery/`
 - `skills` CLI 会搜索 `.agents/skills/`
 - `agents/openai.yaml` 是 Codex 侧的增强元数据，不是最低要求
 
 ## 建议的使用顺序
 
-1. 先读 [quick-start.md](./.agents/skills/project-orchestrator/quick-start.md)
-2. 再读 [SKILL.md](./.agents/skills/project-orchestrator/SKILL.md)
-3. 编排判断优先读 [orchestration-core.md](./.agents/skills/project-orchestrator/references/orchestration-core.md)
+1. 先读 [quick-start.md](./.agents/skills/plantodelivery/quick-start.md)
+2. 再读 [SKILL.md](./.agents/skills/plantodelivery/SKILL.md)
+3. 编排判断优先读 [orchestration-core.md](./.agents/skills/plantodelivery/references/orchestration-core.md)
 4. 需要具体阶段细节时再读对应 reference
-5. 需要创建文档时先读 [templates/index.md](./.agents/skills/project-orchestrator/templates/index.md)
+5. 需要创建文档时先读 [templates/index.md](./.agents/skills/plantodelivery/templates/index.md)
 6. 把状态写回 `docs/orchestrator/`
 
 ## 当前状态

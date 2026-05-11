@@ -20,7 +20,7 @@ This skill is a project governor, not a universal implementation brain. Control 
 - For UI-heavy projects, default to visible-first delivery: visible shell first, mock interactions second, real functionality in phases, hardening last.
 - When functionality is large and phased, visual coverage may lead functional coverage. Functional deferral should change capability, not visibility.
 - Use the operating motto: visible first, demo path first, mock honestly, wire functionality in phases, harden only what is real.
-- For Vue/Vite/uni-app H5 projects that enable the progress overlay, keep `public/orchestrator/project-progress.json` current before reporting checkpoint progress.
+- For Vue/Vite/uni-app H5 projects that enable the progress overlay, keep `public/orchestrator/project-progress.json` current before reporting checkpoint progress, including current focus route, checks, top tasks, and non-blocking debt when relevant.
 - Each execution slice should produce user-visible progress unless invisible work is a blocker for that visible progress.
 - Mock honestly: marked mock/demo/placeholder states are acceptable; fake completion is not.
 - Do not let non-blocking lint, test, type, integration, or polish loops prevent visible progress. Classify, record, and defer non-blockers.
@@ -143,6 +143,13 @@ If the Vue Progress Overlay is enabled for the target project, update the overla
 - target JSON path: `public/orchestrator/project-progress.json`
 - target component path: `src/components/DeliveryProgressOverlay.vue`
 - detailed guide: `references/vue-progress-overlay.md`
+- recommended mount: `<DeliveryProgressOverlay v-if="import.meta.env.DEV" />`
+- schema `1.1` fields: `focus`, `checks`, `tasks`, and `debts`
+- when working on a concrete page, keep `focus.route`, `focus.pageName`, `focus.activity`, `focus.reason`, `focus.status`, and `focus.version` current
+- increment `focus.version` when the watched route changes or the same route needs a fresh one-shot follow
+- record deferred validation in `checks.status` and `checks.reason`
+- keep `tasks` flat and short; put non-blocking quality issues in `debts`, not `blockers`
+- never enable the overlay as production UI
 
 ## Required Workflow
 
