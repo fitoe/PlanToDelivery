@@ -168,8 +168,10 @@ If the milestone needs route planning, page planning, style direction, or design
 - stack-specific domain skills
 - `context7` for current official docs
 - targeted UI/build/deployment/database skills if current task requires them
-- `design-to-code` when a UI milestone has approved section slices ready for code generation
-- never use `design-to-code` before approved implementation-reference images, persisted section artifacts, and an approved `Pre-Implementation Brief` exist
+- `IdeaToTech` when a milestone has non-trivial dependency choices, API/state/mock-to-real work, feature recipes, streaming/upload/chart/map/form complexity, or verification strategy that should be fixed before implementation
+- `design-to-code` when a UI milestone has an approved post-visual Level 3 blueprint package ready for implementation (`implementation-blueprint.json` with approved `visual_freeze_ref`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`) or when a fallback approved design source/brief path is explicitly chosen
+- prefer blueprint-driven `design-to-code` for Foundation -> Coverage -> Refinement -> Fidelity; do not force section slicing before broad route/page coverage unless the blueprint/fidelity target requires it
+- never use `design-to-code` before approved visual sources and either a valid blueprint-path gate or detailed fidelity-path gate exist
 
 ### Browser Validation Note
 Use Playwright narrowly for critical pages or interactions only.

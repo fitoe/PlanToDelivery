@@ -30,9 +30,24 @@ When the gate depends on design, implementation, or verification artifacts, cons
 ### Rule 7: Owning skill before domain work
 When a transition enters a specialized domain, name the owning skill in the gate check.
 Use `idea-to-design` for product and visual design work.
-Use `design-to-code` for approved design image to code implementation.
+Use `design-to-code` for approved blueprint-driven UI implementation.
 Do not continue by executing the specialized workflow inside `PlanToDelivery`.
 Equivalent artifacts from other sources may satisfy gates when manifests, approvals, and evidence paths are valid.
+
+### Rule 8: Visible-first is a delivery mode, not a design shortcut
+Visible-first execution may start only after the current slice has enough approved UI scope and visual source. It does not skip design approval, page scope, or implementation-reference gates.
+
+### Rule 9: Layer-specific completion
+Assess each checkpoint only against its declared layer. Visual-shell is not blocked by unwired real APIs; functional completion cannot be claimed with mock-only behavior; hardening must not expand scope.
+
+### Rule 10: Functional deferral does not imply visual absence
+When functionality is deferred, keep the UI visible as marked mock, disabled, pending, demo, or placeholder state unless there is a recorded reason to hide it.
+
+### Rule 11: No fake completion
+Mock, demo, placeholder, disabled, or pending behavior may satisfy visual-shell or interaction-shell gates only. It cannot satisfy functional completion, release, or hardening gates unless explicitly accepted as demo-only scope.
+
+### Rule 12: Freeze by layer
+After Visual Freeze, do not redesign layout, IA, module order, or major visual language during functional work unless a change request is recorded. During hardening, stabilize committed scope; do not add new page, feature, or visual scope.
 
 ## 1. Intake
 
@@ -139,9 +154,10 @@ Skip only when project is meaningfully non-UI.
 ### Required Outputs
 - `ui-style-directions.md`
 - `ui-spec.md`
-- `ui-implementation-contract.md`
+- `ui-implementation-contract.md` or equivalent Level 3 blueprint package
 - persisted inspiration images for candidate directions
-- approved persisted implementation-reference images for pages that are moving toward implementation
+- approved persisted implementation-reference images or equivalent visual sources for pages that are moving toward implementation
+- for formal UI implementation: post-visual `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`, Visual Freeze approval, and Post-Visual Extraction evidence
 - gate check documenting whether `idea-to-design` outputs satisfy the current transition
 
 ### Prohibited
@@ -160,13 +176,27 @@ Exit only when:
 - implementation contract exists
 - gate check decision is `allowed`
 
-If the project has confirmed UI direction but page code is not yet allowed, stay in `ui-definition` / `decision-closure` until all of these are true:
+If the project has confirmed UI direction but page code is not yet allowed, stay in `ui-definition` / `decision-closure` until one of these paths is true:
+
+Blueprint path for broad implementation:
+- approved implementation-reference images or equivalent visual sources exist
+- Visual Freeze approval is recorded for the approved visual source
+- Post-Visual Extraction refreshed tokens, visual contracts, briefs, and compact blueprint files
+- `implementation-blueprint.json` exists and includes approved `visual_freeze_ref`
+- `page-matrix.json` exists and lists target routes/pages and maturity targets
+- `component-blueprint.json` exists
+- `debt-ledger.json` exists
+- design-to-code inputs/visual contracts exist for binding core pages or are explicitly deferred by maturity target
+- checker-passing handoff evidence exists when available
+
+Detailed fidelity path for complex/high-fidelity pages:
 - section breakdown exists
 - persisted section slice artifacts exist
 - `Pre-Implementation Brief` exists
 - approved implementation-reference images exist
-- user has confirmed the brief
-- user has confirmed the section breakdown
+- user has confirmed the brief and section breakdown when required by the blueprint or fidelity target
+
+Do not block Foundation/Coverage work for simple pages only because section slicing is absent. Do block `L4 core-fidelity` claims when required visual contracts, briefs, or section artifacts are missing.
 
 Do not enter page implementation with only a concept image, only a style frame, or only a route sketch.
 For confirmed UI work, the approved image design is the acceptance baseline; the text brief must not replace or reinterpret it.
@@ -291,12 +321,11 @@ Enter when all are true:
 - milestone test plan exists
 - high-impact decisions remain closed
 - scope freeze is active
-- for UI pages, section breakdown exists
-- for UI pages, persisted section slice artifacts exist
-- for UI pages, `Pre-Implementation Brief` exists
-- for UI pages, approved implementation-reference images exist
-- for UI pages, user has confirmed the brief
-- for UI pages, user has confirmed the section breakdown
+- for UI pages, either the blueprint path or detailed fidelity path from UI Definition is satisfied
+- for UI pages using blueprint path, post-visual `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` exist or equivalent artifacts are recorded, with approved visual freeze metadata
+- for features with non-trivial behavior, dependency choices, APIs, state, mock-to-real transitions, or verification risk, `IdeaToTech` outputs exist or equivalent technical planning is recorded: `technical-decisions.json`, `feature-recipes.json`, and `verification-matrix.json`
+- for UI pages using detailed fidelity path, section breakdown, persisted section slice artifacts, required brief, and required user confirmations exist
+- for UI pages, approved implementation-reference images or equivalent visual sources exist
 - gate check decision for entry into execution is `allowed`
 
 ### Required Inputs
@@ -306,9 +335,10 @@ Enter when all are true:
 
 ### Required Outputs
 - code changes
-- tests
+- tests or layer-appropriate verification evidence
 - updated `milestones/Mx-task-state.md`
 - updated `session-brief.md`
+- for visible-first UI work: status matrix updates, page maturity matrix updates (`L0-L5`), mock ledger updates, deferred/debt ledger updates, and layer-specific completion status
 - verification evidence as work progresses
 
 ### Prohibited
@@ -317,8 +347,11 @@ Enter when all are true:
 - replacing existing dependencies with custom code without justification
 - starting duplicate long-lived processes without need
 - letting process sprawl accumulate
-- entering page code generation without the UI hard gates above
-- re-designing confirmed UI from the text brief instead of implementing the approved image design
+- entering page code generation without the UI hard gates above or a valid blueprint-path gate
+- re-designing confirmed UI from the text brief instead of implementing the approved visual source and blueprint
+- claiming functional completion for mock-only/demo-only behavior
+- hiding deferred functionality without a recorded reason
+- letting non-blocking full lint/type/test failures stop visual-shell progress when touched code is not responsible
 
 ### Exit Conditions
 Exit only when:

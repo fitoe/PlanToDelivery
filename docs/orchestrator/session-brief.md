@@ -4,8 +4,8 @@
 - Name: `PlanToDelivery`
 - Current goal: Finish landing the `project-orchestrator` skill package in this repository.
 - Current repository/root: `C:\Users\纪中庆\projects\PlanToDelivery`
-- Current branch/worktree: Unknown
-- Last updated: 2026-05-02
+- Current branch/worktree: `codex/visible-first-flow`
+- Last updated: 2026-05-09
 
 ## Current Stage
 - Stage: `handoff`
@@ -21,15 +21,15 @@
 - Milestone goal: Validate the landed skill package through consistency review and real or simulated use.
 - Milestone acceptance target: The skill moves from static package to verified working workflow.
 - Milestone status:
-  - `not-started`
+  - `in-progress`
 
 ## Current Task
 - Task ID: `M1-T1`
-- Task name: `Prepare trial-use plan`
+- Task name: `Consistency cleanup before trial use`
 - Task status:
-  - `not-started`
-- Why this task is current: `M0` is complete, so the next step is to define how the skill will be exercised and validated in practice.
-- Exact next action: Choose a real or simulated project workflow and run the orchestrator through at least `intake -> planning`.
+  - `in-progress`
+- Why this task is current: visible-first delivery flow has been added and now needs consistency cleanup before trial-use validation.
+- Exact next action: verify stage naming, gate/routing references, durable docs, and templates before choosing a trial-use scenario.
 
 ## Trusted Documents
 - Primary:
@@ -43,25 +43,27 @@
   - `docs/orchestrator/final-handoff.md`
 
 ## Current Reality
-- Implemented since last major checkpoint: Local `project-orchestrator` skill skeleton created under `.agents/skills/`.
-- Still incomplete: Real-world validation and iteration based on actual use.
+- Implemented since last major checkpoint: Local `project-orchestrator` skill skeleton created under `.agents/skills/`, and visible-first delivery flow added in commit `7222b14`.
+- Still incomplete: final consistency cleanup, real-world validation, and iteration based on actual use.
 - Known doc/code drift: Repo-level orchestrator docs are bootstrap artifacts for this skill package, not a separate product plan.
 - Current confidence level:
   - `high`
 
 ## Verification Status
-- Last verification date: 2026-05-02
-- Last verification scope: Skill directory existence and key file presence
-- Last verification scope: Skill directory existence, core reference/template presence, and durable doc presence
+- Last verification date: 2026-05-09
+- Last verification scope: visible-first flow consistency, CRLF/LF dirty diff triage, and legacy stage-name search
 - Last verification result:
   - `pass`
 - Evidence source:
   - `.agents/skills/project-orchestrator/`
+  - `README.md`
+  - `README.en.md`
+  - `docs/orchestrator/skill-registry.md`
 - Browser evidence source:
   - `docs/orchestrator/evidence/` (reserved for future M1 trial-use artifacts)
 - Fresh verification still required:
   - `yes`
-- If yes, what must be run next: Trial-use verification in `M1`
+- If yes, what must be run next: finish M1 consistency cleanup, then run trial-use verification
 
 ## Blockers
 ### Active blockers
@@ -86,6 +88,10 @@
 - Decision: Trial-use target for `M1`
 - Why blocked: A real or simulated scenario has not yet been selected
 - Needed from user or system: User or operator chooses the first trial scenario
+
+- Decision: Keep stage naming split into `product-definition`, `ui-definition`, and `system-definition`
+- Why blocked: Not blocked; legacy combined definition-stage references were removed during consistency cleanup
+- Needed from user or system: none
 
 ## Backlog Changes
 ### Added this session
@@ -141,9 +147,9 @@
    - `.agents/skills/project-orchestrator/SKILL.md`
    - `.agents/skills/project-orchestrator/references/skill-routing.md`
 3. Verify:
-   - what scenario will be used for trial run
+   - no legacy combined definition-stage references remain
 4. Continue with:
-   - begin `M1`
+   - complete M1 consistency cleanup, then choose a trial-use scenario
 
 ## If Session Must Resume Cold
 1. Read:

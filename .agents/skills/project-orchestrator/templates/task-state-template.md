@@ -17,6 +17,21 @@
 - Files:
 - Tests:
 
+## Visible-First Status
+| Area | Visual | Interaction | Mock | Real | Hardening | Next |
+|---|---|---|---|---|---|---|
+| | | | | | | |
+
+## Mock Ledger
+| ID | Page/Area | Current Behavior | Replace Stage | Real Source |
+|---|---|---|---|---|
+| | | | | |
+
+## Deferred Work Ledger
+| ID | Type | Item | Reason | Severity | Revisit Stage |
+|---|---|---|---|---|---|
+| | | | | | |
+
 ## Verify
 - Commands:
 - Result:

@@ -180,9 +180,15 @@ Plan UI in two parallel tracks:
 Create or update:
 - `docs/orchestrator/ui/ui-style-directions.md`
 - `docs/orchestrator/ui/ui-spec.md`
-- `docs/orchestrator/ui/ui-implementation-contract.md`
-- `docs/orchestrator/ui/section-breakdown.md`
-- `docs/orchestrator/ui/pre-implementation-brief.md`
+- `docs/orchestrator/ui/ui-implementation-contract.md` or equivalent post-visual Level 3 blueprint package
+- Visual Freeze approval evidence
+- Post-Visual Extraction evidence
+- `implementation-blueprint.json`
+- `page-matrix.json`
+- `component-blueprint.json`
+- `debt-ledger.json`
+- `docs/orchestrator/ui/section-breakdown.md` only when required by complexity or fidelity target
+- `docs/orchestrator/ui/pre-implementation-brief.md` only when required by blueprint or fidelity target
 
 Persist assets under:
 - `docs/orchestrator/ui/inspirations/`
@@ -195,8 +201,8 @@ UI planning must guide implementation.
 
 Do not produce visual-only artifacts with no implementation contract.
 Do not jump from small inspiration frames directly to page code.
-Do not start page implementation until approved implementation-reference images, persisted section artifacts, and an approved `Pre-Implementation Brief` exist.
-Do not allow implementation when design images are not produced and approved.
+Do not start page implementation until approved implementation-reference images or equivalent visual sources exist and either a valid Level 3 blueprint package exists or the detailed fidelity path explicitly requires and provides section artifacts plus an approved `Pre-Implementation Brief`.
+Do not allow implementation when design images or equivalent approved visual sources are not produced and approved.
 
 ## 5. System Definition
 
@@ -348,16 +354,58 @@ For UI-bearing work, `execution` is allowed only after design images exist, are 
 
 ### Execution Objectives
 
-Implement current milestone with minimal drift.
+Implement current milestone with minimal drift and maximum useful visible progress.
+
+For UI-heavy milestones, optimize for this layered order:
+1. `visual-shell`: visible pages, approved visual structure, navigation, mock data, visible empty/loading/pending states, placeholders.
+2. `interaction-shell`: demo path, local state, mock actions, dialogs/drawers/toasts, simulated submit, front-end filtering/pagination.
+3. `functional-wiring`: real API contracts, adapters, permissions, persistence, business rules, and true submission paths for the current milestone.
+4. `hardening`: full verification, regression, refactor, performance, accessibility, release checks, and debt burn-down.
+
+When functionality is phased, visual completeness may be broader than functional completeness. Future features should remain visible as mock, disabled, pending, demo, or placeholder states unless there is an explicit reason to hide them.
+
+### Visible-First Execution Rules
+
+Before each execution slice, name:
+- `goal_type`: `visual-shell | interaction-shell | functional-wiring | hardening | bugfix | refactor | release`
+- `Do Now`: work that belongs to this layer
+- `Defer`: real functionality, tests, hardening, polish, or integrations outside this layer
+- `user-visible outcome`: what the user can see or try after the slice
+
+Do not spread effort evenly across all features. Prefer:
+- primary demo path deep enough to feel usable
+- secondary paths visible and mock-interactive
+- future paths visible as placeholders or pending entries
+
+Do not extract shared components before 2-3 pages prove the pattern, the visual structure is approved, and extraction will not change layout.
+
+### Mock and Deferred Tracking
+
+Maintain lightweight ledgers when using mock-first UI:
+- Status Matrix: area/page, Visual, Interaction, Mock, Real, Hardening, Status, Next.
+- Mock Ledger: page, mock area, current behavior, replace stage, real source.
+- Deferred Work Ledger: item, reason, severity, visible impact, revisit stage, owner.
+
+Mock must be explicit. Mark mock/demo/pending behavior in code comments, task state, or handoff. Never report mock behavior as real functionality.
+
+Use stable labels for comments and notes when helpful:
+- `MOCK(visual-shell)`: fixture data or local demo behavior.
+- `DEFERRED(Mx-functional)`: planned future real capability.
+- `BASELINE(...)`: pre-existing lint/type/test issue not introduced by current work.
+- `TODO-now`, `TODO-next`, `TODO-later`: distinguish current-layer work from future-layer work.
+
+Prefer UI view models during visual and interaction layers. Map backend DTOs through adapters during functional wiring so API field changes do not churn approved UI structure.
+
+Do not let tests or component reuse override approved visual behavior. Priority order is: approved visual source, page visual contract, current reusable component, old implementation style.
 
 ### Default Execution Stack
 
-Use:
-- `superpowers:using-git-worktrees`
-- `superpowers:subagent-driven-development`
-- `superpowers:test-driven-development`
-- `superpowers:requesting-code-review`
-- `superpowers:verification-before-completion`
+Use selectively:
+- `superpowers:using-git-worktrees` when isolation is needed
+- `superpowers:subagent-driven-development` when the user allows delegation and tasks are independent
+- `superpowers:test-driven-development` for real functional logic, business rules, and bugfixes where behavior must be protected
+- `superpowers:requesting-code-review` at meaningful checkpoints, not after every tiny visual edit
+- `superpowers:verification-before-completion` before claiming a layer or milestone is complete
 
 ### Execution Rule
 
@@ -380,6 +428,19 @@ Execution may not:
 During execution, update:
 - `milestones/Mx-task-state.md`
 - `session-brief.md`
+
+### Progress Reporting During Execution
+
+Use the Jarvis progress-reporting contract from `references/execution-contract.md` for chat execution:
+
+- every report includes `状态`, `后台执行`, recent progress, current work, next step, and next expected report time;
+- use the five states: `推进中`, `等待工具`, `汇报点`, `阻塞`, `已暂停`;
+- if work is not running, explicitly say `后台执行：否` and `当前未后台执行：...`;
+- merge ordinary progress into one report per 1-minute window;
+- when long tools or debugging have no visible result, send a waiting heartbeat after 2 minutes;
+- if Weixin is rate-limited, reduce to compact merged status bars and continue work;
+- report points, commits, pushes, clean git state, and successful verification are not stop conditions;
+- design/visual/product direction gates wait for confirmation, but use the wait time for safe non-directional prep work.
 
 ## 11. Debugging
 
@@ -531,6 +592,18 @@ Ask user only for:
 - invalidated acceptance
 - stack decision
 - final acceptance
+
+### Rule: Autopilot means continue, not just report
+When the user asks to complete or continue directly, keep executing the next allowed action after every checkpoint until milestone/project closure. Do not ask “是否继续” or stop because one slice is done. A successful test, commit, push, clean working tree, or stage summary is a progress signal, not a stop signal. If a hard gate blocks progress, repair missing state/artifacts when possible; only ask the user when the block needs a first-order decision, credential, destructive approval, production/user-data approval, or final acceptance.
+
+### Rule: No option-ending during execution
+Do not end execution with “下一步可以 A/B/C” for routine choices. Select the highest-value safe next slice yourself in this order: unblock execution, complete visible/demo path, close acceptance, wire real functionality, verify/harden, burn severe debt, update state, continue.
+
+### Rule: Soft blockers reroute work
+Non-blocking lint/type/test failures, unavailable non-core APIs, missing edge-state details, and future-scope functionality should be classified and recorded, then converted to mock/local/demo/placeholder/contract work when honest. Soft blockers do not pause the project.
+
+### Rule: Interrupt questions do not cancel the queue
+If the user asks a question mid-run, answer compactly and resume the active execution queue unless the user explicitly says pause, stop, or change direction.
 
 ## Recommended Stage-to-Skill Routing
 

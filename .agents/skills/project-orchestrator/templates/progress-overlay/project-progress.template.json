@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAt": "2026-05-10T00:00:00+08:00",
+  "project": {
+    "name": "Project Name",
+    "progress": 0,
+    "stage": "intake",
+    "status": "active"
+  },
+  "milestone": {
+    "id": "M1",
+    "name": "Milestone Name",
+    "progress": 0,
+    "currentTask": "Current task",
+    "nextAction": "Next action"
+  },
+  "layers": {
+    "visual": 0,
+    "interaction": 0,
+    "functional": 0,
+    "hardening": 0
+  },
+  "blockers": [],
+  "recent": []
+}

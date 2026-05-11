@@ -294,10 +294,10 @@ Capture plan-local execution risks.
 ### Slice 1
 - [ ] Confirm upstream spec is still valid
 - [ ] Confirm scope still frozen
-- [ ] Write failing tests first
-- [ ] Run failing tests and confirm expected failure
+- [ ] Write failing tests first when this slice includes real functional logic or a bugfix
+- [ ] Run failing tests and confirm expected failure when applicable
 - [ ] Implement minimum code
-- [ ] Run narrow verification
+- [ ] Run layer-appropriate narrow verification
 - [ ] Run relevant integration checks
 - [ ] Request review
 - [ ] Update task state
@@ -305,10 +305,10 @@ Capture plan-local execution risks.
 
 ### Slice 2
 - [ ] Confirm prior slice remains green
-- [ ] Write failing tests first
-- [ ] Run failing tests and confirm expected failure
+- [ ] Write failing tests first when this slice includes real functional logic or a bugfix
+- [ ] Run failing tests and confirm expected failure when applicable
 - [ ] Implement minimum code
-- [ ] Run narrow verification
+- [ ] Run layer-appropriate narrow verification
 - [ ] Run relevant regression
 - [ ] Request review
 - [ ] Update task state

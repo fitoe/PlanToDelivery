@@ -9,6 +9,29 @@ This strategy is designed to balance:
 - minimal wasted verification work
 - cross-session recoverability
 
+## Testing Ladder
+
+Use the lightest layer that matches the current delivery layer:
+
+- Level 0: compile/build smoke or route render check.
+- Level 1: touched-file lint and obvious runtime/console checks.
+- Level 2: page/demo-path smoke with mock data and visible state checks.
+- Level 3: focused unit/integration tests for current real functionality.
+- Level 4: full build, full lint, type-check, targeted regression.
+- Level 5: E2E/regression/release validation for milestone closure.
+
+Default mapping:
+- `visual-shell`: Level 0-1, plus user/dev visual review when appropriate.
+- `interaction-shell`: Level 0-2.
+- `functional-wiring`: Level 0-3, expanding only around current real paths.
+- `hardening`: Level 4-5.
+
+Do not fail a visual-shell checkpoint because real APIs are not wired, and do not claim functional completion with mock-only behavior.
+
+Layer-specific assessment rule: judge each checkpoint only against its declared layer. Visual-shell asks whether the visible page can be reviewed; interaction-shell asks whether the demo path responds; functional-wiring asks whether current real paths work; hardening asks whether the committed real scope is release-stable.
+
+Mock exit rule: before functional-wiring, release, or production integration, each mock item must be replaced, explicitly kept as demo-only, or deferred with user-visible acceptance.
+
 ## Core Testing Model
 
 Testing is organized by both:
@@ -204,11 +227,15 @@ When browser evidence matters, also record:
 - defer broad regression until meaningful checkpoints
 - defer E2E until core flows stabilize
 - prioritize high-value risk areas first
+- in visual-shell, use mock data and page smoke checks instead of full functional test gates
+- record historical lint/type/test failures as baseline blockers when unrelated to touched code
 
 ### Not allowed
-- skipping written test planning
-- relying only on manual testing for critical logic
+- skipping written test planning for real functionality
+- relying only on manual testing for critical real logic
 - using full-suite runs for every small edit without reason
+- blocking visible progress on non-blocking historical or third-party failures
+- claiming functional coverage because a mock or demo path looks correct
 - claiming coverage because "it seems simple"
 
 ## Exit Criteria for Testing Readiness

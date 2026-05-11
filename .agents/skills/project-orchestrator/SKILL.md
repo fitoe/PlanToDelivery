@@ -17,7 +17,23 @@ This skill is a project governor, not a universal implementation brain. Control 
 
 - Plan deeply up front. Reduce execution-time drift.
 - Complete one closed milestone at a time. If scope is too large, split it.
+- For UI-heavy projects, default to visible-first delivery: visible shell first, mock interactions second, real functionality in phases, hardening last.
+- When functionality is large and phased, visual coverage may lead functional coverage. Functional deferral should change capability, not visibility.
+- Use the operating motto: visible first, demo path first, mock honestly, wire functionality in phases, harden only what is real.
+- For Vue/Vite/uni-app H5 projects that enable the progress overlay, keep `public/orchestrator/project-progress.json` current before reporting checkpoint progress.
+- Each execution slice should produce user-visible progress unless invisible work is a blocker for that visible progress.
+- Mock honestly: marked mock/demo/placeholder states are acceptable; fake completion is not.
+- Do not let non-blocking lint, test, type, integration, or polish loops prevent visible progress. Classify, record, and defer non-blockers.
 - User confirms only first-order decisions. Lower-order decisions default to recommended options unless challenged.
+- Autonomous Completion Contract / 连续交付执行契约 is the default execution mode after the user says “贾维斯继续/完成/推进/不要停/直接完成这个项目”: keep executing the next safest valuable slice until the active milestone is done; if whole-project completion is explicitly requested and the roadmap/scope is known, continue milestone by milestone until project closure.
+- Checkpoints are status updates, not stopping points. A completed slice, passing test/build, successful commit/push, clean git status, context handoff, or routine stage summary is never by itself a reason to stop or ask “是否继续”.
+- No option-ending in execution: do not end with “下一步可以 A/B/C” for routine choices. Select the best next slice yourself, state it briefly, and immediately continue unless a hard stop condition exists.
+- During autopilot, make reversible implementation decisions yourself, record assumptions/deferred questions in durable state, and keep moving. Batch non-blocking questions into checkpoint/handoff notes instead of interrupting execution.
+- Soft blockers do not stop the project: classify them, record debt/blocker evidence, downgrade or reroute to mock/local/demo/placeholder/contract work when honest, then continue visible or acceptance-closing progress.
+- User mid-run questions are interrupt communication, not queue cancellation. Answer compactly and resume the active execution queue unless the user explicitly says pause/stop/change direction.
+- Progress reports must use the Jarvis progress-reporting contract: every progress update includes `状态`, `后台执行`, recent progress, current work, next step, and next expected report time. If no background work is running, explicitly state `当前未后台执行` and why.
+- For Weixin/WeChat project execution, use a 1-minute trailing-edge progress window for meaningful progress, send a waiting heartbeat when long tools/debugging exceed 2 minutes without visible output, and reduce to shorter merged status bars after rate limiting. Never allow 5+ minutes of silence while work is actually running unless the platform is failing and the next successful message summarizes the gap.
+- Hard stops only: explicit pause/stop; destructive or irreversible operations; credentials/token/captcha/permissions needed; production operations or user-data risk; security/payment/privacy/permission boundary risk; major product/UI/stack/scope/acceptance change; invalid hard gate that cannot be repaired autonomously; repeated verification failure with no new hypothesis; conflict with explicit user instruction; final acceptance.
 - Prefer existing code and existing dependencies over new code. Prefer mature libraries over custom implementation.
 - Do not load all references at once. Read only what the current stage needs.
 - Start with `quick-start.md`; use `references/orchestration-core.md` before detailed orchestration references.
@@ -28,6 +44,8 @@ This skill is a project governor, not a universal implementation brain. Control 
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
 - Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
 - `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
+- `IdeaToTech` is the recommended owner for implementation-ready technical blueprints: dependency decisions, feature recipes, API/state/mock plans, and verification matrix.
+- For UI implementation, prefer the new post-visual blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` only after Visual Freeze and Post-Visual Extraction; `IdeaToTech` produces `technical-decisions.json`, `feature-recipes.json`, and `verification-matrix.json`; `design-to-code` consumes both packages before coding.
 - Prefer artifact-driven coordination: manifests, approval records, gate checks, and handoff manifests.
 
 ## First-Order Decisions
@@ -78,6 +96,53 @@ Operate in these stages:
 14. `done`
 
 Always determine current stage before acting.
+
+## Visible-First Delivery Semantics
+
+Use these layered completion states for UI-heavy projects:
+
+- `Visual Complete`: page is reachable, layout and approved visual structure are present, mock data fills the UI, and no visible blocker prevents review. For binding visual sources, route reachability or smoke success alone is not visual completion; screenshot-to-source parity must show the approved page type, module order, card anatomy, density, and action hierarchy are preserved or deviations are recorded.
+- `Interaction Complete`: key clicks, navigation, local state, demo flows, loading/empty/error visuals, and feedback are usable without requiring real backend completion.
+- `Functionally Complete`: real data, APIs, permissions, persistence, business rules, and true submissions work for the current milestone scope.
+- `Hardening Complete`: required full verification, regression, refactor, performance, accessibility, documentation, and release checks are done.
+
+Visual-first does not skip design approval. It starts only after UI scope and visual source are approved enough for the current slice.
+
+Select delivery mode explicitly when planning or entering execution:
+- `visual-first`: UI-heavy apps, admin systems, dashboards, mobile/H5 products, or projects where early dev review matters.
+- `function-first`: APIs, libraries, CLIs, backend-only features, or computation-heavy work.
+- `risk-first`: payment, auth, permissions, destructive operations, security-sensitive, or data-loss-sensitive work.
+- `compliance-first`: migration, regulated data, audit, production release, or formal acceptance work.
+
+Maintain lightweight status artifacts when visible-first mode is active:
+- Status Matrix: page/module rows with Visual, Interaction, Mock, Real, Hardening, Next.
+- Mock Ledger: mock area, current behavior, replace stage, and real source.
+- Deferred Work Ledger: item, reason, severity, revisit stage, and owner.
+
+Mock is planned delivery only when it is explicit. Never report mock, demo, pending, disabled, or placeholder behavior as real functionality.
+
+Use demo mode deliberately when useful: mock identity, mock data, no production API, and simulated submissions. Demo mode must have an exit condition before functional wiring, release, or production integration.
+
+For feature-rich UI projects, visual completeness may intentionally exceed functional completeness. Page shells, navigation, placeholders, mock interactions, and pending states may cover the broader product blueprint while real functionality is delivered by milestone.
+
+Use these safety rules:
+- Visual-first does not replace design approval.
+- Mock-first does not mean fake complete.
+- Placeholder is valid delivery when marked and planned.
+- Hidden functionality requires a recorded reason; functional deferral should change capability, not visibility.
+- After Visual Freeze, functional work may fix visual blockers but must not redesign page structure without a change request.
+- Hardening stabilizes committed scope; it must not add new feature or visual scope.
+- Assess each checkpoint only against its declared layer.
+
+- Before each execution checkpoint, report: Visible progress, Interaction progress, Functional progress, Deferred, and Next.
+- For UI checkpoints with approved/binding visual sources, explicitly label design parity separately from route/smoke status: `route reachable`, `interaction smoke`, `design parity PASS/WARN/FAIL`, and `visual debt`. Do not merge these into a single “done” claim.
+
+If the Vue Progress Overlay is enabled for the target project, update the overlay JSON before the checkpoint report:
+- template source: `templates/progress-overlay/project-progress.template.json`
+- Vue component source: `templates/progress-overlay/vue/DeliveryProgressOverlay.vue`
+- target JSON path: `public/orchestrator/project-progress.json`
+- target component path: `src/components/DeliveryProgressOverlay.vue`
+- detailed guide: `references/vue-progress-overlay.md`
 
 ## Required Workflow
 
@@ -172,25 +237,19 @@ For `gpt-image-2` page effect generation, apply the following rules:
 - `small`, `large`, `prompt`, and `slice` artifacts must remain traceable to the same page and version
 - do not discard historical image versions; preserve them for later reference and regeneration
 
-If the project has UI and the visual direction is already confirmed, page implementation must still pass section slicing first:
-- split each page or route into sections before any code is written
-- use a conservative slicing protocol for complex pages:
+If the project has UI and the visual direction is already confirmed, page implementation should prefer the Level 3 blueprint handoff first:
+- `idea-to-design` prepares `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` as the low-context implementation entrypoint
+- `design-to-code` starts from Blueprint Intake, then Foundation Pass, Coverage Pass, Refinement Pass, and Fidelity Pass
+- broad route/page coverage may proceed from the blueprint without re-analyzing every design image
+- section slicing is required only for complex pages, high-fidelity targets, or pages whose blueprint/visual contract requires it
+- when slicing is required, use a conservative slicing protocol:
   - identify forbidden zones first: titles, CTA/button clusters, card bodies, hero/media focal areas, forms, and any section-theme center content
   - identify candidate safe bands second; prefer boundaries that pass through sparse buffer areas rather than semantic centers
   - allow `merge with previous`, `merge with next`, or `keep as one larger slice` when a safe boundary is unclear
   - prefer larger slices with overlap or safety margin over tight cuts that risk clipping content
   - generate a persisted preview artifact before accepting final section slices
-- save the section map and section-level artifacts to repository docs before code
-- each section must state:
-  - section name
-  - layout relationship
-  - content scope
-  - media role
-  - reuse points
-  - key unknowns
-- do not skip section slicing and jump directly to page code
-- `design-to-code` may run only after the section breakdown is complete, the `Pre-Implementation Brief` is written, and the user confirms both
-- implementation must follow the confirmed image design as the source of truth; the brief cannot re-design the UI
+- required section maps, briefs, and slice artifacts must be saved to repository docs before claiming `L4 core-fidelity` for that page
+- implementation must follow the confirmed visual source and blueprint as the source of truth; briefs cannot re-design the UI
 
 For page-oriented work, persist UI artifacts under repository docs:
 - inspiration images
@@ -251,7 +310,8 @@ If the user says "先生成 ui 效果图，确认了再实施" or equivalent:
 - stay in `ui-definition` and `decision-closure`
 - do not enter execution
 - do not write page code
-- require approved implementation-reference images, confirmed section slices, and a confirmed `Pre-Implementation Brief` before any implementation starts
+- require approved implementation-reference images or equivalent visual sources plus a valid Level 3 blueprint package before broad implementation starts
+- require confirmed section slices and page briefs only for pages whose complexity or fidelity target needs them
 
 Do not enter implementation with open high-impact decisions.
 
@@ -278,11 +338,26 @@ After entering `milestone-plan`, scope freezes by default.
 ### 10. Execution
 
 Execute the current milestone plan with:
-- TDD
+- visible-first priority for UI-heavy work
+- TDD where it protects current real functionality
 - review gates
-- verification gates
+- verification gates sized to the current layer
 - controlled progress
 - durable state updates
+
+For UI-heavy milestones, execute in this order unless a blocker requires otherwise:
+1. `visual-shell`: pages/routes, layout, visual structure, mock data, placeholders, and visible states. When a Level 3 blueprint package exists, route to `design-to-code` for Foundation Pass and Coverage Pass first.
+2. `interaction-shell`: clicks, local state, mock flows, loading/empty/error visuals, and demo path feedback. Use Refinement Pass outputs and page maturity updates to choose what to deepen.
+3. `functional-wiring`: real APIs, adapters, persistence, permissions, business rules, and true submissions for the current milestone.
+4. `hardening`: full verification, regression, refactor, performance, accessibility, release checks, and debt burn-down.
+
+Map blueprint-driven `design-to-code` maturity to delivery layers:
+- `L0 route-ready` and `L1 skeleton-ready` contribute to visual-shell progress.
+- `L2 content-ready` and `L3 system-styled` can satisfy broad non-core visual coverage when mock/fallbacks are honest.
+- `L4 core-fidelity` is required before claiming core page visual acceptance.
+- `L5 functional-ready` contributes to functional completion only when real behavior is in scope.
+
+Feature-rich projects may implement broad visual coverage before broad real functionality. Unimplemented features should remain visible as marked mock, disabled, pending, demo, or placeholder states instead of disappearing.
 
 After entering `execution`, scope remains frozen except for blocking or validity-breaking changes.
 
@@ -331,18 +406,23 @@ For UI-bearing projects, also require all of these before `roadmap` or `executio
 - `docs/orchestrator/current-state.md` records `product_definition_status: approved`
 - `docs/orchestrator/current-state.md` records `ui_design_status: approved`
 
-For any UI page implementation based on an approved visual direction, also require all of these before `design-to-code` or page code generation:
+For any UI page implementation based on an approved visual direction, prefer the Level 3 blueprint gate before `design-to-code` or page code generation:
 
-- approved persisted implementation-reference images
-- section breakdown
-- persisted slice preview artifact with forbidden zones, candidate boundaries, and merge/skip decisions
-- persisted section slice artifacts
-- `Pre-Implementation Brief`
-- user confirmation of the brief
-- user confirmation of the section breakdown
-- user confirmation that the implementation-reference images are the visual source of truth
+- approved persisted implementation-reference images or equivalent visual sources
+- recorded Visual Freeze approval for the visual source
+- Post-Visual Extraction refreshed tokens, visual contracts, briefs, and blueprint files from the approved visual source
+- `implementation-blueprint.json` with approved `visual_freeze_ref`
+- `page-matrix.json`
+- `component-blueprint.json`
+- `debt-ledger.json`
+- `visual-contracts/<page-id>.json` for binding core pages
+- `design-to-code-inputs/manifest.json`
+- `pre-implementation-briefs/<page-id>.md` where required by the blueprint or fidelity target
+- checker-passing handoff evidence when an `idea-to-design` checker is available
 
-Do not allow implementation when design images are not produced and approved.
+Section breakdown, slice preview artifacts, and section slice artifacts are required when the blueprint, page complexity, or target fidelity says they are required. They must not block broad Foundation/Coverage work for simple pages or pages whose current target is only `L0-L3` maturity.
+
+Do not allow implementation when design images or equivalent approved visual sources are not produced and approved.
 Do not treat `.codex/`-only artifacts as produced/persisted; required UI evidence must exist under project paths.
 
 If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
@@ -368,10 +448,10 @@ Use:
 - `superpowers:writing-plans`
 
 ### Execution
-Use:
-- `superpowers:using-git-worktrees`
-- `superpowers:subagent-driven-development`
-- `superpowers:test-driven-development`
+Use selectively:
+- `superpowers:using-git-worktrees` when isolation is needed
+- `superpowers:subagent-driven-development` when the user allows delegation and tasks are independent
+- `superpowers:test-driven-development` for real functional logic, business rules, and bugfixes where behavior must be protected
 
 ### Quality
 Use:
@@ -395,6 +475,10 @@ Use:
 Use:
 - `idea-to-design`
 
+### Functional and technical implementation planning
+Use:
+- `IdeaToTech`
+
 ### Design image to code
 Use:
 - `design-to-code`
@@ -404,11 +488,11 @@ Use:
 Example sequence for a confirmed UI project:
 1. generate 2-3 small inspiration frames and save them to `docs/orchestrator/ui/inspirations/`
 2. user confirms one direction for expansion
-3. generate larger implementation-reference images and save them to `docs/orchestrator/ui/references/`
-4. output homepage / inner page section slicing preview plus section breakdown and save artifacts under `docs/orchestrator/ui/sections/`
-5. output `Pre-Implementation Brief`
-6. user confirms the implementation-reference images, section breakdown, and brief
-7. only then start Astro / Vue page code
+3. generate larger implementation-reference images or equivalent visual sources and save them to repository docs
+4. route to `idea-to-design` for Level 3 handoff: `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`, visual contracts, and design-to-code input manifest
+5. run/record the handoff checker or equivalent gate evidence
+6. route to `design-to-code` for Blueprint Intake -> Foundation -> Coverage -> Refinement -> Fidelity
+7. use section slicing and detailed briefs only where required for complex/high-fidelity pages, then claim `L4 core-fidelity` only for verified core pages
 
 ### Optional extensions
 Use only when relevant:
@@ -563,6 +647,7 @@ Read in this order:
 For stage transitions, read:
 - `references/cross-skill-contracts.md` when routing between skills
 - `references/artifact-driven-workflow.md` when checking equivalent artifacts, approval evidence, or handoff manifests
+- `references/vue-progress-overlay.md` when enabling or updating the Vue progress overlay
 - `templates/gate-check-template.md` before allowing the transition
 - `references/gate-enforcement-scenarios.md` when pressure exists to skip required planning, design, confirmation, or verification
 
