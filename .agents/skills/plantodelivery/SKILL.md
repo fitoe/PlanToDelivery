@@ -135,7 +135,7 @@ Use these safety rules:
 - Assess each checkpoint only against its declared layer.
 
 - Before each execution checkpoint, report: Visible progress, Interaction progress, Functional progress, Deferred, and Next.
-- For UI checkpoints with approved/binding visual sources, explicitly label design parity separately from route/smoke status: `route reachable`, `interaction smoke`, `design parity PASS/WARN/FAIL`, and `visual debt`. Do not merge these into a single “done” claim.
+- For UI checkpoints with approved/binding visual sources, explicitly label design parity separately from route/smoke status: `route reachable`, `interaction smoke`, `design parity PASS/WARN/FAIL`, and `visual debt`. Do not merge these into a single “done” claim. If the user reports low fidelity, no visible change, or a large design gap, immediately downgrade design parity to FAIL/WARN, verify dev freshness and viewport, route back through `design-to-code` Fidelity Pass, and require screenshot-to-source or section-level mismatch evidence before the next completion claim.
 
 If the Vue Progress Overlay is enabled for the target project, update the overlay JSON before the checkpoint report:
 - template source: `templates/progress-overlay/project-progress.template.json`
@@ -257,6 +257,8 @@ If the project has UI and the visual direction is already confirmed, page implem
   - generate a persisted preview artifact before accepting final section slices
 - required section maps, briefs, and slice artifacts must be saved to repository docs before claiming `L4 core-fidelity` for that page
 - implementation must follow the confirmed visual source and blueprint as the source of truth; briefs cannot re-design the UI
+- for high-fidelity or user-questioned pages, require a section-level parity check before accepting progress: compare exact row/card counts, grid/list pattern, dominant card anatomy, color blocks, density, icon/image treatment, and action hierarchy against the approved mockup/crop
+- do not accept unit tests, DOM text checks, or route smoke as design parity evidence; they only support coverage or functionality
 
 For page-oriented work, persist UI artifacts under repository docs:
 - inspiration images
@@ -361,7 +363,7 @@ For UI-heavy milestones, execute in this order unless a blocker requires otherwi
 Map blueprint-driven `design-to-code` maturity to delivery layers:
 - `L0 route-ready` and `L1 skeleton-ready` contribute to visual-shell progress.
 - `L2 content-ready` and `L3 system-styled` can satisfy broad non-core visual coverage when mock/fallbacks are honest.
-- `L4 core-fidelity` is required before claiming core page visual acceptance.
+- `L4 core-fidelity` is required before claiming core page visual acceptance. For binding mockups, `L4` requires direct screenshot-to-source or section-level mismatch evidence; text/DOM/test presence cannot satisfy it.
 - `L5 functional-ready` contributes to functional completion only when real behavior is in scope.
 
 Feature-rich projects may implement broad visual coverage before broad real functionality. Unimplemented features should remain visible as marked mock, disabled, pending, demo, or placeholder states instead of disappearing.
