@@ -43,10 +43,12 @@ This skill is a project governor, not a universal implementation brain. Control 
 - No completion claims without fresh verification evidence.
 - `PlanToDelivery` owns orchestration and gates; specialized skills own their domain workflow.
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
+- Visual parity gate: if the user reports low visual fidelity, unlike the design, no visible change, or repeated mismatch on an L4/core UI region, pause broad delivery progress. Route the slice back through `design-to-code` with a binding crop/source, `section_visual_anatomy`, section-first mismatch notes, and an asset strategy before more code is written. Treat this as a parity gate, not ordinary implementation debt.
 - Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
 - `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
 - `IdeaToTech` is the recommended owner for implementation-ready technical blueprints: dependency decisions, feature recipes, API/state/mock plans, and verification matrix.
 - For UI implementation, prefer the new post-visual blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` only after Visual Freeze and Post-Visual Extraction; `IdeaToTech` produces `technical-decisions.json`, `feature-recipes.json`, and `verification-matrix.json`; `design-to-code` consumes both packages before coding.
+- Handoff ownership boundary: once the user-approved visual source has Visual Freeze, Post-Visual Extraction, and an implementation-ready handoff package or equivalent binding inputs, route routine implementation, visual repair, screenshot comparison, and fidelity/deviation reporting to `design-to-code`. Route back to `idea-to-design` only when the design source is missing, stale, contradicted by product changes, lacks post-visual extraction, or the user requests a new/changed design.
 - Prefer artifact-driven coordination: manifests, approval records, gate checks, and handoff manifests.
 
 ## First-Order Decisions
