@@ -21,6 +21,7 @@ This skill is a project governor, not a universal implementation brain. Control 
 - When functionality is large and phased, visual coverage may lead functional coverage. Functional deferral should change capability, not visibility.
 - Use the operating motto: visible first, demo path first, mock honestly, wire functionality in phases, harden only what is real.
 - For Vue/Vite/uni-app H5 projects that enable the progress overlay, keep `public/orchestrator/project-progress.json` current before reporting checkpoint progress, including current focus route, checks, top tasks, and non-blocking debt when relevant.
+- On first use with a Vue/Vite/uni-app H5 project, auto-enable the progress overlay when the target app shape is clear and the user has not disabled it; otherwise install only safe files and record the manual mount step.
 - Each execution slice should produce user-visible progress unless invisible work is a blocker for that visible progress.
 - Mock honestly: marked mock/demo/placeholder states are acceptable; fake completion is not.
 - Do not let non-blocking lint, test, type, integration, or polish loops prevent visible progress. Classify, record, and defer non-blockers.
@@ -150,6 +151,15 @@ If the Vue Progress Overlay is enabled for the target project, update the overla
 - record deferred validation in `checks.status` and `checks.reason`
 - keep `tasks` flat and short; put non-blocking quality issues in `debts`, not `blockers`
 - never enable the overlay as production UI
+
+Auto-enable the overlay on first eligible use:
+- eligibility: target project has `package.json`, appears to be Vue/Vite/uni-app H5, has a public/static directory or one can be safely created, and has a clear root shell such as `src/App.vue` or an equivalent uni-app H5 shell
+- skip when the user disables it with `progress_overlay: disabled`, says not to install it, or the target is not a browser UI project
+- copy `project-progress.template.json` to `public/orchestrator/project-progress.json` when missing
+- copy `DeliveryProgressOverlay.vue` to `src/components/DeliveryProgressOverlay.vue` when missing
+- patch the root shell only when the import and dev-only mount location are unambiguous
+- if the mount point is ambiguous, do not patch app code; record the exact manual mount instruction in the checkpoint or handoff
+- the mounted component must be dev-only, normally `<DeliveryProgressOverlay v-if="import.meta.env.DEV" />`
 
 ## Required Workflow
 

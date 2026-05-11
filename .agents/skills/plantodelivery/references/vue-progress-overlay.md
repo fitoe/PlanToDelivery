@@ -22,6 +22,42 @@ Copy them into the target project as:
 - `public/orchestrator/project-progress.json`
 - `src/components/DeliveryProgressOverlay.vue`
 
+## Auto-Enable On First Use
+
+When PlanToDelivery first enters execution for an eligible Vue/Vite/uni-app H5 project, enable the overlay automatically unless the user has disabled it.
+
+Eligibility:
+
+- `package.json` exists.
+- The project appears to use Vue, Vite, or uni-app H5.
+- A public/static directory exists or can be safely created.
+- A stable root shell exists, such as `src/App.vue` or an equivalent uni-app H5 shell.
+- No existing custom progress overlay conflicts with the template.
+
+Disable conditions:
+
+- user says not to enable the overlay
+- repository state records `progress_overlay: disabled`
+- target project is not a browser UI project
+- production/user-data risk exists
+
+Auto-enable actions:
+
+1. Copy `templates/progress-overlay/project-progress.template.json` to `public/orchestrator/project-progress.json` if missing.
+2. Copy `templates/progress-overlay/vue/DeliveryProgressOverlay.vue` to `src/components/DeliveryProgressOverlay.vue` if missing.
+3. Write initial progress values from the active PlanToDelivery state.
+4. Patch the app shell only when the import and dev-only mount point are unambiguous.
+5. If the shell is ambiguous, leave source code unchanged and record the manual mount instruction.
+
+Safe shell patch requirements:
+
+- import can be added without colliding with existing names
+- root template has an obvious app shell or root layout
+- mount uses dev-only gating, normally `<DeliveryProgressOverlay v-if="import.meta.env.DEV" />`
+- patch does not alter production routes, product UI, or app state
+
+If any requirement is unclear, install the files only and report the manual mount step.
+
 ## Target Project Usage
 
 ```vue
