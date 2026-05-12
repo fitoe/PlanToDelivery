@@ -4,6 +4,7 @@ Use this index before opening individual templates. Load only the template neede
 
 ## Session And Intake
 
+- `active-slice-template.json` - recommended low-token state seed for `.hermes/project-state/active-slice.json`
 - `project-state-template.json` - required when creating durable orchestrator state
 - `current-state-template.md` - required for intake on existing or partial projects
 - `gap-analysis-template.md` - required when current state has missing or stale planning

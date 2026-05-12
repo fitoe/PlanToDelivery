@@ -21,7 +21,14 @@ Main rule:
 
 ## Files To Check
 
-Prefer:
+Prefer low-token project state first:
+- `.hermes/project-state/current-state.md`
+- `.hermes/project-state/active-slice.json`
+- `.hermes/project-state/artifact-index.json` or equivalent manifest
+- `.hermes/project-state/decision-log.md`
+- `.hermes/project-state/verification-ledger.md`
+
+Use legacy orchestrator state as fallback when present:
 - `docs/orchestrator/project-state.json`
 - `docs/orchestrator/session-brief.md`
 - `docs/orchestrator/current-state.md`
@@ -29,6 +36,8 @@ Prefer:
 - `docs/orchestrator/approval-records.json`
 - latest file under `docs/orchestrator/gate-checks/`
 - active milestone task state
+
+Read only the smallest files needed to determine stage, owner, gate, and next action. Do not load specialist artifacts until the owner skill is selected.
 
 If these files are missing in a new project:
 - stay in `intake`

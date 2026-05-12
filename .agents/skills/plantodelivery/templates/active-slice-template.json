@@ -1,0 +1,32 @@
+{
+  "stage": "intake",
+  "milestone": null,
+  "active_slice": {
+    "id": null,
+    "type": "feature|page|route|section|verification",
+    "title": null,
+    "scope": [],
+    "out_of_scope": []
+  },
+  "owner_skill": "PlanToDelivery",
+  "specialist_status": {
+    "loaded": null,
+    "reason": null,
+    "artifact_inputs": [],
+    "artifact_outputs": []
+  },
+  "gate": {
+    "latest": null,
+    "decision": "unknown",
+    "blockers": []
+  },
+  "artifacts": {
+    "design_manifest": null,
+    "tech_manifest": null,
+    "implementation_manifest": null,
+    "verification_ledger": ".hermes/project-state/verification-ledger.md",
+    "decision_log": ".hermes/project-state/decision-log.md"
+  },
+  "next_allowed_action": "inspect or initialize durable state",
+  "updated_at": null
+}

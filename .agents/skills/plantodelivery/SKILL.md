@@ -31,6 +31,23 @@ Default stages:
 
 Do not skip gates because implementation “looks done”.
 
+## Low-Token Routing Protocol
+
+When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or asks to continue a project, default to low-token orchestration:
+
+1. Keep `PlanToDelivery` as the only persistent owner until a gate requires a specialist.
+2. Restore durable state first; prefer `.hermes/project-state/current-state.md`, `.hermes/project-state/active-slice.json`, and an artifact/manifest index when present. If legacy `docs/orchestrator/*` state exists, use it as fallback.
+3. Route by current stage and active slice, not by habit. Specialist skills are stage tools, not persistent context.
+4. Load at most one specialist skill by default:
+   - `idea-to-design` only for product/visual exploration, visual source approval, Visual Freeze, Post-Visual Extraction, or missing/stale design handoff.
+   - `IdeaToTech` only for API/state/dependency/mock-to-real/platform/security/performance decisions, feature recipes, or verification strategy that must be fixed before coding.
+   - `design-to-code` only after approved design/handoff for implementation, Visual IR, section anchors, screenshots, parity repair, and UI handoff evidence.
+5. Do not co-load `idea-to-design`, `IdeaToTech`, and `design-to-code` unless a gate explicitly needs cross-skill conflict resolution. If more than one is needed, load sequentially and pass artifact paths, not full conversation history.
+6. Make specialist outputs durable artifacts. The orchestrator consumes manifests, current-state updates, changed-file lists, verification summaries, and blocker/debt ledgers instead of long prose.
+7. Keep each execution loop scoped to one feature slice, page, route, or section. Split broad requests into visible checkpoints.
+8. Large logs, diffs, screenshots, browser snapshots, and file reads should be saved or summarized; avoid pasting full raw output into the main conversation when a path plus concise summary is enough.
+9. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
+
 ## Skill Routing
 
 - Use `idea-to-design` for product/visual exploration, design approval, Visual Freeze, Post-Visual Extraction, and Level 3 handoff.
@@ -89,6 +106,7 @@ Load only when needed:
 - `references/efficiency-rules.md` — low-token/low-cost execution rules
 - `references/vue-progress-overlay.md` — progress overlay implementation
 - `templates/index.md` — artifact templates
+- `templates/active-slice-template.json` — low-token active slice/project-state seed
 - `references/main-skill-full-reference.md` — full legacy detail if this compact guide is insufficient
 
 ## Common Pitfalls

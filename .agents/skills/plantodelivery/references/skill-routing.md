@@ -12,6 +12,9 @@ Before loading templates, read `templates/index.md` and open only the exact temp
 
 - Route by stage, not by habit.
 - Use the smallest necessary skill set for the current task.
+- Treat specialist skills as stage tools, not persistent context.
+- Keep `PlanToDelivery` as the persistent owner; load at most one specialist by default.
+- Prefer artifact paths, manifests, and concise state summaries over full chat-history handoffs.
 - Prefer existing core skills over introducing new ones.
 - Additional skills must be explicitly justified and stage-bounded.
 - Do not load all possible skills into every session.
@@ -60,9 +63,10 @@ Use only when relevant.
 
 ## Tier 6: Specialized Project Delivery Layer
 
-Use only through explicit stage gates.
+Use only through explicit stage gates. These are on-demand stage tools, not always-on context:
 
 - `idea-to-design`
+- `IdeaToTech`
 - `design-to-code`
 
 ## Stage-to-Skill Routing
@@ -168,10 +172,11 @@ If the milestone needs route planning, page planning, style direction, or design
 - stack-specific domain skills
 - `context7` for current official docs
 - targeted UI/build/deployment/database skills if current task requires them
-- `IdeaToTech` when a milestone has non-trivial dependency choices, API/state/mock-to-real work, feature recipes, streaming/upload/chart/map/form complexity, or verification strategy that should be fixed before implementation
-- `design-to-code` when a UI milestone has an approved post-visual Level 3 blueprint package ready for implementation (`implementation-blueprint.json` with approved `visual_freeze_ref`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`) or when a fallback approved design source/brief path is explicitly chosen
-- prefer blueprint-driven `design-to-code` for Foundation -> Coverage -> Refinement -> Fidelity; do not force section slicing before broad route/page coverage unless the blueprint/fidelity target requires it
-- never use `design-to-code` before approved visual sources and either a valid blueprint-path gate or detailed fidelity-path gate exist
+- `IdeaToTech` only when a milestone has non-trivial dependency choices, API/state/mock-to-real work, feature recipes, streaming/upload/chart/map/form complexity, or verification strategy that should be fixed before implementation; consume its JSON artifacts on later turns instead of reloading it.
+- `design-to-code` only when a UI milestone has an approved post-visual Level 3 blueprint package ready for implementation (`implementation-blueprint.json` with approved `visual_freeze_ref`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`) or when a fallback approved design source/brief path is explicitly chosen.
+- prefer blueprint-driven `design-to-code` for Foundation -> Coverage -> Refinement -> Fidelity; do not force section slicing before broad route/page coverage unless the blueprint/fidelity target requires it.
+- never use `design-to-code` before approved visual sources and either a valid blueprint-path gate or detailed fidelity-path gate exist.
+- do not load `idea-to-design` during routine implementation unless design source is missing, stale, conflicting, or the user requests a design change.
 
 ### Browser Validation Note
 Use Playwright narrowly for critical pages or interactions only.
@@ -259,10 +264,11 @@ When multiple skills could apply:
 ## Reference and Template Loading by Stage
 
 ## Session Start
-Read:
-- `references/session-start-protocol.md`
-- `references/artifact-driven-workflow.md` when artifact state exists
-- `templates/project-state-template.json` when initializing artifact-driven state
+Read the minimum state needed:
+- `.hermes/project-state/current-state.md` and `.hermes/project-state/active-slice.json` when present
+- `references/session-start-protocol.md` only if stage/owner/gate cannot be established from compact state
+- `references/artifact-driven-workflow.md` only when artifact state exists and needs interpretation
+- `templates/project-state-template.json` only when initializing artifact-driven state
 
 ## Intake
 Read:
