@@ -46,12 +46,14 @@ When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or ask
 6. Make specialist outputs durable artifacts. The orchestrator consumes manifests, current-state updates, changed-file lists, verification summaries, and blocker/debt ledgers instead of long prose.
 7. Keep each execution loop scoped to one feature slice, page, route, or section. Split broad requests into visible checkpoints.
 8. Large logs, diffs, screenshots, browser snapshots, and file reads should be saved or summarized; avoid pasting full raw output into the main conversation when a path plus concise summary is enough.
-9. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
+9. For GPT Image 2/mockup UI work, default to `standard-fidelity`: keep high-fidelity expectations, but scope each loop to the active page/section and use Visual IR/source/screenshot paths instead of long visual prose.
+10. Do not downgrade high-fidelity UI to a fast/loose mode just to save tokens. Escalate to `strict-fidelity` only for core screens, full-page regeneration, complex assets, final parity acceptance, or repeated parity failure.
+11. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
 
 ## Skill Routing
 
 - Use `idea-to-design` for product/visual exploration, design approval, Visual Freeze, Post-Visual Extraction, and Level 3 handoff.
-- Use `design-to-code` after approved design handoff for implementation, Visual IR, `data-section`, screenshot parity, and visual repair.
+- Use `design-to-code` after approved design handoff for implementation, Visual IR, `data-section`, screenshot parity, and visual repair. For GPT Image 2/mockup UI, route with `standard-fidelity` by default; use `strict-fidelity` only when exact final parity, full-page regeneration, complex assets, or repeated repair failure requires heavier references.
 - Use `IdeaToTech` or project planning workflows for technical/API/state/dependency decisions when needed.
 - Use framework skills only for concrete implementation details.
 
