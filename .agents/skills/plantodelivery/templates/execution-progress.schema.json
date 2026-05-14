@@ -1,0 +1,660 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Execution Progress",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "source_plan",
+    "current",
+    "selection_policy",
+    "tasks",
+    "gates",
+    "blockers",
+    "checkpoints",
+    "events"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "project": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "repo_root"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "repo_root": {
+          "type": "string"
+        },
+        "default_branch": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "source_plan": {
+      "type": "object",
+      "required": [
+        "type",
+        "path",
+        "status"
+      ],
+      "properties": {
+        "type": {
+          "const": "implementation_plan"
+        },
+        "path": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "active",
+            "stale",
+            "superseded"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "current": {
+      "type": "object",
+      "required": [
+        "stage",
+        "task_id",
+        "next_task_id",
+        "next_action"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string"
+        },
+        "milestone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "phase": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "task_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "next_task_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "next_action": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "selection_policy": {
+      "type": "object",
+      "required": [
+        "mode",
+        "rules"
+      ],
+      "properties": {
+        "mode": {
+          "const": "dependency_priority_order"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "order",
+          "title",
+          "objective",
+          "success_criteria",
+          "owner",
+          "task_status",
+          "verification_status",
+          "commit_status",
+          "user_confirmation_status",
+          "depends_on",
+          "required_gates",
+          "blocked_by",
+          "routing",
+          "source_ref"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "string"
+          },
+          "success_criteria": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "owner": {
+            "type": "string"
+          },
+          "assignee": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_status": {
+            "enum": [
+              "pending",
+              "ready",
+              "in_progress",
+              "blocked",
+              "completed",
+              "skipped",
+              "failed"
+            ]
+          },
+          "verification_status": {
+            "enum": [
+              "not_required",
+              "not_started",
+              "running",
+              "passed",
+              "failed",
+              "waived"
+            ]
+          },
+          "commit_status": {
+            "enum": [
+              "not_required",
+              "not_committed",
+              "committed",
+              "pushed",
+              "waived"
+            ]
+          },
+          "user_confirmation_status": {
+            "enum": [
+              "not_required",
+              "required",
+              "requested",
+              "approved",
+              "changes_requested",
+              "waived"
+            ]
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_gates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blocked_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expected_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "artifact_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "routing": {
+            "type": "object",
+            "required": [
+              "required_skills",
+              "input_artifact_refs",
+              "expected_output_artifacts",
+              "gate_owner",
+              "handoff_to"
+            ],
+            "properties": {
+              "required_skills": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "input_artifact_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "expected_output_artifacts": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "gate_owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "handoff_to": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "verification": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "source_ref": {
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "heading": {
+                "type": "string"
+              },
+              "anchor": {
+                "type": "string"
+              },
+              "line_range": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            },
+            "additionalProperties": true
+          },
+          "claim": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": [
+                  "unclaimed",
+                  "claimed",
+                  "released",
+                  "expired"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "notes": {
+            "type": "array"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "owner"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "passed",
+              "failed",
+              "waived",
+              "blocked"
+            ]
+          },
+          "owner": {
+            "type": "string"
+          },
+          "required_for_stages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_artifact_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "checks": {
+            "type": "array"
+          },
+          "blocked_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "waiver": {}
+        },
+        "additionalProperties": true
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "severity",
+          "owner",
+          "resolution_required",
+          "unblocks_task_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "investigating",
+              "waiting_user",
+              "waiting_external",
+              "resolved",
+              "waived"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "owner": {
+            "type": "string"
+          },
+          "resolution_required": {
+            "type": "string"
+          },
+          "unblocks_task_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "summary"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "command",
+                    "file",
+                    "screenshot",
+                    "browser",
+                    "commit",
+                    "user_confirmation",
+                    "external_url",
+                    "note"
+                  ]
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "command": {
+                  "type": "string"
+                },
+                "exit_code": {
+                  "type": "integer"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "log_path": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "summary",
+          "task_refs",
+          "artifact_refs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "completed",
+              "failed",
+              "skipped"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "task_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "artifact_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "commit": {
+            "type": "object"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "summary"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "command",
+                    "file",
+                    "screenshot",
+                    "browser",
+                    "commit",
+                    "user_confirmation",
+                    "external_url",
+                    "note"
+                  ]
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "command": {
+                  "type": "string"
+                },
+                "exit_code": {
+                  "type": "integer"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "log_path": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "actor",
+          "summary",
+          "refs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "progress_initialized",
+              "task_status_changed",
+              "verification_status_changed",
+              "gate_status_changed",
+              "blocker_opened",
+              "blocker_resolved",
+              "checkpoint_created",
+              "artifact_registered",
+              "user_confirmation_recorded",
+              "waiver_recorded"
+            ]
+          },
+          "actor": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

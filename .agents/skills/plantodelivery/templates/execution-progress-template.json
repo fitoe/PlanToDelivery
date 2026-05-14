@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "project": {
+    "id": "example-project",
+    "name": "Example Project",
+    "repo_root": ".",
+    "default_branch": "main"
+  },
+  "source_plan": {
+    "type": "implementation_plan",
+    "path": "docs/superpowers/plans/example.md",
+    "updated_at": null,
+    "status": "active"
+  },
+  "current": {
+    "stage": "execution",
+    "milestone": "M1",
+    "phase": "foundation",
+    "task_id": "task-01",
+    "next_task_id": null,
+    "next_action": "Run task-01"
+  },
+  "selection_policy": {
+    "mode": "dependency_priority_order",
+    "rules": [
+      "continue in_progress current task first",
+      "eligible tasks have status ready or pending",
+      "all dependencies are completed/skipped/waived",
+      "no unresolved blockers",
+      "required gates are passed/waived",
+      "sort by priority then order"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "task-01",
+      "order": 10,
+      "priority": 1,
+      "title": "Example task",
+      "objective": "Describe the task outcome.",
+      "success_criteria": [
+        "Expected result is observable."
+      ],
+      "milestone": "M1",
+      "phase": "foundation",
+      "stage": "execution",
+      "owner": "PlanToDelivery",
+      "assignee": "main-agent",
+      "task_status": "pending",
+      "verification_status": "not_started",
+      "commit_status": "not_committed",
+      "user_confirmation_status": "not_required",
+      "depends_on": [],
+      "required_gates": [],
+      "blocked_by": [],
+      "expected_files": [],
+      "artifact_refs": [],
+      "routing": {
+        "required_skills": [
+          "PlanToDelivery"
+        ],
+        "input_artifact_refs": [],
+        "expected_output_artifacts": [],
+        "gate_owner": "PlanToDelivery",
+        "handoff_to": null
+      },
+      "verification": [],
+      "source_ref": {
+        "path": "docs/superpowers/plans/example.md",
+        "heading": "Task 1: Example task",
+        "anchor": "task-1-example-task"
+      },
+      "claim": {
+        "status": "unclaimed",
+        "claimed_by": null,
+        "claimed_at": null,
+        "heartbeat_at": null,
+        "expires_at": null
+      },
+      "notes": []
+    }
+  ],
+  "gates": [],
+  "blockers": [],
+  "checkpoints": [],
+  "events": [
+    {
+      "id": "event-001",
+      "type": "progress_initialized",
+      "actor": "PlanToDelivery",
+      "summary": "Execution progress initialized.",
+      "refs": [
+        "task-01"
+      ],
+      "created_at": null
+    }
+  ],
+  "metadata": {}
+}

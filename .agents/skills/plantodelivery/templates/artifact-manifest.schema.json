@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Artifact Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "project": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "repo_root"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "repo_root": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "path",
+          "status",
+          "producer",
+          "consumer"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "design_spec",
+              "visual_source",
+              "visual_source_contract",
+              "implementation_blueprint",
+              "page_matrix",
+              "component_blueprint",
+              "visual_ir",
+              "design_debt_ledger",
+              "technical_decisions",
+              "feature_recipes",
+              "verification_matrix",
+              "api_contracts",
+              "state_management_plan",
+              "mock_to_real_plan",
+              "implementation_code",
+              "parity_report",
+              "screenshot_evidence",
+              "accepted_deviations",
+              "gate_report",
+              "validation_log",
+              "checkpoint_report",
+              "schema",
+              "note"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "ready",
+              "approved",
+              "consumed",
+              "stale",
+              "superseded",
+              "rejected",
+              "missing"
+            ]
+          },
+          "producer": {
+            "type": "string"
+          },
+          "consumer": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "summary": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
