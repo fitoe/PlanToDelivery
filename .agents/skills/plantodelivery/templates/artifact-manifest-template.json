@@ -1,10 +1,27 @@
 {
-  "schema_version": "1.0.0",
-  "project": {
-    "id": "example-project",
-    "name": "Example Project",
-    "repo_root": "."
+  "schema_version": "artifact-manifest-v1",
+  "project_id": "",
+  "artifact_id": "ART-001",
+  "artifact_type": "product-design|visual-source|implementation|verification|handoff",
+  "source": "idea-to-design|design-to-code|figma|manual|external|other",
+  "status": "draft|approved|superseded|archived",
+  "owner_skill": "",
+  "scope": {
+    "flows": [],
+    "pages": [],
+    "sections": []
   },
-  "artifacts": [],
-  "metadata": {}
+  "files": [
+    {
+      "path": "",
+      "role": "",
+      "required": true
+    }
+  ],
+  "approvals": [],
+  "based_on": [],
+  "supersedes": [],
+  "created_at": "",
+  "updated_at": "",
+  "notes": ""
 }
