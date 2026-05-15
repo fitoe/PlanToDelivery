@@ -37,18 +37,68 @@ When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or ask
 
 1. Keep `PlanToDelivery` as the only persistent owner until a gate requires a specialist.
 2. Restore durable state first; prefer project-root `project-state/execution-progress.json` and `project-state/artifact-manifest.json` when present. Fall back to `.hermes/project-state/current-state.md`, `.hermes/project-state/active-slice.json`, or legacy `docs/orchestrator/*` only when project-state is absent.
-3. Route by current stage and active slice, not by habit. Specialist skills are stage tools, not persistent context.
-4. Load at most one specialist skill by default:
+3. If project-state exists, do not re-summarize the whole project or reread broad historical docs by default. Recover only the active task, its blockers, referenced artifact paths, and the next gate.
+4. Route by current stage and active slice, not by habit. Specialist skills are stage tools, not persistent context.
+5. Load at most one specialist skill by default:
    - `idea-to-design` only for product/visual exploration, visual source approval, Visual Freeze, Post-Visual Extraction, or missing/stale design handoff.
    - `IdeaToTech` only for API/state/dependency/mock-to-real/platform/security/performance decisions, feature recipes, or verification strategy that must be fixed before coding.
    - `design-to-code` only after approved design/handoff for implementation, Visual IR, section anchors, screenshots, parity repair, and UI handoff evidence.
-5. Do not co-load `idea-to-design`, `IdeaToTech`, and `design-to-code` unless a gate explicitly needs cross-skill conflict resolution. If more than one is needed, load sequentially and pass artifact paths, not full conversation history.
-6. Make specialist outputs durable artifacts. The orchestrator consumes `project-state/artifact-manifest.json`, current-state updates, changed-file lists, verification summaries, and blocker/debt ledgers instead of long prose.
-7. Keep each execution loop scoped to one feature slice, page, route, or section. Split broad requests into visible checkpoints.
-8. Large logs, diffs, screenshots, browser snapshots, and file reads should be saved or summarized; avoid pasting full raw output into the main conversation when a path plus concise summary is enough.
-9. For GPT Image 2/mockup UI work, default to `standard-fidelity`: keep high-fidelity expectations, but scope each loop to the active page/section and use Visual IR/source/screenshot paths instead of long visual prose.
-10. Do not downgrade high-fidelity UI to a fast/loose mode just to save tokens. Escalate to `strict-fidelity` only for core screens, full-page regeneration, complex assets, final parity acceptance, or repeated parity failure.
-11. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
+6. Do not co-load `idea-to-design`, `IdeaToTech`, and `design-to-code` unless a gate explicitly needs cross-skill conflict resolution. If more than one is needed, load sequentially and pass artifact paths, not full conversation history.
+7. Make specialist outputs durable artifacts. The orchestrator consumes `project-state/artifact-manifest.json`, current-state updates, changed-file lists, verification summaries, and blocker/debt ledgers instead of long prose.
+8. Keep each execution loop scoped to one active slice: one feature, page, route, section, visual repair pass, or integration seam. Split broad requests into visible checkpoints before routing.
+9. Large logs, diffs, screenshots, browser snapshots, vision output, file reads, and design analyses must be saved to artifacts or summarized; avoid pasting raw output into the main conversation when a path plus concise summary is enough.
+10. For GPT Image 2/mockup UI work, default to `standard-fidelity`: keep high-fidelity expectations, but scope each loop to the active page/section and use Visual IR/source/screenshot paths instead of long visual prose.
+11. Do not downgrade high-fidelity UI to a fast/loose mode just to save tokens. Escalate to `strict-fidelity` only for core screens, full-page regeneration, complex assets, final parity acceptance, or repeated parity failure.
+12. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
+
+### Context Budget Contract
+
+PlanToDelivery should hold an index, not every specialist's reasoning. For each routed task:
+
+- pass the specialist a compact invocation brief containing only `active_task`, `scope`, `required_skill`, `input_artifact_refs`, allowed target files, expected outputs, and explicit read/browser/repair budgets;
+- prefer artifact IDs and paths from `artifact-manifest.json` over pasted artifact contents;
+- require the specialist to write heavy outputs to `project-state/design/`, `project-state/tech/`, `project-state/implementation/`, or another declared artifact path;
+- require the specialist to return a delta summary, not a narrative report;
+- after verifying the delta, merge only state changes, artifact entries, blockers, evidence, and the next action into project-state;
+- discard raw specialist process context from the main conversation. Keep only durable artifact refs, PASS/WARN/FAIL, and next-step state.
+
+Default specialist invocation brief:
+
+```json
+{
+  "active_task": "T-xxx",
+  "scope": "route-or-section-or-feature",
+  "required_skill": "design-to-code",
+  "input_artifact_refs": ["artifact.id"],
+  "allowed_files": ["path/or/glob"],
+  "expected_outputs": ["artifact_kind_or_path"],
+  "budgets": {
+    "read_files_max": 8,
+    "browser_snapshots_max": 2,
+    "vision_outputs_inline": false,
+    "repair_gaps_max": 3
+  }
+}
+```
+
+Default specialist delta response:
+
+```json
+{
+  "result": "completed | partial | blocked",
+  "changed_files": [],
+  "produced_artifacts": [],
+  "suggested_manifest_entries": [],
+  "suggested_progress_updates": [],
+  "suggested_blockers": [],
+  "suggested_gate_updates": [],
+  "evidence": [],
+  "largest_remaining_gaps": [],
+  "next_recommended_task": ""
+}
+```
+
+The delta is a proposal. Verify referenced files, screenshots, commands, commits, and user confirmations before merging it into `execution-progress.json` or `artifact-manifest.json`.
 
 ## Skill Routing
 
@@ -78,16 +128,6 @@ Hard-block on:
 - unknown auth/permission requirements for real API work
 - claiming completion without verification or waiver
 - design parity claims without design source and visual evidence
-- claiming UI completion when the declared fidelity target has not been met
-
-### UI Completion Semantics
-
-For UI-bearing work, `implemented` is not the same as `accepted`.
-
-- If the current target is `high_fidelity`, `strict_parity`, or an equivalent final-design target, a page that only has route wiring, content scaffolding, or rough visual structure must not be recorded as final-complete.
-- When a UI task has code but has not met the current fidelity target, keep it `in_progress`, `ready`, or mark it `needs_rework` rather than `completed`.
-- When the target bar is raised later, or a newer approved visual source supersedes the one used for implementation, previously completed UI tasks must be downgraded to a non-final state until they satisfy the new target.
-- `PlanToDelivery` owns this downgrade. Do not preserve optimistic completion states just because the page exists or build/test passed under an older, weaker target.
 
 
 ## Progress-Driven Execution
@@ -115,32 +155,22 @@ Rules:
 - `source_plan`: implementation plan path and status
 - `current`: stage, milestone/phase, current task, next task, and next action
 - `selection_policy`: default `dependency_priority_order`
-- `tasks`: task-level progress with separated `task_status`, `verification_status`, `commit_status`, `user_confirmation_status`, and optional fidelity/acceptance metadata for UI tasks
+- `tasks`: task-level progress with separated `task_status`, `verification_status`, `commit_status`, and `user_confirmation_status`
 - `gates`: stage or handoff gates and required artifacts/checks
 - `blockers`: top-level lifecycle blockers with owner, severity, resolution requirement, and unblocked task IDs
 - `checkpoints`: meaningful commits/releases/handoffs with evidence
 - `events`: audit trail for key progress changes
 
-Default task statuses: `pending`, `ready`, `in_progress`, `blocked`, `needs_rework`, `completed`, `skipped`, `failed`.
+Default task statuses: `pending`, `ready`, `in_progress`, `blocked`, `completed`, `skipped`, `failed`.
 Default verification statuses: `not_required`, `not_started`, `running`, `passed`, `failed`, `waived`.
 Default commit statuses: `not_required`, `not_committed`, `committed`, `pushed`, `waived`.
 Default user confirmation statuses: `not_required`, `required`, `requested`, `approved`, `changes_requested`, `waived`.
-
-Recommended optional UI-only fields:
-- `fidelity_target`: `structure_only`, `visual_shell`, `high_fidelity`, `strict_parity`
-- `acceptance_status`: `not_applicable`, `not_ready`, `needs_review`, `accepted`, `rework_required`, `waived`
-
-Rules:
-- A UI task should not be treated as done for handoff if `fidelity_target` is `high_fidelity` or above and `acceptance_status` is not `accepted` or `waived`.
-- If implementation is present but newer design expectations invalidate it, set `task_status` to `needs_rework` and update `acceptance_status` to `rework_required`.
-- Build/test success alone may support `implementation_complete`, but it does not imply final UI acceptance.
 
 ### Selection Policy
 
 When choosing the next task:
 1. Continue `current.task_id` if it is still `in_progress`.
 2. Otherwise choose tasks whose status is `ready` or `pending`.
-2a. Tasks marked `needs_rework` are eligible ahead of untouched `pending` UI work when they block truthful milestone completion.
 3. Dependencies must be `completed`, `skipped`, or `waived`.
 4. Referenced blockers must be `resolved` or `waived`.
 5. Required gates must be `passed` or `waived`.
@@ -167,17 +197,22 @@ Each execution task that needs a specialist should include `routing`:
 - `expected_output_artifacts`
 - `gate_owner`
 - `handoff_to`
+- optional `scope`, `allowed_files`, and `budgets`
 
-Load only the specialist named by the active task. Ask the specialist to return:
+Load only the specialist named by the active task. Send a compact invocation brief, not project history. Ask the specialist to return the default delta response from the Context Budget Contract:
 
 ```json
 {
+  "result": "completed | partial | blocked",
+  "changed_files": [],
+  "produced_artifacts": [],
   "suggested_manifest_entries": [],
   "suggested_progress_updates": [],
   "suggested_blockers": [],
   "suggested_gate_updates": [],
-  "suggested_events": [],
-  "evidence": []
+  "evidence": [],
+  "largest_remaining_gaps": [],
+  "next_recommended_task": ""
 }
 ```
 
