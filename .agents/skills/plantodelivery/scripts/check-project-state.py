@@ -5,9 +5,15 @@ import json, sys
 from pathlib import Path
 
 TASK_DONE = {"completed", "skipped"}
-TASK_REF_DONE = {"completed", "skipped"}  # waived is represented by gate/verification/commit statuses, not task_status
 RESOLVED_BLOCKER = {"resolved", "waived"}
 PASSED_GATE = {"passed", "waived"}
+CONTINUEABLE = {"in_progress", "ready", "pending", "needs_rework"}
+ELIGIBLE = {"ready", "pending", "needs_rework"}
+BLOCKING_CONFIRMATION = {"required", "requested", "changes_requested"}
+EXECUTION_STAGES = {"execution", "debugging", "verification", "handoff", "done"}
+UI_FIDELITY = {"visual_shell", "high_fidelity", "strict_parity"}
+VISUAL_ARTIFACT_KINDS = {"visual_source", "visual_source_contract", "implementation_blueprint", "page_matrix", "component_blueprint", "visual_ir", "parity_report", "screenshot_evidence"}
+READY_ARTIFACT_STATUS = {"ready", "approved", "consumed"}
 
 
 def load_json(path: Path):
@@ -79,8 +85,11 @@ def main() -> int:
             errors.append(f"{where} references missing artifact: {ref}")
 
     current = progress.get("current", {})
-    require_task(current.get("task_id"), "current.task_id")
-    require_task(current.get("next_task_id"), "current.next_task_id")
+    current_stage = current.get("stage")
+    current_task_id = current.get("task_id")
+    next_task_id = current.get("next_task_id")
+    require_task(current_task_id, "current.task_id")
+    require_task(next_task_id, "current.next_task_id")
 
     for tid, t in tasks.items():
         for dep in t.get("depends_on", []): require_task(dep, f"task {tid}.depends_on")
@@ -88,22 +97,50 @@ def main() -> int:
         for gid in t.get("required_gates", []): require_gate(gid, f"task {tid}.required_gates")
         for aid in t.get("artifact_refs", []): require_artifact(aid, f"task {tid}.artifact_refs")
         for aid in t.get("routing", {}).get("input_artifact_refs", []): require_artifact(aid, f"task {tid}.routing.input_artifact_refs")
-        if t.get("task_status") == "blocked" and not t.get("blocked_by"):
+
+        status = t.get("task_status")
+        if status == "blocked" and not t.get("blocked_by"):
             errors.append(f"blocked task {tid} has no blocked_by refs")
-        if t.get("task_status") == "completed" and t.get("verification_status") in {"failed", "running"}:
+        if status == "completed" and t.get("verification_status") in {"failed", "running", "not_started"}:
             errors.append(f"completed task {tid} has inconsistent verification_status={t.get('verification_status')}")
-        if t.get("task_status") == "completed":
+        if status == "completed" and t.get("user_confirmation_status") in BLOCKING_CONFIRMATION:
+            errors.append(f"completed task {tid} still has blocking user_confirmation_status={t.get('user_confirmation_status')}")
+        if status == "skipped" and not (t.get("waiver") or t.get("skip_reason") or any("waiver" in str(n).lower() for n in t.get("notes", []))):
+            errors.append(f"skipped task {tid} requires waiver/skip_reason evidence")
+        if status == "completed":
             for f in t.get("expected_files", []):
                 if not (root / f).exists():
                     errors.append(f"completed task {tid} expected file missing: {f}")
+
+        # Task-local gate readiness for active/executable tasks.
+        if status in {"in_progress", "completed"}:
+            for gid in t.get("required_gates", []):
+                g = gates.get(gid)
+                if g and g.get("status") not in PASSED_GATE:
+                    errors.append(f"task {tid} is {status} but required gate {gid} status={g.get('status')}")
+            for bid in t.get("blocked_by", []):
+                b = blockers.get(bid)
+                if b and b.get("status") not in RESOLVED_BLOCKER:
+                    errors.append(f"task {tid} is {status} but blocker {bid} status={b.get('status')}")
+
+        # UI final/completion guard: visual fidelity completion needs visual evidence.
+        if status == "completed" and t.get("fidelity_target") in UI_FIDELITY:
+            refs = list(t.get("artifact_refs", [])) + list(t.get("routing", {}).get("input_artifact_refs", []))
+            visual_refs = [aid for aid in refs if artifacts.get(aid, {}).get("kind") in VISUAL_ARTIFACT_KINDS]
+            if not visual_refs:
+                errors.append(f"completed UI task {tid} fidelity_target={t.get('fidelity_target')} has no visual/parity artifact refs")
 
     for gid, g in gates.items():
         for aid in g.get("required_artifact_refs", []): require_artifact(aid, f"gate {gid}.required_artifact_refs")
         for bid in g.get("blocked_by", []): require_blocker(bid, f"gate {gid}.blocked_by")
         if g.get("status") == "passed":
+            if g.get("blocked_by"):
+                unresolved = [bid for bid in g.get("blocked_by", []) if blockers.get(bid, {}).get("status") not in RESOLVED_BLOCKER]
+                if unresolved:
+                    errors.append(f"passed gate {gid} still has unresolved blockers: {', '.join(unresolved)}")
             for aid in g.get("required_artifact_refs", []):
                 a = artifacts.get(aid)
-                if a and a.get("status") in {"missing", "stale", "rejected"}:
+                if a and a.get("status") not in READY_ARTIFACT_STATUS:
                     errors.append(f"passed gate {gid} requires non-ready artifact {aid} status={a.get('status')}")
 
     for bid, b in blockers.items():
@@ -122,12 +159,45 @@ def main() -> int:
         for ref in a.get("source_refs", []): require_artifact(ref, f"artifact {aid}.source_refs")
         for ref in a.get("evidence_refs", []): require_artifact(ref, f"artifact {aid}.evidence_refs")
 
-    if current.get("task_id") in tasks:
-        ct = tasks[current["task_id"]]
-        if ct.get("task_status") not in {"in_progress", "ready", "pending"} and not current.get("next_task_id"):
-            unresolved = [b for b in blockers.values() if b.get("status") not in RESOLVED_BLOCKER]
-            if not unresolved:
+    unresolved_blockers = [b for b in blockers.values() if b.get("status") not in RESOLVED_BLOCKER]
+
+    if current_task_id in tasks:
+        ct = tasks[current_task_id]
+        if ct.get("task_status") not in CONTINUEABLE and not next_task_id:
+            if not unresolved_blockers:
                 warnings.append("current task is not continueable and no next_task_id/unresolved blocker is present")
+        if ct.get("user_confirmation_status") in BLOCKING_CONFIRMATION:
+            warnings.append(f"current task {current_task_id} is waiting on user confirmation; next action should resolve confirmation")
+
+    # Execution-stage gate guard. This catches the common accidental skip from intake/planning to execution.
+    if current_stage in EXECUTION_STAGES:
+        execution_gates = [g for g in gates.values() if current_stage in g.get("required_for_stages", []) or g.get("id") in {"execution-entry", "gate-execution-entry"}]
+        if not execution_gates:
+            errors.append(f"current.stage={current_stage} requires an execution-entry gate in project-state.gates")
+        elif not any(g.get("status") in PASSED_GATE for g in execution_gates):
+            statuses = ", ".join(f"{g.get('id')}={g.get('status')}" for g in execution_gates)
+            errors.append(f"current.stage={current_stage} has no passed/waived execution-entry gate ({statuses})")
+
+        if current_task_id:
+            ct = tasks.get(current_task_id, {})
+            if current_task_id and not ct.get("required_gates") and not execution_gates:
+                errors.append(f"execution current task {current_task_id} has no required_gates and no execution gate exists")
+
+    # Eligible next task sanity check.
+    if next_task_id in tasks:
+        nt = tasks[next_task_id]
+        if nt.get("task_status") not in ELIGIBLE and nt.get("task_status") != "in_progress":
+            warnings.append(f"next_task_id {next_task_id} status={nt.get('task_status')} is not normally eligible")
+        for gid in nt.get("required_gates", []):
+            g = gates.get(gid)
+            if g and g.get("status") not in PASSED_GATE:
+                warnings.append(f"next_task_id {next_task_id} waits for gate {gid} status={g.get('status')}")
+        for bid in nt.get("blocked_by", []):
+            b = blockers.get(bid)
+            if b and b.get("status") not in RESOLVED_BLOCKER:
+                warnings.append(f"next_task_id {next_task_id} blocked by {bid} status={b.get('status')}")
+        if nt.get("user_confirmation_status") in BLOCKING_CONFIRMATION:
+            warnings.append(f"next_task_id {next_task_id} waits for user confirmation status={nt.get('user_confirmation_status')}")
 
     for w in warnings: print(f"WARNING: {w}")
     for e in errors: print(f"ERROR: {e}")

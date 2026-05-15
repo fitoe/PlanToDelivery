@@ -119,30 +119,30 @@ Exit only when all are true:
 - non-goals exist
 - high-level success criteria exist
 
-## 3. Full Definition
+## 3. Product Definition
 
 ### Entry Conditions
 Enter when:
 - project goal exists
 - high-level direction exists
-- implementation detail is still incomplete
+- product behavior, flows, page responsibilities, or acceptance detail are still incomplete
 
 ### Required Inputs
 - `product-spec.md`
 
 ### Required Outputs
 - `feature-breakdown.md`
-- supporting planning docs as needed
+- supporting product/interaction planning docs as needed
 
 ### Prohibited
 - stopping at feature names only
 - leaving main, branch, or error flows undefined for core functionality
-- leaving ownership, permissions, or state behavior implicit for core entities
+- leaving page responsibilities, states, or acceptance-relevant behavior implicit
 
 ### Exit Conditions
 Exit only when:
-- core features are decomposed to implementable detail
-- high-impact states and behaviors are defined
+- core features are decomposed to implementable behavior
+- product states and interactions are defined
 - acceptance-relevant behavior is understandable without guesswork
 
 ## 4. UI Definition
@@ -209,7 +209,27 @@ Do not enter page implementation with only a concept image, only a style frame, 
 For confirmed UI work, the approved image design is the acceptance baseline; the text brief must not replace or reinterpret it.
 Do not preserve completed UI states when the approved image design changes materially; reopen the affected tasks and rerun the relevant gates.
 
-## 5. Decision Closure
+## 5. System Definition
+
+### Entry Conditions
+Enter after product behavior is defined and, for UI-bearing projects, UI direction is approved enough for system decisions.
+
+### Required Inputs
+- `product-spec.md`
+- `feature-breakdown.md`
+- UI planning outputs if applicable
+
+### Required Outputs
+- technical, integration, permission, state, API, data, testing, observability, deployment, or environment planning artifacts as needed
+
+### Prohibited
+- reopening approved product or UI decisions casually
+- leaving high-impact data, permissions, integration, or verification decisions implicit before roadmap/milestone planning
+
+### Exit Conditions
+Exit only when high-impact system decisions for the current scope are resolved, explicitly deferred outside scope, or converted into blockers.
+
+## 6. Decision Closure
 
 ### Entry Conditions
 Enter when:
@@ -237,7 +257,7 @@ Exit only when all high-impact decisions are explicitly:
 
 No unresolved high-impact item may remain open.
 
-## 6. Roadmap
+## 7. Roadmap
 
 ### Entry Conditions
 Enter when:
@@ -264,7 +284,7 @@ Exit only when:
 - current milestone is identified
 - milestone closure criteria are meaningful
 
-## 7. Milestone Spec
+## 8. Milestone Spec
 
 ### Entry Conditions
 Enter when:
@@ -291,7 +311,7 @@ Exit only when:
 - milestone behavior is detailed enough for planning
 - milestone acceptance criteria exist
 
-## 8. Milestone Plan
+## 9. Milestone Plan
 
 ### Entry Conditions
 Enter when:
@@ -320,7 +340,7 @@ Exit only when:
 - risk matrix exists and reflects current milestone
 - current scope freeze can begin
 
-## 9. Execution
+## 10. Execution
 
 ### Entry Conditions
 Enter when all are true:
@@ -368,7 +388,7 @@ Exit only when:
 - state files are updated
 - either next execution step is clear or blocking issue is escalated
 
-## 10. Debugging
+## 11. Debugging
 
 ### Entry Conditions
 Enter when:

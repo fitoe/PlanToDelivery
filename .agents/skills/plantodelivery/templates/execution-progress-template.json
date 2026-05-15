@@ -13,21 +13,23 @@
     "status": "active"
   },
   "current": {
-    "stage": "execution",
-    "milestone": "M1",
-    "phase": "foundation",
-    "task_id": "task-01",
-    "next_task_id": null,
-    "next_action": "Run task-01"
+    "stage": "intake",
+    "milestone": null,
+    "phase": null,
+    "task_id": null,
+    "next_task_id": "task-01",
+    "next_action": "inspect_or_initialize_state"
   },
   "selection_policy": {
     "mode": "dependency_priority_order",
     "rules": [
-      "continue in_progress current task first",
-      "eligible tasks have status ready or pending",
-      "all dependencies are completed/skipped/waived",
+      "establish startup gate before acting",
+      "continue eligible in_progress current task first",
+      "eligible tasks have status ready, pending, or needs_rework",
+      "all dependencies are completed/skipped/waived with evidence",
       "no unresolved blockers",
       "required gates are passed/waived",
+      "required user confirmations are approved/waived/not_required",
       "sort by priority then order"
     ]
   },
@@ -36,14 +38,15 @@
       "id": "task-01",
       "order": 10,
       "priority": 1,
-      "title": "Example task",
-      "objective": "Describe the task outcome.",
+      "title": "Inspect or initialize durable state",
+      "objective": "Establish project root, current stage, gate status, blockers, and next allowed action before implementation.",
       "success_criteria": [
-        "Expected result is observable."
+        "Authoritative durable state is present or a missing-state action is recorded.",
+        "Current stage, owner, latest gate, blockers, and next allowed action are known."
       ],
       "milestone": "M1",
       "phase": "foundation",
-      "stage": "execution",
+      "stage": "intake",
       "owner": "PlanToDelivery",
       "assignee": "main-agent",
       "task_status": "pending",
@@ -68,9 +71,9 @@
       },
       "verification": [],
       "source_ref": {
-        "path": "docs/superpowers/plans/example.md",
-        "heading": "Task 1: Example task",
-        "anchor": "task-1-example-task"
+        "path": "PlanToDelivery startup protocol",
+        "heading": "Session Start",
+        "anchor": "session-start"
       },
       "claim": {
         "status": "unclaimed",
@@ -79,7 +82,9 @@
         "heartbeat_at": null,
         "expires_at": null
       },
-      "notes": []
+      "notes": [
+        "Template starts in intake by default; do not initialize new projects directly in execution."
+      ]
     }
   ],
   "gates": [],
@@ -90,7 +95,7 @@
       "id": "event-001",
       "type": "progress_initialized",
       "actor": "PlanToDelivery",
-      "summary": "Execution progress initialized.",
+      "summary": "Execution progress initialized at startup/intake gate.",
       "refs": [
         "task-01"
       ],

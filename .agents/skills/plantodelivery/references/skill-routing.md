@@ -94,7 +94,7 @@ Use only through explicit stage gates. These are on-demand stage tools, not alwa
 - `superpowers:using-superpowers`
 - `karpathy-guidelines`
 
-## 3. Full Definition
+## 3. Product Definition
 
 ### Default Skills
 - `superpowers:brainstorming`
@@ -141,17 +141,17 @@ If the milestone needs route planning, page planning, style direction, or design
 - `karpathy-guidelines`
 - `context7` when documentation is needed to compare stack or platform choices
 
-## 6. Roadmap
+## 7. Roadmap
 
 ### Default Skills
 - `superpowers:brainstorming`
 
-## 7. Milestone Spec
+## 8. Milestone Spec
 
 ### Default Skills
 - `superpowers:brainstorming`
 
-## 8. Milestone Plan
+## 9. Milestone Plan
 
 ### Default Skills
 - `superpowers:writing-plans`
@@ -159,7 +159,7 @@ If the milestone needs route planning, page planning, style direction, or design
 ### Supporting Skills
 - `karpathy-guidelines`
 
-## 9. Execution
+## 10. Execution
 
 ### Default Skills
 - `superpowers:using-git-worktrees`
@@ -181,7 +181,7 @@ If the milestone needs route planning, page planning, style direction, or design
 ### Browser Validation Note
 Use Playwright narrowly for critical pages or interactions only.
 
-## 10. Debugging
+## 11. Debugging
 
 ### Default Skills
 - `superpowers:systematic-debugging`
@@ -193,7 +193,7 @@ Use Playwright narrowly for critical pages or interactions only.
 ### Browser Validation Note
 Use Playwright when the defect needs browser evidence.
 
-## 11. Verification
+## 12. Verification
 
 ### Default Skills
 - `superpowers:verification-before-completion`
@@ -204,7 +204,7 @@ Use Playwright when the defect needs browser evidence.
 ### Browser Validation Note
 Use Playwright when milestone acceptance needs browser evidence.
 
-## 12. Handoff
+## 13. Handoff
 
 ### Default Skills
 - `superpowers:finishing-a-development-branch` for milestone or major work closure
@@ -212,7 +212,7 @@ Use Playwright when milestone acceptance needs browser evidence.
 ### Supporting Skills
 - `caveman` can be used for compact summaries if user wants compression
 
-## 13. Done
+## 14. Done
 
 ### Default Skills
 - `superpowers:verification-before-completion`
@@ -264,11 +264,13 @@ When multiple skills could apply:
 ## Reference and Template Loading by Stage
 
 ## Session Start
-Read the minimum state needed:
-- `.hermes/project-state/current-state.md` and `.hermes/project-state/active-slice.json` when present
-- `references/session-start-protocol.md` only if stage/owner/gate cannot be established from compact state
+Read the minimum authoritative state needed:
+- `project-state/execution-progress.json` and `project-state/artifact-manifest.json` when present
+- fallback: `.hermes/project-state/current-state.md` and `.hermes/project-state/active-slice.json` only when `project-state/` is absent
+- legacy fallback: `docs/orchestrator/*` only when portable and `.hermes` state are absent
+- `references/session-start-protocol.md` if stage/owner/gate cannot be established from compact state or state systems conflict
 - `references/artifact-driven-workflow.md` only when artifact state exists and needs interpretation
-- `templates/project-state-template.json` only when initializing artifact-driven state
+- `templates/project-state-template.json` only when initializing legacy artifact-driven state
 
 ## Intake
 Read:
@@ -277,7 +279,7 @@ Read:
 - `templates/gap-analysis-template.md`
 - `templates/session-brief-template.md`
 
-## Discovery / Full Definition
+## Discovery / Product Definition / System Definition
 Read:
 - `references/planning-contract.md`
 - `templates/product-spec-template.md`

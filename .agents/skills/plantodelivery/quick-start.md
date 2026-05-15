@@ -1,53 +1,41 @@
 # Quick Start
 
-Use this file at the start of every `PlanToDelivery` session.
-
-Goal: restore control with the smallest possible context before doing work.
+Use this as the minimal reminder for `PlanToDelivery`. The authoritative rules are in `SKILL.md`.
 
 ## Startup Checklist
 
-1. Determine current stage.
-2. Read durable project state if it exists.
-3. Identify the current owner skill.
-4. Check the latest gate evidence.
-5. State the next allowed action before implementation.
+Before acting:
 
-## Minimal Load Order
-
-Load only what is needed:
-
-1. `quick-start.md`
-2. `docs/orchestrator/project-state.json`, if present
-3. latest `docs/orchestrator/session-brief.md`, if present
-4. latest gate check or approval record, if present
-5. `references/orchestration-core.md`, only when routing, gates, or artifact validity must be decided
-6. one stage-specific reference, only after the stage is known
-7. one template, only when creating or updating that exact artifact
-
-Do not load all references or all templates during startup.
+1. Verify project root and git status.
+2. Read authoritative state in this order:
+   - `project-state/execution-progress.json` + `project-state/artifact-manifest.json`
+   - fallback: `.hermes/project-state/*`
+   - legacy fallback: `docs/orchestrator/*`
+3. Establish stage, current task/slice, owner skill, latest gate, blockers, next allowed action.
+4. If anything is unknown or conflicting, inspect/repair state before implementation.
 
 ## Required Startup Output
 
-Before doing substantive work, report:
-
-- `stage`: current stage or best inferred stage
-- `owner`: `PlanToDelivery`, `idea-to-design`, `design-to-code`, or another stage-bounded skill
-- `gate`: `pass`, `fail`, `n/a`, or `unknown`
-- `next`: next allowed action
-- `evidence`: durable files or missing files used to decide
-
-If gate is `fail` or `unknown`, do not advance to execution. Repair the missing artifact or ask only for the first-order decision that blocks progress.
+```md
+Session Start
+- Project root:
+- Stage:
+- Current task/slice:
+- Owner skill:
+- Latest gate:
+- Blocked reason:
+- Next allowed action:
+- Must update:
+```
 
 ## Fast Path
 
-When state is complete and gates pass:
+Fast path is allowed only when authoritative state proves:
 
-- do not re-open old completed planning unless new contradictions appear
-- do not ask the user to reconfirm previously approved first-order decisions
-- move directly to the next stage action
+- current task is eligible
+- dependencies are complete/skipped/waived with evidence
+- required gates are passed/waived
+- blockers are resolved/waived
+- required user confirmations are approved/waived/not required
 
-When state is missing:
-
-- create or repair only the smallest required artifact
-- prefer a session brief over reloading long historical documents
-- preserve existing decisions unless evidence shows they are obsolete
+Low-token mode reduces reading volume, not rigor.

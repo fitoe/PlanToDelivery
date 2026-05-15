@@ -81,7 +81,22 @@
       ],
       "properties": {
         "stage": {
-          "type": "string"
+          "enum": [
+            "intake",
+            "discovery",
+            "product-definition",
+            "ui-definition",
+            "system-definition",
+            "decision-closure",
+            "roadmap",
+            "milestone-spec",
+            "milestone-plan",
+            "execution",
+            "debugging",
+            "verification",
+            "handoff",
+            "done"
+          ]
         },
         "milestone": {
           "type": [
@@ -647,7 +662,9 @@
               "checkpoint_created",
               "artifact_registered",
               "user_confirmation_recorded",
-              "waiver_recorded"
+              "waiver_recorded",
+              "state_repaired",
+              "startup_gate_checked"
             ]
           },
           "actor": {
