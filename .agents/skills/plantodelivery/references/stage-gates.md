@@ -21,6 +21,13 @@ Once in `milestone-plan` or `execution`, scope is frozen by default.
 ### Rule 5: Verification gates completion
 No milestone or project completion without fresh verification evidence.
 
+### Rule 5a: Fidelity target gates UI completion
+For UI-bearing work, completion is measured against the currently declared fidelity target, not merely code presence.
+
+- A routed page with rough structure, placeholder visuals, or mid-fidelity styling may satisfy scaffold or implementation-progress checkpoints, but not final completion when the target is high fidelity.
+- If the fidelity target rises after a page was marked complete, or a newer approved visual source supersedes the implemented source, the task must be downgraded from `completed` to a non-final state such as `needs_rework`, `in_progress`, or `ready`.
+- Build, lint, and route smoke evidence are necessary but not sufficient for final UI completion claims.
+
 ### Rule 6: Gate report before transition
 Before every major stage transition, write a gate check using `templates/gate-check-template.md`.
 Every required item must be marked `pass`, `fail`, or `n/a`.
@@ -200,6 +207,7 @@ Do not block Foundation/Coverage work for simple pages only because section slic
 
 Do not enter page implementation with only a concept image, only a style frame, or only a route sketch.
 For confirmed UI work, the approved image design is the acceptance baseline; the text brief must not replace or reinterpret it.
+Do not preserve completed UI states when the approved image design changes materially; reopen the affected tasks and rerun the relevant gates.
 
 ## 5. Decision Closure
 

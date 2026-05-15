@@ -78,6 +78,16 @@ Hard-block on:
 - unknown auth/permission requirements for real API work
 - claiming completion without verification or waiver
 - design parity claims without design source and visual evidence
+- claiming UI completion when the declared fidelity target has not been met
+
+### UI Completion Semantics
+
+For UI-bearing work, `implemented` is not the same as `accepted`.
+
+- If the current target is `high_fidelity`, `strict_parity`, or an equivalent final-design target, a page that only has route wiring, content scaffolding, or rough visual structure must not be recorded as final-complete.
+- When a UI task has code but has not met the current fidelity target, keep it `in_progress`, `ready`, or mark it `needs_rework` rather than `completed`.
+- When the target bar is raised later, or a newer approved visual source supersedes the one used for implementation, previously completed UI tasks must be downgraded to a non-final state until they satisfy the new target.
+- `PlanToDelivery` owns this downgrade. Do not preserve optimistic completion states just because the page exists or build/test passed under an older, weaker target.
 
 
 ## Progress-Driven Execution
@@ -105,22 +115,32 @@ Rules:
 - `source_plan`: implementation plan path and status
 - `current`: stage, milestone/phase, current task, next task, and next action
 - `selection_policy`: default `dependency_priority_order`
-- `tasks`: task-level progress with separated `task_status`, `verification_status`, `commit_status`, and `user_confirmation_status`
+- `tasks`: task-level progress with separated `task_status`, `verification_status`, `commit_status`, `user_confirmation_status`, and optional fidelity/acceptance metadata for UI tasks
 - `gates`: stage or handoff gates and required artifacts/checks
 - `blockers`: top-level lifecycle blockers with owner, severity, resolution requirement, and unblocked task IDs
 - `checkpoints`: meaningful commits/releases/handoffs with evidence
 - `events`: audit trail for key progress changes
 
-Default task statuses: `pending`, `ready`, `in_progress`, `blocked`, `completed`, `skipped`, `failed`.
+Default task statuses: `pending`, `ready`, `in_progress`, `blocked`, `needs_rework`, `completed`, `skipped`, `failed`.
 Default verification statuses: `not_required`, `not_started`, `running`, `passed`, `failed`, `waived`.
 Default commit statuses: `not_required`, `not_committed`, `committed`, `pushed`, `waived`.
 Default user confirmation statuses: `not_required`, `required`, `requested`, `approved`, `changes_requested`, `waived`.
+
+Recommended optional UI-only fields:
+- `fidelity_target`: `structure_only`, `visual_shell`, `high_fidelity`, `strict_parity`
+- `acceptance_status`: `not_applicable`, `not_ready`, `needs_review`, `accepted`, `rework_required`, `waived`
+
+Rules:
+- A UI task should not be treated as done for handoff if `fidelity_target` is `high_fidelity` or above and `acceptance_status` is not `accepted` or `waived`.
+- If implementation is present but newer design expectations invalidate it, set `task_status` to `needs_rework` and update `acceptance_status` to `rework_required`.
+- Build/test success alone may support `implementation_complete`, but it does not imply final UI acceptance.
 
 ### Selection Policy
 
 When choosing the next task:
 1. Continue `current.task_id` if it is still `in_progress`.
 2. Otherwise choose tasks whose status is `ready` or `pending`.
+2a. Tasks marked `needs_rework` are eligible ahead of untouched `pending` UI work when they block truthful milestone completion.
 3. Dependencies must be `completed`, `skipped`, or `waived`.
 4. Referenced blockers must be `resolved` or `waived`.
 5. Required gates must be `passed` or `waived`.

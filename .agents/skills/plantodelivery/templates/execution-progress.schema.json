@@ -190,9 +190,29 @@
               "ready",
               "in_progress",
               "blocked",
+              "needs_rework",
               "completed",
               "skipped",
               "failed"
+            ]
+          },
+          "fidelity_target": {
+            "enum": [
+              "not_applicable",
+              "structure_only",
+              "visual_shell",
+              "high_fidelity",
+              "strict_parity"
+            ]
+          },
+          "acceptance_status": {
+            "enum": [
+              "not_applicable",
+              "not_ready",
+              "needs_review",
+              "accepted",
+              "rework_required",
+              "waived"
             ]
           },
           "verification_status": {

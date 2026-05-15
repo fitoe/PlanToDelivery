@@ -47,6 +47,8 @@
       "owner": "PlanToDelivery",
       "assignee": "main-agent",
       "task_status": "pending",
+      "fidelity_target": "not_applicable",
+      "acceptance_status": "not_applicable",
       "verification_status": "not_started",
       "commit_status": "not_committed",
       "user_confirmation_status": "not_required",
