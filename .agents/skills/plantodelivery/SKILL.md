@@ -29,7 +29,41 @@ Default stages:
 6. verification / hardening
 7. release / final handoff
 
-Do not skip gates because implementation “looks done”.
+Do not skip gates because implementation “looks done”. However, best practice is not “more steps”; it is the smallest process that removes the largest delivery risk and produces verifiable progress.
+
+## Delivery Mode Calibration
+
+Before starting or resuming a project, classify the lightest delivery mode that still controls the main risk:
+
+| Mode | Use when | Default workflow |
+|---|---|---|
+| **Lightweight** | Small fix, single bug, copy/style tweak, clearly bounded task | confirm target → implement → narrow verification → report |
+| **Standard** | New page/module/H5/website slice with moderate ambiguity | 30-60 min calibration → decisionable artifact → key direction approval → sliced execution → evidence checkpoint |
+| **Strict** | New product/system, many pages/stakeholders, high ambiguity, costly rework, complex data/auth/compliance | discovery → scope/design/tech freeze → milestone plan → execution gates → hardening/release |
+
+Rules:
+- Default to the lightest mode that controls the actual risk; do not use Strict only because a project is new.
+- Escalate one level only when ambiguity, integration, data/auth, compliance, brand/visual, or rework cost is high.
+- Downgrade when the task is local and reversible; do not force full project gates for small fixes.
+- State the chosen mode, why, and the first deliverable slice before deep planning.
+
+## Speed and Output Discipline
+
+- First loop for a new project must produce a **decisionable artifact** within 30-60 minutes: project type/risk/mode, first slice, assumptions, blockers, and at least one concrete artifact path or preview plan.
+- Prefer artifacts over prose: route/page inventory, IA, state matrix, visual board, screenshot, diff, demo, build result, or concise decision log.
+- Do not run two consecutive planning loops with only narrative analysis and no new decision, artifact, screenshot, code, test, or documented gate result.
+- Use explicit low-risk assumptions instead of blocking on every unknown; reserve hard blockers for destructive actions, secrets, irreversible choices, auth/permission, or direction-level ambiguity.
+- Each execution/repair loop should target the largest **1-3** product-breaking gaps, then checkpoint remaining debt instead of polishing everything equally.
+
+## Parallel Progress Rule
+
+When workstreams do not depend on each other, run them in parallel or delegate them separately:
+- product/IA clarification can run beside tech environment/API discovery;
+- visual direction exploration can run beside route/data/state inventory;
+- implementation can run beside mock data/assets preparation;
+- screenshot evidence can run beside Top-gap/debt summarization.
+
+Main session owns mode, gates, and acceptance; subagents may own bounded pages/components/research tasks. Do not serialize independent work just because the written workflow is ordered.
 
 ## Low-Token Routing Protocol
 
@@ -61,9 +95,18 @@ When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or ask
 
 Once the visual source is user-approved and has Visual Freeze + Post-Visual Extraction + implementation-ready handoff, route routine UI implementation to `design-to-code`. Return to `idea-to-design` only for stale/missing/conflicting design source, product changes, missing handoff, or requested redesign.
 
+When the user asks to整理/生成/更新产品设计文档 after design approval, route to `idea-to-design` to consolidate the approved design into `Design-Spec.md` or an equivalent product/design document, recording source paths, approval notes, and implementation-critical design decisions. This is a documentation capability, not a default hard gate; it should not block existing implementation flow unless the project state or user explicitly requires it.
+
 For flat PNG/GPT Image 2 sources, prefer Visual IR + section parity evidence over prose-only briefs.
 
 ## Gate Checks
+
+Gates are decision points, not ritual confirmations. Every gate must answer:
+1. Can we safely move to the next stage now?
+2. What evidence or artifact supports that decision?
+3. If blocked, what are the smallest 1-3 missing conditions?
+4. Which unknowns can be carried as explicit assumptions/debt?
+5. Who owns the next action?
 
 Before major transitions, record:
 - required artifacts
@@ -119,3 +162,7 @@ Load only when needed:
 | Treating smoke tests as visual parity | Require design-source/section evidence for visual claims |
 | Letting orchestration become implementation | Route to specialist skills and verify outputs |
 | Stopping on routine user questions | Answer briefly, then continue unless user pauses/stops |
+| Treating best practice as maximum process | Choose the lightest delivery mode that controls risk |
+| Producing two planning rounds with no artifact | Create a decisionable artifact or move into a bounded execution slice |
+| Polishing many minor issues equally | Fix the Top 1-3 product-breaking gaps and record the rest as debt |
+| Serializing independent workstreams | Parallelize/delegate independent discovery, design, implementation, and evidence tasks |
