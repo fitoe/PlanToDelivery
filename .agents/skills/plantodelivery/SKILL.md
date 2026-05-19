@@ -84,6 +84,31 @@ When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or ask
 10. Do not downgrade high-fidelity UI to a fast/loose mode just to save tokens. Escalate to `strict-fidelity` only for core screens, full-page regeneration, complex assets, final parity acceptance, or repeated parity failure.
 11. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
 
+## Kanban Orchestrator Mode
+
+Use this mode when the project is operated by Javis/Kanban, when a task references `kanban-capability-task/v1`, or when provider manifests / registry / review gates are part of the workflow.
+
+Responsibilities:
+- act as the orchestrator only: state machine, capability matching, dispatch, gate decisions, progress rollup, and final handoff;
+- do not hard-code specialist internals or import provider implementation details; route through a capability registry and task envelope;
+- match work by capability (`product_visual_design`, `visual_source_creation`, `technical_blueprint`, `implementation_planning`, `verification_strategy`, `visual_implementation`) rather than by tool identity;
+- create one bounded `kanban-capability-task/v1` envelope per provider invocation with project root, active slice, input artifact refs, expected output schema, verification expectations, and allowed side effects;
+- require providers to return `kanban-capability-result/v1`-shaped manifests with `result`, `changed_files`, `produced_artifacts`, `evidence`, `blockers`, `debts`, and `next_recommended_task`;
+- consume provider output as suggestions until the orchestrator records the canonical project-state, artifact manifest, and gate status; providers must not mark global gates passed themselves.
+
+Gate semantics:
+- `review_required` / `review-required` means route the item to `review`, not generic `blocked`;
+- `blocked` is reserved for real missing input, external dependency, contradictory requirements, unsafe/destructive action, auth/permission, or secret issues;
+- review completion is the point where downstream children may be unlocked;
+- if a provider result is partial, record usable artifacts and route only the missing capability instead of rerunning the whole workflow.
+
+Runtime contract discipline:
+- task describes the need, not the implementation provider;
+- provider advertises capability, not privileged identity;
+- orchestrator matches contract and readiness evidence, not prose confidence;
+- keep provider prompts short and artifact-path based; do not pass full conversation history unless a gate explicitly requires it;
+- prefer schema-valid JSON/manifest files under project-state or the project-approved contracts directory for durable handoff.
+
 ## Skill Routing
 
 - Use `idea-to-design` for product/visual exploration, design approval, Visual Freeze, Post-Visual Extraction, and Level 3 handoff.
