@@ -107,6 +107,7 @@ def test_hermes_kanban_backend_cli_create_read_claim_complete_block(tmp_path: Pa
         provider="design-to-code",
     )
     backend.record_task(p2d_meta_to_task_envelope(blocked_meta, project_root=project_root))
+    backend.claim_task("p2d-blocked", ttl_seconds=30)
     blocked_result = backend.record_result({
         "schema": "kanban-capability-result/v1",
         "task_id": "p2d-blocked",
@@ -154,6 +155,83 @@ def test_orchestrator_uses_hermes_backend_for_state_backend_hermes(tmp_path: Pat
     card = orchestrator.store.show_card("orch-001")
     assert card["task"]["status"] == "ready"
     assert extract_p2d_meta_marker(body=card["task"]["body"], comments=[]) is not None
+
+
+def test_hermes_backend_enforces_claimed_before_result_and_review_before_done(tmp_path: Path) -> None:
+    hermes_home = tmp_path / "hermes-home"
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    backend = HermesKanbanBackend(project_root=project_root, board="p2d-enforce", hermes_home=hermes_home)
+    meta = P2DMeta(
+        task_id="p2d-review-gate",
+        capability="visual_implementation",
+        active_slice={"goal": "prove enforcement"},
+        provider="design-to-code",
+        expected_outputs=["result-manifest.json", "parity-report.md"],
+        verification_expectations=["visual evidence must exist"],
+        allowed_side_effects=["write output_root only"],
+    )
+    backend.record_task(p2d_meta_to_task_envelope(meta, project_root=project_root))
+
+    review_manifest = {
+        "schema": "kanban-capability-result/v1",
+        "task_id": "p2d-review-gate",
+        "capability": "visual_implementation",
+        "provider": "design-to-code",
+        "result": "completed",
+        "changed_files": ["src/pages/mall.vue"],
+        "produced_artifacts": ["project-state/kanban/tasks/p2d-review-gate/parity-report.md"],
+        "evidence": ["project-state/kanban/tasks/p2d-review-gate/mobile.png"],
+        "blockers": [],
+        "debts": [],
+        "review_required": True,
+        "suggested_gate_updates": [],
+        "next_recommended_task": None,
+    }
+
+    with pytest.raises(KanbanContractError, match="must be claimed/running before ingest_result"):
+        backend.record_result(review_manifest)
+
+    backend.claim_task("p2d-review-gate", ttl_seconds=30)
+    result_path = backend.record_result(review_manifest)
+
+    assert result_path.exists()
+    assert backend.show_card("p2d-review-gate")["task"]["status"] == "blocked"
+    assert backend.load_index()["tasks"]["p2d-review-gate"]["gate_status"] == "review"
+
+    with pytest.raises(KanbanContractError, match="review evidence is required"):
+        backend.approve_review("p2d-review-gate", [])
+
+    backend.approve_review("p2d-review-gate", ["visual parity approved"] )
+    card = backend.show_card("p2d-review-gate")
+    assert card["task"]["status"] == "done"
+    assert any("P2D REVIEW APPROVED" in c["body"] for c in card["comments"])
+
+
+def test_audit_enforcement_reports_missing_marker_and_done_without_result(tmp_path: Path) -> None:
+    hermes_home = tmp_path / "hermes-home"
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    backend = HermesKanbanBackend(project_root=project_root, board="p2d-audit", hermes_home=hermes_home)
+    backend._run("--board", backend.board, "create", "plain task", "--body", "no marker", "--json", json_output=True)
+
+    meta = P2DMeta(
+        task_id="p2d-missing-result",
+        capability="technical_blueprint",
+        active_slice={"goal": "audit done without manifest"},
+        provider="idea-to-tech",
+    )
+    backend.record_task(p2d_meta_to_task_envelope(meta, project_root=project_root))
+    backend.claim_task("p2d-missing-result", ttl_seconds=30)
+    backend._run("--board", backend.board, "complete", backend._hermes_task_id("p2d-missing-result"), "--result", "manual bypass")
+
+    report = backend.audit_enforcement()
+
+    codes = {violation["code"] for violation in report["violations"]}
+    assert report["ok"] is False
+    assert "missing_p2d_meta" in codes
+    assert "done_without_result_manifest" in codes
+    assert "missing_review_approval" not in codes
 
 def test_p2d_meta_marker_round_trips_from_body_and_comments() -> None:
     meta = P2DMeta(

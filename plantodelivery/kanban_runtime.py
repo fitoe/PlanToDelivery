@@ -429,13 +429,43 @@ class HermesKanbanBackend(KanbanStateStore):
         self._run(*args)
         return self.show_card(task_id)["task"]
 
+    def _p2d_task_status(self, task_id: str) -> str:
+        card = self.show_card(task_id)
+        task = card.get("task") or {}
+        status = task.get("status")
+        if not isinstance(status, str) or not status:
+            raise KanbanContractError(f"cannot read Hermes task status: {task_id}")
+        return status
+
+    def _require_running(self, task_id: str, *, action: str) -> None:
+        status = self._p2d_task_status(task_id)
+        if status != "running":
+            raise KanbanContractError(f"task must be claimed/running before {action}: {task_id} (status={status})")
+
+    def _comment(self, task_id: str, text: str, *, author: str = "plantodelivery") -> None:
+        self._run("--board", self.board, "comment", self._hermes_task_id(task_id), text, "--author", author)
+
     def record_result(self, manifest: dict[str, Any]) -> Path:
         validated = validate_result_manifest(manifest)
-        result_path = super().record_result(validated)
         task_id = validated["task_id"]
-        if decide_gate_status(validated) == "blocked":
+        self._require_running(task_id, action="ingest_result")
+        result_path = super().record_result(validated)
+        gate_status = decide_gate_status(validated)
+        if gate_status == "blocked":
             reason = "; ".join(validated.get("blockers") or []) or validated["result"]
             self._run("--board", self.board, "block", self._hermes_task_id(task_id), reason)
+        elif gate_status == "review":
+            summary = json.dumps(validated, ensure_ascii=False, separators=(",", ":"))
+            self._comment(task_id, f"P2D RESULT READY FOR REVIEW\n{summary}")
+            self._run("--board", self.board, "block", self._hermes_task_id(task_id), "P2D review gate pending approval")
+            index = self.load_index()
+            task_entry = index["tasks"].get(task_id)
+            if task_entry is not None:
+                task_entry["gate_status"] = "review"
+                task_entry["display_status"] = display_gate_status("review")
+                self._sync_card(index, task_id, action="review_gate")
+                self._rebuild_gates(index)
+                self._write_index(index)
         else:
             summary = json.dumps(validated, ensure_ascii=False, separators=(",", ":"))
             self._run(
@@ -445,6 +475,69 @@ class HermesKanbanBackend(KanbanStateStore):
                 "--summary", summary,
             )
         return result_path
+
+    def approve_review(self, task_id: str, evidence: list[str]) -> None:
+        if not evidence:
+            raise KanbanContractError("review evidence is required")
+        index = self.load_index()
+        task_entry = index.get("tasks", {}).get(task_id)
+        if task_entry is None:
+            raise KanbanContractError(f"unknown task: {task_id}")
+        if task_entry.get("gate_status") != "review":
+            raise KanbanContractError(f"task is not in review: {task_id}")
+        result = self.load_result(task_id)
+        self._comment(task_id, "P2D REVIEW APPROVED\n" + json.dumps({"evidence": list(evidence)}, ensure_ascii=False))
+        summary = json.dumps({"result_manifest": result, "review_evidence": list(evidence)}, ensure_ascii=False, separators=(",", ":"))
+        self._run(
+            "--board", self.board,
+            "complete", self._hermes_task_id(task_id),
+            "--result", result["result"],
+            "--summary", summary,
+        )
+        super().approve_review(task_id, evidence)
+
+    def audit_enforcement(self) -> dict[str, Any]:
+        raw_cards = self._run("--board", self.board, "list", "--json", json_output=True)
+        cards = raw_cards.get("tasks", raw_cards) if isinstance(raw_cards, dict) else raw_cards
+        if not isinstance(cards, list):
+            raise KanbanContractError("unexpected Hermes Kanban list JSON shape")
+        violations: list[dict[str, Any]] = []
+        for item in cards:
+            task = item.get("task", item) if isinstance(item, dict) else {}
+            if not isinstance(task, dict):
+                continue
+            hermes_id = str(task.get("id") or "")
+            title = str(task.get("title") or hermes_id)
+            body = str(task.get("body") or "")
+            comments = [str(comment.get("body") or "") for comment in item.get("comments", [])] if isinstance(item, dict) else []
+            if not comments and hermes_id:
+                try:
+                    detail = self.show_card(hermes_id)
+                    comments = [str(comment.get("body") or "") for comment in detail.get("comments", [])]
+                except KanbanContractError:
+                    comments = []
+            try:
+                meta = extract_p2d_meta_marker(body=body, comments=comments)
+            except KanbanContractError as exc:
+                violations.append({"task_id": title, "hermes_task_id": hermes_id, "code": "invalid_p2d_meta", "message": str(exc)})
+                continue
+            if meta is None:
+                violations.append({"task_id": title, "hermes_task_id": hermes_id, "code": "missing_p2d_meta", "message": "card has no P2D_META marker"})
+                continue
+            result_path = self.tasks_root / meta.task_id / "result-manifest.json"
+            status = task.get("status")
+            if status == "done" and not result_path.exists():
+                violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "done_without_result_manifest", "message": "done card has no local result-manifest.json"})
+                continue
+            if result_path.exists():
+                result = _load_json(result_path)
+                gate_status = decide_gate_status(validate_result_manifest(result, expected_task_id=meta.task_id, expected_capability=meta.capability))
+                has_approval = any("P2D REVIEW APPROVED" in comment for comment in comments)
+                if gate_status == "review" and status == "done" and not has_approval:
+                    violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "missing_review_approval", "message": "review-required task is done without P2D REVIEW APPROVED comment"})
+                if gate_status != "review" and status == "blocked" and result.get("result") != "blocked":
+                    violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "unexpected_blocked_status", "message": "card is blocked but result is not blocked/review"})
+        return {"schema": "p2d-enforcement-audit/v1", "ok": not violations, "board": self.board, "violations": violations}
 
 
 class KanbanOrchestrator:

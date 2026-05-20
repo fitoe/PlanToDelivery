@@ -74,6 +74,39 @@ python ~/.hermes/skills/PlanToDelivery/scripts/p2d_smoke.py --project-root .
 The smoke test creates a temporary board, creates a P2D_META card, claims it,
 completes it, and checks that the final Hermes Kanban status is `done`.
 
+## Enforcement wrapper
+
+For real PlanToDelivery execution, do not let providers call `hermes kanban complete`
+directly. Use the skill wrapper so claim/result/review/audit are enforced before a
+card can move forward:
+
+```bash
+# Provider must claim/start before writing a result
+python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
+  --project-root . --board plantodelivery claim <p2d-task-id> --ttl 3600
+
+# Provider result manifests are accepted only while the card is running
+python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
+  --project-root . --board plantodelivery ingest project-state/kanban/tasks/<p2d-task-id>/result-manifest.json
+
+# Review-required results stay blocked at the Hermes card level until approved
+python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
+  --project-root . --board plantodelivery approve <p2d-task-id> \
+  --evidence "reviewed screenshot/parity report"
+
+# CI/checkpoint audit: fails non-zero with --fail-on-violation
+python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
+  --project-root . --board plantodelivery audit --fail-on-violation
+```
+
+Current strict gates:
+
+- missing or conflicting `P2D_META` markers are audit violations;
+- result ingest is rejected unless the Hermes card status is `running`;
+- `review_required=true` writes the result manifest and comments `P2D RESULT READY FOR REVIEW`, then blocks the card as a review gate instead of completing it;
+- review approval requires non-empty evidence and comments `P2D REVIEW APPROVED` before completing the Hermes card;
+- manually completed cards without result manifests are audit violations.
+
 ## Runtime modes
 
 - `state_backend="json"`: local artifact/export fallback for dry-runs and tests.
