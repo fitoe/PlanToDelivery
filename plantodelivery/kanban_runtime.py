@@ -127,8 +127,9 @@ class KanbanStateStore:
         return _load_json(self.tasks_root / task_id / "task-envelope.json")
 
     def find_next_ready_task(self) -> dict[str, Any] | None:
-        for task_id, task in sorted(self.load_index().get("tasks", {}).items()):
-            if task.get("gate_status") == "ready":
+        tasks = self.load_index().get("tasks", {})
+        for task_id, task in sorted(tasks.items()):
+            if task.get("gate_status") == "ready" and _dependencies_completed(task, tasks):
                 return dict(task)
         return None
 
@@ -579,6 +580,19 @@ def _require_fields(data: dict[str, Any], fields: set[str]) -> None:
     missing = sorted(field for field in fields if field not in data)
     if missing:
         raise KanbanContractError(f"missing required fields: {', '.join(missing)}")
+
+
+def _dependencies_completed(task: dict[str, Any], tasks: dict[str, dict[str, Any]]) -> bool:
+    depends_on = task.get("depends_on") or []
+    if not isinstance(depends_on, list):
+        raise KanbanContractError("depends_on must be a list")
+    for dependency_id in depends_on:
+        if not isinstance(dependency_id, str) or not dependency_id:
+            raise KanbanContractError("depends_on entries must be non-empty strings")
+        dependency = tasks.get(dependency_id)
+        if dependency is None or dependency.get("gate_status") != "completed":
+            return False
+    return True
 
 
 def display_gate_status(gate_status: str) -> str:
