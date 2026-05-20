@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -6,6 +7,7 @@ import pytest
 from plantodelivery.kanban_runtime import (
     KanbanContractError,
     KanbanOrchestrator,
+    KanbanSQLiteStateStore,
     KanbanStateStore,
     create_task_envelope,
     decide_gate_status,
@@ -362,6 +364,114 @@ def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_pa
     assert reloaded["cards"]["task-db-board"]["gate_status"] == "blocked"
     assert reloaded["cards"]["task-db-board"]["display_status"] == "已阻塞"
     assert reloaded["events"][-1]["action"] == "ingest_result"
+
+
+def test_sqlite_state_store_is_db_canonical_and_json_is_export(tmp_path: Path) -> None:
+    store = KanbanSQLiteStateStore(tmp_path / "project-state" / "kanban")
+    envelope = create_task_envelope(
+        task_id="task-db-canonical",
+        capability="visual_implementation",
+        project_root=tmp_path,
+        active_slice={"page": "/mall", "goal": "db canonical state"},
+        input_artifact_refs=["project-state/design/mall-handoff.json"],
+        output_root=tmp_path / "project-state" / "kanban" / "tasks" / "task-db-canonical",
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["db state survives restart"],
+        allowed_side_effects=["write output_root only"],
+    )
+
+    task_path = store.record_task(envelope)
+    assert task_path.exists()
+    assert store.db_path == tmp_path / "project-state" / "kanban" / "kanban-state.sqlite3"
+    assert store.index_path == tmp_path / "project-state" / "kanban" / "kanban-state.json"
+
+    result_manifest = {
+        "schema": "kanban-capability-result/v1",
+        "task_id": "task-db-canonical",
+        "capability": "visual_implementation",
+        "provider": "design-to-code",
+        "result": "completed",
+        "changed_files": ["src/pages/mall.vue"],
+        "produced_artifacts": ["project-state/kanban/tasks/task-db-canonical/parity-report.md"],
+        "evidence": ["project-state/kanban/tasks/task-db-canonical/mobile.png"],
+        "blockers": [],
+        "debts": [],
+        "review_required": True,
+        "suggested_gate_updates": [],
+        "next_recommended_task": None,
+    }
+    store.record_result(result_manifest)
+    store.approve_review("task-db-canonical", ["人工审查通过"])
+
+    with sqlite3.connect(store.db_path) as conn:
+        task_row = conn.execute(
+            "select task_id, gate_status, display_status, result, result_path from kanban_tasks where task_id = ?",
+            ("task-db-canonical",),
+        ).fetchone()
+        event_actions = [
+            row[0]
+            for row in conn.execute(
+                "select action from kanban_events where task_id = ? order by id",
+                ("task-db-canonical",),
+            ).fetchall()
+        ]
+    assert task_row[0] == "task-db-canonical"
+    assert task_row[1] == "completed"
+    assert task_row[2] == "已完成"
+    assert task_row[3] == "completed"
+    assert task_row[4].endswith("result-manifest.json")
+    assert event_actions == ["dispatch", "ingest_result", "approve_review"]
+
+    reloaded = KanbanSQLiteStateStore(tmp_path / "project-state" / "kanban")
+    index = reloaded.load_index()
+    assert index["tasks"]["task-db-canonical"]["gate_status"] == "completed"
+    assert index["cards"]["task-db-canonical"]["display_status"] == "已完成"
+    assert index["gates"]["completed"] == ["task-db-canonical"]
+    assert index["events"][-1]["action"] == "approve_review"
+
+    store.export_index()
+    exported = json.loads(store.index_path.read_text(encoding="utf-8"))
+    assert exported["tasks"]["task-db-canonical"]["gate_status"] == "completed"
+
+
+def test_orchestrator_can_use_sqlite_state_store_for_e2e_recovery(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+    write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
+    state_root = tmp_path / "project-state" / "kanban"
+    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root, state_store=KanbanSQLiteStateStore(state_root))
+
+    dispatch = orchestrator.dispatch_task(
+        task_id="task-db-e2e",
+        capability="visual_implementation",
+        active_slice={"page": "/mall", "goal": "db backed e2e"},
+        input_artifact_refs=[],
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["sqlite state recovery"],
+        allowed_side_effects=["write output_root only"],
+    )
+    result_path = write_fixture_provider_result(
+        task_envelope_path=dispatch.task_path,
+        provider="design-to-code",
+        result="completed",
+        review_required=True,
+        changed_files=["src/pages/mall.vue"],
+        produced_artifacts=["parity-report.md"],
+        evidence=["mobile.png"],
+    )
+    ingest = orchestrator.ingest_result_path(result_path)
+
+    assert ingest.gate_status == "review"
+    reloaded = KanbanSQLiteStateStore(state_root).load_index()
+    assert reloaded["cards"]["task-db-e2e"]["gate_status"] == "review"
+    assert reloaded["cards"]["task-db-e2e"]["display_status"] == "待审查"
+
+    review = KanbanOrchestrator(
+        project_root=tmp_path,
+        providers_root=providers_root,
+        state_store=KanbanSQLiteStateStore(state_root),
+    ).approve_review("task-db-e2e", evidence=["db review approved"])
+    assert review.gate_status == "completed"
+    assert KanbanSQLiteStateStore(state_root).load_index()["gates"]["completed"] == ["task-db-e2e"]
 
 
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
