@@ -364,10 +364,11 @@ def test_bootstrap_real_provider_manifests_into_json_artifact_store(tmp_path: Pa
         provider_manifests=source_manifests,
     )
     state_root = tmp_path / "project-state" / "kanban"
+    backend = KanbanStateStore(state_root)
     orchestrator = KanbanOrchestrator(
         project_root=tmp_path,
         providers_root=registry_config,
-        state_store=KanbanStateStore(state_root),
+        state_store=backend,
     )
 
     expectations = {
@@ -525,7 +526,8 @@ def test_state_store_persists_task_result_and_gate_index(tmp_path: Path) -> None
     assert store.load_result("task-001")["provider"] == "design-to-code"
 
 
-def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path) -> None:
+def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
     orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root)
@@ -542,7 +544,7 @@ def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path) -
 
     assert dispatch.provider == "design-to-code"
     assert dispatch.envelope["capability"] == "visual_implementation"
-    assert "provider" not in dispatch.envelope
+    assert dispatch.envelope["provider_hint"] == "design-to-code"
     assert dispatch.task_path.exists()
     assert dispatch.output_root == tmp_path / "project-state" / "kanban" / "tasks" / "task-002"
 
@@ -562,6 +564,8 @@ def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path) -
         "next_recommended_task": None,
     }
 
+    assert isinstance(orchestrator.store, HermesKanbanBackend)
+    orchestrator.store.claim_task("task-002", ttl_seconds=30)
     ingest = orchestrator.ingest_result(result_manifest)
 
     assert ingest.gate_status == "review"
@@ -636,7 +640,8 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
     assert index["events"][-1]["action"] == "approve_review"
 
 
-def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_path: Path) -> None:
+def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
     orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root)
@@ -654,6 +659,8 @@ def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_pa
     assert reloaded["cards"]["task-db-board"]["gate_status"] == "dispatched"
     assert reloaded["cards"]["task-db-board"]["display_status"] == "已派发"
 
+    assert isinstance(orchestrator.store, HermesKanbanBackend)
+    orchestrator.store.claim_task("task-db-board", ttl_seconds=30)
     orchestrator.ingest_result(
         {
             "schema": "kanban-capability-result/v1",
@@ -684,6 +691,14 @@ def test_self_managed_sqlite_backend_is_removed_from_orchestrator(tmp_path: Path
 
     with pytest.raises(KanbanContractError, match="unsupported state_backend: sqlite"):
         KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root, state_backend="sqlite")
+
+
+def test_orchestrator_rejects_json_backend_for_real_execution(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+    write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
+
+    with pytest.raises(KanbanContractError, match='state_backend="json" is test/export only'):
+        KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root, state_backend="json")
 
 
 def test_project_state_store_remains_json_artifact_overlay_not_sqlite(tmp_path: Path) -> None:
@@ -756,7 +771,8 @@ def test_provider_recommendations_are_json_overlay_only_until_hermes_board_backe
     assert "visual-pass" not in index["tasks"]
 
 
-def test_dispatch_next_ready_task_is_disabled_until_hermes_board_backend(tmp_path: Path) -> None:
+def test_dispatch_next_ready_task_requires_hermes_board_backend(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
     orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root)
@@ -764,7 +780,8 @@ def test_dispatch_next_ready_task_is_disabled_until_hermes_board_backend(tmp_pat
     with pytest.raises(KanbanContractError, match="Hermes Kanban board backend"):
         orchestrator.dispatch_next_ready_task()
 
-def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
+def test_orchestrator_rejects_unknown_capability(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "idea-to-design" / "provider-manifest.json", "idea-to-design", ["product_visual_design"])
     orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root)
@@ -781,7 +798,8 @@ def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
         )
 
 
-def test_fixture_provider_e2e_flow_uses_registry_config(tmp_path: Path) -> None:
+def test_fixture_provider_e2e_flow_uses_registry_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
     manifest_path = tmp_path / "DesignToCode" / "contracts" / "provider-manifest.json"
     write_manifest(manifest_path, "design-to-code", ["visual_implementation"])
     registry_config = write_provider_registry_config(
@@ -809,6 +827,8 @@ def test_fixture_provider_e2e_flow_uses_registry_config(tmp_path: Path) -> None:
         evidence=["mobile.png"],
     )
 
+    assert isinstance(orchestrator.store, HermesKanbanBackend)
+    orchestrator.store.claim_task("task-e2e", ttl_seconds=30)
     ingest = orchestrator.ingest_result_path(result_path)
     assert ingest.gate_status == "review"
     assert orchestrator.store.load_index()["gates"]["review"] == ["task-e2e"]

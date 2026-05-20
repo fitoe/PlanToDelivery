@@ -76,7 +76,7 @@ def main() -> int:
         except json.JSONDecodeError as exc:
             detail = f"invalid JSON: {exc}"
     record("boards JSON", boards_ok, detail)
-    record("target board", board_exists, f"{args.board} present" if board_exists else f"{args.board} missing; run p2d_setup.py")
+    record("target board", board_exists, f"{args.board} present" if board_exists else f"{args.board} missing; run p2d_setup.py before any Javis/P2D execution")
 
     provider_candidates = [
         project_root / "provider-registry.json",
@@ -87,7 +87,7 @@ def main() -> int:
     provider_ok = any(path.exists() for path in provider_candidates) or bool(provider_dirs)
     record("provider contracts", provider_ok, "found provider registry/manifests" if provider_ok else "optional but recommended before dispatch")
 
-    overall = all(item["ok"] for item in results if item["name"] not in {"target board", "provider contracts"})
+    overall = all(item["ok"] for item in results if item["name"] != "provider contracts")
     if args.json:
         print(json.dumps({"ok": overall, "checks": results}, ensure_ascii=False, indent=2))
     return 0 if overall else 1

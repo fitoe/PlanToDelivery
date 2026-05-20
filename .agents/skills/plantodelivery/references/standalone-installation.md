@@ -107,12 +107,17 @@ Current strict gates:
 - review approval requires non-empty evidence and comments `P2D REVIEW APPROVED` before completing the Hermes card;
 - manually completed cards without result manifests are audit violations.
 
-## Runtime modes
+## Runtime mode
 
-- `state_backend="json"`: local artifact/export fallback for dry-runs and tests.
-- `state_backend="hermes"`: real execution gate. Hermes Kanban owns lifecycle;
+Real PlanToDelivery/Javis execution has one supported backend:
+
+- `state_backend="hermes"`: mandatory execution gate. Hermes Kanban owns lifecycle;
   P2D JSON files are semantic overlays, task envelopes, result manifests, and
   evidence/debug exports.
+
+`state_backend="json"` is intentionally rejected by `KanbanOrchestrator` for real
+execution. Use `KanbanStateStore` only in explicit unit tests, migration/export
+scripts, or evidence inspection tools; it is not a no-board compatibility mode.
 
 ## Independence contract
 

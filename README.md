@@ -167,19 +167,19 @@ docs/orchestrator/
 
 ## Provider capability model
 
-PlanToDelivery remains usable even when the full provider set is not installed. Runtime capability checks should distinguish:
+PlanToDelivery requires Hermes Kanban for real execution. Runtime capability checks distinguish:
 
-- **core capability available**: `plantodelivery.kanban_runtime` imports, `P2DMeta` marker helpers work, and provider registry/task/result schemas validate;
+- **core contract capability available**: `plantodelivery.kanban_runtime` imports, `P2DMeta` marker helpers work, and provider registry/task/result schemas validate;
+- **Hermes board backend available**: canonical board transitions can be executed through Hermes Kanban; this is mandatory for Javis/P2D execution;
 - **provider registry available**: a `provider-registry/v1` config or discoverable `provider-manifest/v1` snapshots exist;
-- **specialist provider available**: a selected capability resolves to a concrete provider manifest;
-- **Hermes board backend available**: canonical board transitions can be executed through Hermes Kanban. Until that backend is implemented, JSON state is only a fallback/export/dry-run overlay.
+- **specialist provider available**: a selected capability resolves to a concrete provider manifest.
 
-Doctor/capability checks should report missing specialist providers as degraded routing, not as failure of the PlanToDelivery skill itself. Safe fallback behavior is:
+Doctor/capability checks should fail/block execution when Hermes Kanban is unavailable. Missing specialist providers are degraded routing, not an install failure. Safe non-execution behavior is:
 
 1. validate or append `P2D_META` marker;
 2. compile marker to `kanban-capability-task/v1` artifact envelope;
-3. run fixture/local dry-run only if explicitly requested;
-4. do not claim Hermes lifecycle transitions unless the Hermes Kanban backend/API is available.
+3. run fixture/local contract tests only if explicitly requested;
+4. do not dispatch/claim/complete/approve a real Javis task unless the Hermes Kanban backend/API is available.
 
 ## 通过 skills CLI 安装
 

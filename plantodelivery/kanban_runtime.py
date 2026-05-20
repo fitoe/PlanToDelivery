@@ -550,7 +550,7 @@ class KanbanOrchestrator:
         providers_root: str | Path,
         state_root: str | Path | None = None,
         state_store: KanbanStateStore | None = None,
-        state_backend: str = "json",
+        state_backend: str = "hermes",
         board: str = "plantodelivery",
     ) -> None:
         self.project_root = Path(project_root)
@@ -559,7 +559,7 @@ class KanbanOrchestrator:
         if state_store is not None:
             self.store = state_store
         elif state_backend == "json":
-            self.store = KanbanStateStore(resolved_state_root)
+            raise KanbanContractError('state_backend="json" is test/export only; real PlanToDelivery execution requires state_backend="hermes"')
         elif state_backend == "hermes":
             self.store = HermesKanbanBackend(project_root=self.project_root, state_root=resolved_state_root, board=board)
         else:
