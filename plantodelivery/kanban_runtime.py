@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -74,11 +73,11 @@ class KanbanEvent:
     action: str
 
 class KanbanStateStore:
-    """Canonical PlanToDelivery Kanban state source.
+    """JSON artifact overlay for PlanToDelivery provider contracts.
 
-    The state index is the source of truth for tasks, gates, visible cards,
-    and events. Task/result JSON files remain artifact evidence referenced by
-    the canonical Kanban state.
+    Hermes Kanban boards own canonical execution state. This store only writes
+    task/result evidence and display-friendly overlay exports for migration,
+    debugging, and provider handoff tests.
     """
 
     def __init__(self, root: str | Path) -> None:
@@ -127,11 +126,7 @@ class KanbanStateStore:
         return _load_json(self.tasks_root / task_id / "task-envelope.json")
 
     def find_next_ready_task(self) -> dict[str, Any] | None:
-        tasks = self.load_index().get("tasks", {})
-        for task_id, task in sorted(tasks.items()):
-            if task.get("gate_status") == "ready" and _dependencies_completed(task, tasks):
-                return dict(task)
-        return None
+        raise KanbanContractError("find_next_ready_task requires the Hermes Kanban board backend")
 
     def record_result(self, manifest: dict[str, Any]) -> Path:
         validated = validate_result_manifest(manifest)
@@ -159,6 +154,8 @@ class KanbanStateStore:
                 "result": validated["result"],
                 "gate_status": decide_gate_status(validated),
                 "display_status": display_gate_status(decide_gate_status(validated)),
+                "suggested_gate_updates": list(validated.get("suggested_gate_updates") or []),
+                "next_recommended_task": validated.get("next_recommended_task"),
             }
         )
         self._sync_card(index, task_id, action="ingest_result")
@@ -240,322 +237,6 @@ class KanbanStateStore:
         index["gates"] = gates
 
 
-class KanbanSQLiteStateStore(KanbanStateStore):
-    """SQLite-backed canonical PlanToDelivery Kanban state source.
-
-    Task/result JSON files remain artifact evidence. SQLite is the source of
-    truth for task, gate, card, review, and event recovery; JSON index export is
-    available only as debug/evidence output.
-    """
-
-    def __init__(self, root: str | Path, db_path: str | Path | None = None) -> None:
-        super().__init__(root)
-        self.db_path = Path(db_path) if db_path is not None else self.root / "kanban-state.sqlite3"
-        self.root.mkdir(parents=True, exist_ok=True)
-        self._init_db()
-
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _init_db(self) -> None:
-        with self._connect() as conn:
-            conn.executescript(
-                """
-                create table if not exists kanban_tasks (
-                    task_id text primary key,
-                    capability text not null,
-                    provider text,
-                    task_path text,
-                    result_path text,
-                    result text,
-                    gate_status text not null,
-                    display_status text not null,
-                    task_json text,
-                    result_json text,
-                    review_json text
-                );
-                create table if not exists kanban_cards (
-                    task_id text primary key,
-                    gate_status text not null,
-                    display_status text not null,
-                    card_json text not null
-                );
-                create table if not exists kanban_events (
-                    id integer primary key autoincrement,
-                    task_id text not null,
-                    gate_status text not null,
-                    display_status text not null,
-                    action text not null,
-                    event_key text
-                );
-                create table if not exists kanban_artifacts (
-                    id integer primary key autoincrement,
-                    task_id text not null,
-                    artifact_type text not null,
-                    path text not null
-                );
-                create table if not exists kanban_reviews (
-                    task_id text primary key,
-                    status text not null,
-                    evidence_json text not null
-                );
-                """
-            )
-            columns = [row["name"] for row in conn.execute("pragma table_info(kanban_events)").fetchall()]
-            if "event_key" not in columns:
-                conn.execute("alter table kanban_events add column event_key text")
-            conn.execute(
-                """
-                create unique index if not exists idx_kanban_events_event_key
-                    on kanban_events(event_key)
-                    where event_key is not null
-                """
-            )
-
-    def load_index(self) -> dict[str, Any]:
-        self._init_db()
-        with self._connect() as conn:
-            task_rows = conn.execute("select * from kanban_tasks order by task_id").fetchall()
-            card_rows = conn.execute("select * from kanban_cards order by task_id").fetchall()
-            event_rows = conn.execute("select task_id, gate_status, display_status, action from kanban_events order by id").fetchall()
-        tasks = {row["task_id"]: json.loads(row["task_json"] or "{}") for row in task_rows}
-        cards = {row["task_id"]: json.loads(row["card_json"]) for row in card_rows}
-        index = {
-            "schema": STATE_SCHEMA,
-            "tasks": tasks,
-            "gates": {},
-            "cards": cards,
-            "events": [dict(row) for row in event_rows],
-        }
-        self._rebuild_gates(index)
-        return index
-
-    def record_task(self, envelope: dict[str, Any]) -> Path:
-        _require_fields(envelope, {"schema", "task_id", "capability", "output_root"})
-        if envelope["schema"] != TASK_SCHEMA:
-            raise KanbanContractError(f"unsupported task schema: {envelope['schema']}")
-        task_id = envelope["task_id"]
-        task_dir = self.tasks_root / task_id
-        task_dir.mkdir(parents=True, exist_ok=True)
-        task_path = task_dir / "task-envelope.json"
-        _write_json(task_path, envelope)
-
-        task_entry = {
-            "task_id": task_id,
-            "capability": envelope["capability"],
-            "task_path": str(task_path),
-            "result_path": None,
-            "result": None,
-            "gate_status": "dispatched",
-            "display_status": display_gate_status("dispatched"),
-        }
-        self._upsert_task(task_entry, envelope=envelope, result_manifest=None)
-        self._sync_card_db(task_id, task_entry, action="dispatch")
-        self._record_artifact(task_id, "task_envelope", task_path)
-        return task_path
-
-    def record_result(self, manifest: dict[str, Any]) -> Path:
-        validated = validate_result_manifest(manifest)
-        task_id = validated["task_id"]
-        task_dir = self.tasks_root / task_id
-        if not task_dir.exists():
-            raise KanbanContractError(f"cannot record result for unknown task: {task_id}")
-        result_path = task_dir / "result-manifest.json"
-        _write_json(result_path, validated)
-
-        index = self.load_index()
-        existing = index["tasks"].get(
-            task_id,
-            {
-                "task_id": task_id,
-                "capability": validated["capability"],
-                "task_path": str(task_dir / "task-envelope.json"),
-            },
-        )
-        gate_status = decide_gate_status(validated)
-        existing.update(
-            {
-                "capability": validated["capability"],
-                "provider": validated["provider"],
-                "result_path": str(result_path),
-                "result": validated["result"],
-                "gate_status": gate_status,
-                "display_status": display_gate_status(gate_status),
-                "suggested_gate_updates": list(validated.get("suggested_gate_updates") or []),
-                "next_recommended_task": validated.get("next_recommended_task"),
-            }
-        )
-        self._upsert_task(existing, envelope=None, result_manifest=validated)
-        self._apply_provider_recommendations(validated)
-        self._sync_card_db(task_id, existing, action="ingest_result")
-        self._record_artifact(task_id, "result_manifest", result_path)
-        return result_path
-
-    def approve_review(self, task_id: str, evidence: list[str]) -> None:
-        index = self.load_index()
-        task_entry = index["tasks"].get(task_id)
-        if task_entry is None:
-            raise KanbanContractError(f"unknown task: {task_id}")
-        if task_entry.get("gate_status") != "review":
-            raise KanbanContractError(f"task is not in review: {task_id}")
-        task_entry["gate_status"] = "completed"
-        task_entry["display_status"] = display_gate_status("completed")
-        task_entry["review"] = {"status": "approved", "evidence": list(evidence)}
-        self._upsert_task(task_entry, envelope=None, result_manifest=None)
-        with self._connect() as conn:
-            conn.execute(
-                "insert or replace into kanban_reviews(task_id, status, evidence_json) values (?, ?, ?)",
-                (task_id, "approved", json.dumps(list(evidence), ensure_ascii=False)),
-            )
-        self._sync_card_db(task_id, task_entry, action="approve_review")
-        self._record_dependency_unlock_events_db(completed_task_id=task_id)
-
-    def export_index(self) -> Path:
-        self._write_index(self.load_index())
-        return self.index_path
-
-    def _upsert_task(self, task_entry: dict[str, Any], *, envelope: dict[str, Any] | None, result_manifest: dict[str, Any] | None) -> None:
-        with self._connect() as conn:
-            existing = conn.execute("select task_json, result_json from kanban_tasks where task_id = ?", (task_entry["task_id"],)).fetchone()
-            result_json = json.dumps(result_manifest, ensure_ascii=False) if result_manifest is not None else (existing["result_json"] if existing else None)
-            conn.execute(
-                """
-                insert or replace into kanban_tasks(
-                    task_id, capability, provider, task_path, result_path, result,
-                    gate_status, display_status, task_json, result_json, review_json
-                ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    task_entry["task_id"],
-                    task_entry["capability"],
-                    task_entry.get("provider"),
-                    task_entry.get("task_path"),
-                    task_entry.get("result_path"),
-                    task_entry.get("result"),
-                    task_entry["gate_status"],
-                    task_entry["display_status"],
-                    json.dumps(task_entry, ensure_ascii=False),
-                    result_json,
-                    json.dumps(task_entry.get("review"), ensure_ascii=False) if task_entry.get("review") else None,
-                ),
-            )
-
-    @staticmethod
-    def _event_key(action: str, task_id: str) -> str | None:
-        if action == "dependency_unlocked":
-            return f"dependency_unlocked:{task_id}"
-        return None
-
-    def _record_event_db(self, conn: sqlite3.Connection, *, task_id: str, gate_status: str, display_status: str, action: str) -> None:
-        event_key = self._event_key(action, task_id)
-        if event_key is None:
-            conn.execute(
-                "insert into kanban_events(task_id, gate_status, display_status, action, event_key) values (?, ?, ?, ?, ?)",
-                (task_id, gate_status, display_status, action, None),
-            )
-            return
-        conn.execute(
-            """
-            insert or ignore into kanban_events(task_id, gate_status, display_status, action, event_key)
-            values (?, ?, ?, ?, ?)
-            """,
-            (task_id, gate_status, display_status, action, event_key),
-        )
-
-    def _sync_card_db(self, task_id: str, task_entry: dict[str, Any], *, action: str) -> None:
-        gate_status = task_entry.get("gate_status", "dispatched")
-        task_entry["display_status"] = display_gate_status(gate_status)
-        card = dict(self.load_index().get("cards", {}).get(task_id, {}))
-        card.update(task_entry)
-        card["display_status"] = task_entry["display_status"]
-        with self._connect() as conn:
-            conn.execute(
-                "insert or replace into kanban_cards(task_id, gate_status, display_status, card_json) values (?, ?, ?, ?)",
-                (task_id, gate_status, task_entry["display_status"], json.dumps(card, ensure_ascii=False)),
-            )
-            self._record_event_db(
-                conn,
-                task_id=task_id,
-                gate_status=gate_status,
-                display_status=task_entry["display_status"],
-                action=action,
-            )
-
-    def _record_dependency_unlock_events_db(self, *, completed_task_id: str) -> None:
-        index = self.load_index()
-        tasks = index.get("tasks", {})
-        for task_id, task in sorted(tasks.items()):
-            if task.get("gate_status") != "ready":
-                continue
-            if completed_task_id not in (task.get("depends_on") or []):
-                continue
-            if not _dependencies_completed(task, tasks):
-                continue
-            with self._connect() as conn:
-                existing = conn.execute(
-                    "select 1 from kanban_events where task_id = ? and action = 'dependency_unlocked' limit 1",
-                    (task_id,),
-                ).fetchone()
-            if existing is not None:
-                continue
-            display_status = display_gate_status("ready")
-            task["display_status"] = display_status
-            self._upsert_task(task, envelope=None, result_manifest=None)
-            with self._connect() as conn:
-                self._record_event_db(
-                    conn,
-                    task_id=task_id,
-                    gate_status="ready",
-                    display_status=display_status,
-                    action="dependency_unlocked",
-                )
-
-    def _apply_provider_recommendations(self, manifest: dict[str, Any]) -> None:
-        for update in manifest.get("suggested_gate_updates") or []:
-            if not isinstance(update, dict):
-                raise KanbanContractError("suggested_gate_updates entries must be objects")
-            _require_fields(update, {"task_id", "gate_status"})
-            gate_status = update["gate_status"]
-            if not isinstance(gate_status, str) or not gate_status:
-                raise KanbanContractError("suggested gate_status must be a non-empty string")
-            task_id = update["task_id"]
-            if not isinstance(task_id, str) or not task_id:
-                raise KanbanContractError("suggested task_id must be a non-empty string")
-            task_entry = self.load_index().get("tasks", {}).get(task_id, {"task_id": task_id})
-            task_entry.update({k: v for k, v in update.items() if k not in {"reason"}})
-            task_entry.setdefault("capability", update.get("capability") or "")
-            task_entry["gate_status"] = gate_status
-            task_entry["display_status"] = display_gate_status(gate_status)
-            if "reason" in update:
-                task_entry["gate_reason"] = update["reason"]
-            self._upsert_task(task_entry, envelope=None, result_manifest=None)
-            self._sync_card_db(task_id, task_entry, action="suggested_gate_update")
-
-        next_task = manifest.get("next_recommended_task")
-        if next_task is None:
-            return
-        if not isinstance(next_task, dict):
-            raise KanbanContractError("next_recommended_task must be an object or null")
-        _require_fields(next_task, {"task_id", "capability"})
-        task_id = next_task["task_id"]
-        if not isinstance(task_id, str) or not task_id:
-            raise KanbanContractError("next_recommended_task.task_id must be a non-empty string")
-        task_entry = self.load_index().get("tasks", {}).get(task_id, {"task_id": task_id})
-        task_entry.update(next_task)
-        task_entry.setdefault("depends_on", [manifest["task_id"]])
-        task_entry.setdefault("gate_status", "ready")
-        task_entry["display_status"] = display_gate_status(task_entry["gate_status"])
-        self._upsert_task(task_entry, envelope=None, result_manifest=None)
-        self._sync_card_db(task_id, task_entry, action="next_recommended_task")
-
-    def _record_artifact(self, task_id: str, artifact_type: str, path: Path) -> None:
-        with self._connect() as conn:
-            conn.execute(
-                "insert into kanban_artifacts(task_id, artifact_type, path) values (?, ?, ?)",
-                (task_id, artifact_type, str(path)),
-            )
 
 class KanbanOrchestrator:
     """Minimal PlanToDelivery orchestration API over registry + state store."""
@@ -576,8 +257,8 @@ class KanbanOrchestrator:
             self.store = state_store
         elif state_backend == "json":
             self.store = KanbanStateStore(resolved_state_root)
-        elif state_backend == "sqlite":
-            self.store = KanbanSQLiteStateStore(resolved_state_root)
+        elif state_backend == "hermes":
+            raise KanbanContractError("Hermes Kanban board backend is not implemented yet")
         else:
             raise KanbanContractError(f"unsupported state_backend: {state_backend}")
 
@@ -644,28 +325,7 @@ class KanbanOrchestrator:
         return ReviewRecord(task_id=task_id, gate_status="completed", evidence=list(evidence))
 
     def dispatch_next_ready_task(self) -> DispatchRecord | None:
-        task = self.store.find_next_ready_task()
-        if task is None:
-            return None
-        required_fields = {
-            "task_id",
-            "capability",
-            "active_slice",
-            "input_artifact_refs",
-            "expected_outputs",
-            "verification_expectations",
-            "allowed_side_effects",
-        }
-        _require_fields(task, required_fields)
-        return self.dispatch_task(
-            task_id=task["task_id"],
-            capability=task["capability"],
-            active_slice=task["active_slice"],
-            input_artifact_refs=list(task["input_artifact_refs"]),
-            expected_outputs=list(task["expected_outputs"]),
-            verification_expectations=list(task["verification_expectations"]),
-            allowed_side_effects=list(task["allowed_side_effects"]),
-        )
+        raise KanbanContractError("dispatch_next_ready_task requires the Hermes Kanban board backend")
 
 
 def _load_json(path: Path) -> dict[str, Any]:
