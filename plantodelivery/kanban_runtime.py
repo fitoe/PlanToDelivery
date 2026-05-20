@@ -209,6 +209,7 @@ class KanbanStateStore:
     @staticmethod
     def _record_dependency_unlock_events(index: dict[str, Any], *, completed_task_id: str) -> None:
         tasks = index.get("tasks", {})
+        events = index.setdefault("events", [])
         for task_id, task in sorted(tasks.items()):
             if task.get("gate_status") != "ready":
                 continue
@@ -216,9 +217,11 @@ class KanbanStateStore:
                 continue
             if not _dependencies_completed(task, tasks):
                 continue
+            if _has_dependency_unlock_event(events, task_id=task_id):
+                continue
             display_status = display_gate_status("ready")
             task["display_status"] = display_status
-            index.setdefault("events", []).append(
+            events.append(
                 {
                     "task_id": task_id,
                     "gate_status": "ready",
@@ -454,6 +457,13 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                 continue
             if not _dependencies_completed(task, tasks):
                 continue
+            with self._connect() as conn:
+                existing = conn.execute(
+                    "select 1 from kanban_events where task_id = ? and action = 'dependency_unlocked' limit 1",
+                    (task_id,),
+                ).fetchone()
+            if existing is not None:
+                continue
             display_status = display_gate_status("ready")
             task["display_status"] = display_status
             self._upsert_task(task, envelope=None, result_manifest=None)
@@ -635,6 +645,13 @@ def _dependencies_completed(task: dict[str, Any], tasks: dict[str, dict[str, Any
         if dependency is None or dependency.get("gate_status") != "completed":
             return False
     return True
+
+
+def _has_dependency_unlock_event(events: list[dict[str, Any]], *, task_id: str) -> bool:
+    return any(
+        event.get("task_id") == task_id and event.get("action") == "dependency_unlocked"
+        for event in events
+    )
 
 
 def display_gate_status(gate_status: str) -> str:
