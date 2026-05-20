@@ -287,7 +287,8 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                     task_id text not null,
                     gate_status text not null,
                     display_status text not null,
-                    action text not null
+                    action text not null,
+                    event_key text
                 );
                 create table if not exists kanban_artifacts (
                     id integer primary key autoincrement,
@@ -300,6 +301,16 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                     status text not null,
                     evidence_json text not null
                 );
+                """
+            )
+            columns = [row["name"] for row in conn.execute("pragma table_info(kanban_events)").fetchall()]
+            if "event_key" not in columns:
+                conn.execute("alter table kanban_events add column event_key text")
+            conn.execute(
+                """
+                create unique index if not exists idx_kanban_events_event_key
+                    on kanban_events(event_key)
+                    where event_key is not null
                 """
             )
 
@@ -431,6 +442,28 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                 ),
             )
 
+    @staticmethod
+    def _event_key(action: str, task_id: str) -> str | None:
+        if action == "dependency_unlocked":
+            return f"dependency_unlocked:{task_id}"
+        return None
+
+    def _record_event_db(self, conn: sqlite3.Connection, *, task_id: str, gate_status: str, display_status: str, action: str) -> None:
+        event_key = self._event_key(action, task_id)
+        if event_key is None:
+            conn.execute(
+                "insert into kanban_events(task_id, gate_status, display_status, action, event_key) values (?, ?, ?, ?, ?)",
+                (task_id, gate_status, display_status, action, None),
+            )
+            return
+        conn.execute(
+            """
+            insert or ignore into kanban_events(task_id, gate_status, display_status, action, event_key)
+            values (?, ?, ?, ?, ?)
+            """,
+            (task_id, gate_status, display_status, action, event_key),
+        )
+
     def _sync_card_db(self, task_id: str, task_entry: dict[str, Any], *, action: str) -> None:
         gate_status = task_entry.get("gate_status", "dispatched")
         task_entry["display_status"] = display_gate_status(gate_status)
@@ -442,9 +475,12 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                 "insert or replace into kanban_cards(task_id, gate_status, display_status, card_json) values (?, ?, ?, ?)",
                 (task_id, gate_status, task_entry["display_status"], json.dumps(card, ensure_ascii=False)),
             )
-            conn.execute(
-                "insert into kanban_events(task_id, gate_status, display_status, action) values (?, ?, ?, ?)",
-                (task_id, gate_status, task_entry["display_status"], action),
+            self._record_event_db(
+                conn,
+                task_id=task_id,
+                gate_status=gate_status,
+                display_status=task_entry["display_status"],
+                action=action,
             )
 
     def _record_dependency_unlock_events_db(self, *, completed_task_id: str) -> None:
@@ -468,9 +504,12 @@ class KanbanSQLiteStateStore(KanbanStateStore):
             task["display_status"] = display_status
             self._upsert_task(task, envelope=None, result_manifest=None)
             with self._connect() as conn:
-                conn.execute(
-                    "insert into kanban_events(task_id, gate_status, display_status, action) values (?, ?, ?, ?)",
-                    (task_id, "ready", display_status, "dependency_unlocked"),
+                self._record_event_db(
+                    conn,
+                    task_id=task_id,
+                    gate_status="ready",
+                    display_status=display_status,
+                    action="dependency_unlocked",
                 )
 
     def _apply_provider_recommendations(self, manifest: dict[str, Any]) -> None:

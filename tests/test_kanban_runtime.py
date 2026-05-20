@@ -807,6 +807,28 @@ def test_dependency_unlock_event_is_idempotent_when_recovered_before_dispatch(tm
     ]
 
 
+def test_dependency_unlock_event_db_key_rejects_duplicate_writes(tmp_path: Path) -> None:
+    store = KanbanSQLiteStateStore(tmp_path / "project-state" / "kanban")
+    event_key = "dependency_unlocked:task-concurrent"
+
+    with sqlite3.connect(store.db_path) as conn:
+        conn.execute(
+            """
+            insert into kanban_events(task_id, gate_status, display_status, action, event_key)
+            values (?, ?, ?, ?, ?)
+            """,
+            ("task-concurrent", "ready", display_gate_status("ready"), "dependency_unlocked", event_key),
+        )
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute(
+                """
+                insert into kanban_events(task_id, gate_status, display_status, action, event_key)
+                values (?, ?, ?, ?, ?)
+                """,
+                ("task-concurrent", "ready", display_gate_status("ready"), "dependency_unlocked", event_key),
+            )
+
+
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "idea-to-design" / "provider-manifest.json", "idea-to-design", ["product_visual_design"])
