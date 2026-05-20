@@ -108,6 +108,7 @@ Current strict gates:
 - missing or conflicting `P2D_META` markers are audit violations;
 - dispatch/record-task writes `active-slice-digest.json` beside `task-envelope.json`; `audit --strict-digest` reports missing, invalid, or mismatched digests;
 - result ingest is rejected unless the Hermes card status is `running`;
+- provider-side P2D mode should call `plantodelivery.provider_guard.validate_provider_execution_context(...)` before any provider implementation work; this validates `task-envelope.json`, `active-slice-digest.json`, expected capability, `output_root/result-manifest.json`, and the Hermes card `running` gate;
 - `review_required=true` writes the result manifest and comments `P2D RESULT READY FOR REVIEW`, then blocks the card as a review gate instead of completing it;
 - review approval requires non-empty evidence and comments `P2D REVIEW APPROVED` before completing the Hermes card;
 - manually completed cards without result manifests are audit violations.
