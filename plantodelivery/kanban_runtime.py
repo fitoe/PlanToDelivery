@@ -9,6 +9,7 @@ from typing import Any
 TASK_SCHEMA = "kanban-capability-task/v1"
 RESULT_SCHEMA = "kanban-capability-result/v1"
 PROVIDER_SCHEMA = "provider-manifest/v1"
+PROVIDER_REGISTRY_SCHEMA = "provider-registry/v1"
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
 STATE_SCHEMA = "plantodelivery-kanban-state/v1"
 
@@ -219,6 +220,9 @@ class KanbanOrchestrator:
             result_path=result_path,
         )
 
+    def ingest_result_path(self, result_path: str | Path) -> IngestRecord:
+        return self.ingest_result(_load_json(Path(result_path)))
+
     def approve_review(self, task_id: str, *, evidence: list[str]) -> ReviewRecord:
         self.store.approve_review(task_id, evidence)
         return ReviewRecord(task_id=task_id, gate_status="completed", evidence=list(evidence))
@@ -245,6 +249,41 @@ def _require_fields(data: dict[str, Any], fields: set[str]) -> None:
         raise KanbanContractError(f"missing required fields: {', '.join(missing)}")
 
 
+def load_provider_registry_config(path: str | Path) -> dict[str, Any]:
+    config_path = Path(path)
+    config = _load_json(config_path)
+    _require_fields(config, {"schema", "providers"})
+    if config["schema"] != PROVIDER_REGISTRY_SCHEMA:
+        raise KanbanContractError(f"unsupported provider registry schema: {config['schema']}")
+    if not isinstance(config["providers"], dict):
+        raise KanbanContractError("providers must be an object")
+    for provider, entry in config["providers"].items():
+        if not isinstance(entry, dict):
+            raise KanbanContractError(f"provider entry must be an object: {provider}")
+        _require_fields(entry, {"manifest_path"})
+    return config
+
+
+def write_provider_registry_config(path: str | Path, *, providers: dict[str, str | Path]) -> Path:
+    config_path = Path(path)
+    config = {
+        "schema": PROVIDER_REGISTRY_SCHEMA,
+        "providers": {
+            provider: {"manifest_path": str(Path(manifest_path))}
+            for provider, manifest_path in sorted(providers.items())
+        },
+    }
+    _write_json(config_path, config)
+    return config_path
+
+
+def _provider_manifest_paths(root: Path) -> list[Path]:
+    if root.is_file():
+        config = load_provider_registry_config(root)
+        return [Path(entry["manifest_path"]) for entry in config["providers"].values()]
+    return sorted(root.rglob("provider-manifest.json"))
+
+
 def load_provider_registry(root: str | Path) -> dict[str, ProviderCapability]:
     """Load provider manifests and index them by replaceable capability.
 
@@ -255,7 +294,7 @@ def load_provider_registry(root: str | Path) -> dict[str, ProviderCapability]:
 
     root = Path(root)
     registry: dict[str, ProviderCapability] = {}
-    for manifest_path in sorted(root.rglob("provider-manifest.json")):
+    for manifest_path in _provider_manifest_paths(root):
         manifest = _load_json(manifest_path)
         _require_fields(manifest, {"schema", "provider", "capabilities"})
         if manifest["schema"] != PROVIDER_SCHEMA:
@@ -332,6 +371,48 @@ def create_task_envelope(
             **(blocking_policy or {}),
         },
     }
+
+
+def write_fixture_provider_result(
+    *,
+    task_envelope_path: str | Path,
+    provider: str,
+    result: str = "completed",
+    review_required: bool = True,
+    changed_files: list[str] | None = None,
+    produced_artifacts: list[str] | None = None,
+    evidence: list[str] | None = None,
+    blockers: list[str] | None = None,
+    debts: list[str] | None = None,
+    suggested_gate_updates: list[dict[str, Any]] | None = None,
+    next_recommended_task: dict[str, Any] | None = None,
+) -> Path:
+    envelope = _load_json(Path(task_envelope_path))
+    _require_fields(envelope, {"task_id", "capability", "output_root"})
+    output_root = Path(envelope["output_root"])
+    manifest = {
+        "schema": RESULT_SCHEMA,
+        "task_id": envelope["task_id"],
+        "capability": envelope["capability"],
+        "provider": provider,
+        "result": result,
+        "changed_files": list(changed_files or []),
+        "produced_artifacts": list(produced_artifacts or []),
+        "evidence": list(evidence or []),
+        "blockers": list(blockers or []),
+        "debts": list(debts or []),
+        "review_required": review_required,
+        "suggested_gate_updates": list(suggested_gate_updates or []),
+        "next_recommended_task": next_recommended_task,
+    }
+    validate_result_manifest(
+        manifest,
+        expected_task_id=envelope["task_id"],
+        expected_capability=envelope["capability"],
+    )
+    result_path = output_root / "result-manifest.json"
+    _write_json(result_path, manifest)
+    return result_path
 
 
 def validate_result_manifest(

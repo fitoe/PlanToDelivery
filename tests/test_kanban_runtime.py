@@ -10,7 +10,10 @@ from plantodelivery.kanban_runtime import (
     create_task_envelope,
     decide_gate_status,
     load_provider_registry,
+    load_provider_registry_config,
     validate_result_manifest,
+    write_fixture_provider_result,
+    write_provider_registry_config,
 )
 
 
@@ -55,6 +58,30 @@ def test_registry_rejects_duplicate_capability_without_priority(tmp_path: Path) 
 
     with pytest.raises(KanbanContractError, match="duplicate capability"):
         load_provider_registry(tmp_path)
+
+
+def test_provider_registry_config_records_real_provider_paths(tmp_path: Path) -> None:
+    providers = {
+        "idea-to-design": tmp_path / "IdeaToDesign" / "contracts" / "provider-manifest.json",
+        "idea-to-tech": tmp_path / "IdeaToTech" / "contracts" / "provider-manifest.json",
+        "design-to-code": tmp_path / "DesignToCode" / "contracts" / "provider-manifest.json",
+    }
+    for provider, manifest_path in providers.items():
+        write_manifest(manifest_path, provider, [f"{provider}-capability"])
+
+    config_path = write_provider_registry_config(
+        tmp_path / "project-state" / "kanban" / "provider-registry.json",
+        providers=providers,
+    )
+
+    config = load_provider_registry_config(config_path)
+    assert config["schema"] == "provider-registry/v1"
+    assert set(config["providers"]) == {"idea-to-design", "idea-to-tech", "design-to-code"}
+    assert config["providers"]["design-to-code"]["manifest_path"] == str(providers["design-to-code"])
+
+    registry = load_provider_registry(config_path)
+    assert registry["design-to-code-capability"].provider == "design-to-code"
+    assert registry["design-to-code-capability"].manifest_path == providers["design-to-code"]
 
 
 def test_task_envelope_is_capability_first_and_bounded(tmp_path: Path) -> None:
@@ -251,3 +278,40 @@ def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
             verification_expectations=[],
             allowed_side_effects=[],
         )
+
+
+def test_fixture_provider_e2e_flow_uses_registry_config(tmp_path: Path) -> None:
+    manifest_path = tmp_path / "DesignToCode" / "contracts" / "provider-manifest.json"
+    write_manifest(manifest_path, "design-to-code", ["visual_implementation"])
+    registry_config = write_provider_registry_config(
+        tmp_path / "project-state" / "kanban" / "provider-registry.json",
+        providers={"design-to-code": manifest_path},
+    )
+    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=registry_config)
+
+    dispatch = orchestrator.dispatch_task(
+        task_id="task-e2e",
+        capability="visual_implementation",
+        active_slice={"page": "/mall", "goal": "fixture e2e"},
+        input_artifact_refs=["project-state/design/mall-handoff.json"],
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["fixture evidence exists"],
+        allowed_side_effects=["write output_root only"],
+    )
+    result_path = write_fixture_provider_result(
+        task_envelope_path=dispatch.task_path,
+        provider="design-to-code",
+        result="completed",
+        review_required=True,
+        changed_files=["src/pages/mall.vue"],
+        produced_artifacts=["parity-report.md"],
+        evidence=["mobile.png"],
+    )
+
+    ingest = orchestrator.ingest_result_path(result_path)
+    assert ingest.gate_status == "review"
+    assert orchestrator.store.load_index()["gates"]["review"] == ["task-e2e"]
+
+    review = orchestrator.approve_review("task-e2e", evidence=["fixture review approved"])
+    assert review.gate_status == "completed"
+    assert orchestrator.store.load_index()["gates"]["completed"] == ["task-e2e"]

@@ -61,12 +61,15 @@ The canonical in-repo runtime entry is `plantodelivery.kanban_runtime`.
 
 Use it for deterministic contract work before/after provider dispatch:
 
-- `load_provider_registry(root)` scans `provider-manifest.json` files and returns a capability-indexed registry.
+- `write_provider_registry_config(path, providers={...})` writes `provider-registry/v1` with explicit real provider manifest paths such as IdeaToDesign, IdeaToTech, and DesignToCode.
+- `load_provider_registry_config(path)` validates that registry config before dispatch.
+- `load_provider_registry(root_or_config)` scans `provider-manifest.json` files from either a directory or a `provider-registry/v1` config file and returns a capability-indexed registry.
 - `create_task_envelope(...)` builds capability-first `kanban-capability-task/v1` payloads without embedding provider identity.
 - `validate_result_manifest(...)` checks `kanban-capability-result/v1` provider outputs before state updates.
 - `decide_gate_status(manifest)` maps provider results into Javis gate states; `review_required` becomes `review`, while real blockers remain `blocked`.
 - `KanbanStateStore(root)` persists the minimal task/result/gate loop under `project-state/kanban`: task envelopes, result manifests, `kanban-state.json`, and gate indexes.
-- `KanbanOrchestrator(project_root=..., providers_root=...)` is the minimal end-to-end orchestration facade: `dispatch_task(...)` selects a provider by capability and records the task envelope, `ingest_result(...)` validates and persists the provider result manifest, and `approve_review(task_id, evidence=[...])` advances a reviewed task from `review` to `completed`.
+- `KanbanOrchestrator(project_root=..., providers_root=...)` is the minimal end-to-end orchestration facade: `dispatch_task(...)` selects a provider by capability and records the task envelope, `ingest_result(...)` or `ingest_result_path(...)` validates and persists the provider result manifest, and `approve_review(task_id, evidence=[...])` advances a reviewed task from `review` to `completed`.
+- `write_fixture_provider_result(task_envelope_path=..., provider=...)` is a deterministic fake-provider helper for contract tests and local dry-runs; do not treat it as a real provider implementation.
 
 These helpers are deliberately small and provider-agnostic. Extend them by contract tests first; do not reintroduce legacy orchestration coupling.
 
