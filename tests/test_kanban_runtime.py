@@ -8,7 +8,10 @@ from plantodelivery.kanban_runtime import (
     KanbanContractError,
     KanbanOrchestrator,
     KanbanSQLiteStateStore,
+    DispatchRecord,
+    IngestRecord,
     KanbanStateStore,
+    ReviewRecord,
     bootstrap_provider_registry_from_manifests,
     create_task_envelope,
     decide_gate_status,
@@ -570,6 +573,65 @@ def test_sqlite_state_store_persists_provider_recommendations_for_dag_unlock(tmp
     assert index["tasks"]["visual-pass"]["gate_status"] == "ready"
     assert index["tasks"]["visual-pass"]["depends_on"] == ["task-db-dag-source"]
     assert index["gates"]["ready"] == ["visual-pass"]
+
+
+def test_orchestrator_dispatches_next_ready_recommended_task_from_db_state(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+    write_manifest(providers_root / "idea-to-tech" / "provider-manifest.json", "idea-to-tech", ["technical_blueprint"])
+    write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
+    state_root = tmp_path / "project-state" / "kanban"
+    orchestrator = KanbanOrchestrator(
+        project_root=tmp_path,
+        providers_root=providers_root,
+        state_store=KanbanSQLiteStateStore(state_root),
+    )
+
+    source = orchestrator.dispatch_task(
+        task_id="task-blueprint",
+        capability="technical_blueprint",
+        active_slice={"feature": "dispatch from recommendation"},
+        input_artifact_refs=[],
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["recommend next implementation task"],
+        allowed_side_effects=["write output_root only"],
+    )
+    result_path = write_fixture_provider_result(
+        task_envelope_path=source.task_path,
+        provider="idea-to-tech",
+        result="completed",
+        changed_files=[],
+        produced_artifacts=["project-state/tech/blueprint.md"],
+        evidence=["blueprint checked"],
+    )
+    manifest = json.loads(result_path.read_text(encoding="utf-8"))
+    manifest["suggested_gate_updates"] = [{"task_id": "task-implement", "gate_status": "ready"}]
+    manifest["next_recommended_task"] = {
+        "task_id": "task-implement",
+        "capability": "visual_implementation",
+        "active_slice": {"page": "/mall"},
+        "input_artifact_refs": ["project-state/tech/blueprint.md"],
+        "expected_outputs": ["result-manifest.json", "parity-report.md"],
+        "verification_expectations": ["mobile parity screenshot"],
+        "allowed_side_effects": ["edit approved page files"],
+        "depends_on": ["task-blueprint"],
+    }
+    result_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    orchestrator.ingest_result_path(result_path)
+
+    recovered = KanbanOrchestrator(
+        project_root=tmp_path,
+        providers_root=providers_root,
+        state_store=KanbanSQLiteStateStore(state_root),
+    )
+    dispatch = recovered.dispatch_next_ready_task()
+
+    assert isinstance(dispatch, DispatchRecord)
+    assert dispatch.provider == "design-to-code"
+    assert dispatch.capability == "visual_implementation"
+    assert dispatch.envelope["task_id"] == "task-implement"
+    assert dispatch.envelope["active_slice"] == {"page": "/mall"}
+    assert dispatch.envelope["input_artifact_refs"] == ["project-state/tech/blueprint.md"]
+    assert KanbanSQLiteStateStore(state_root).load_index()["tasks"]["task-implement"]["gate_status"] == "dispatched"
 
 
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:

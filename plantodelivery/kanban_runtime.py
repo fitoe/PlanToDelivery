@@ -126,6 +126,12 @@ class KanbanStateStore:
     def load_task(self, task_id: str) -> dict[str, Any]:
         return _load_json(self.tasks_root / task_id / "task-envelope.json")
 
+    def find_next_ready_task(self) -> dict[str, Any] | None:
+        for task_id, task in sorted(self.load_index().get("tasks", {}).items()):
+            if task.get("gate_status") == "ready":
+                return dict(task)
+        return None
+
     def record_result(self, manifest: dict[str, Any]) -> Path:
         validated = validate_result_manifest(manifest)
         task_id = validated["task_id"]
@@ -528,6 +534,30 @@ class KanbanOrchestrator:
     def approve_review(self, task_id: str, *, evidence: list[str]) -> ReviewRecord:
         self.store.approve_review(task_id, evidence)
         return ReviewRecord(task_id=task_id, gate_status="completed", evidence=list(evidence))
+
+    def dispatch_next_ready_task(self) -> DispatchRecord | None:
+        task = self.store.find_next_ready_task()
+        if task is None:
+            return None
+        required_fields = {
+            "task_id",
+            "capability",
+            "active_slice",
+            "input_artifact_refs",
+            "expected_outputs",
+            "verification_expectations",
+            "allowed_side_effects",
+        }
+        _require_fields(task, required_fields)
+        return self.dispatch_task(
+            task_id=task["task_id"],
+            capability=task["capability"],
+            active_slice=task["active_slice"],
+            input_artifact_refs=list(task["input_artifact_refs"]),
+            expected_outputs=list(task["expected_outputs"]),
+            verification_expectations=list(task["verification_expectations"]),
+            allowed_side_effects=list(task["allowed_side_effects"]),
+        )
 
 
 def _load_json(path: Path) -> dict[str, Any]:
