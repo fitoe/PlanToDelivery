@@ -68,7 +68,9 @@ Use it for deterministic contract work before/after provider dispatch:
 - `validate_result_manifest(...)` checks `kanban-capability-result/v1` provider outputs before state updates.
 - `decide_gate_status(manifest)` maps provider results into Javis gate states; `review_required` becomes `review`, while real blockers remain `blocked`.
 - `KanbanStateStore(root)` persists the minimal task/result/gate loop under `project-state/kanban`: task envelopes, result manifests, `kanban-state.json`, and gate indexes.
-- `KanbanOrchestrator(project_root=..., providers_root=...)` is the minimal end-to-end orchestration facade: `dispatch_task(...)` selects a provider by capability and records the task envelope, `ingest_result(...)` or `ingest_result_path(...)` validates and persists the provider result manifest, and `approve_review(task_id, evidence=[...])` advances a reviewed task from `review` to `completed`.
+- `InMemoryKanbanBoardAdapter()` mirrors task/gate changes as board cards for DB-backed adapter tests; board/user-visible cards should keep canonical English `gate_status` plus Chinese `display_status` such as `已派发`, `待审查`, `已完成`, and `已阻塞`.
+- `display_gate_status(gate_status)` returns the Chinese label for board/UI/progress display while preserving English contract enums for schemas and provider manifests.
+- `KanbanOrchestrator(project_root=..., providers_root=..., board=...)` is the minimal end-to-end orchestration facade: `dispatch_task(...)` selects a provider by capability, records the task envelope, and syncs board card state; `ingest_result(...)` or `ingest_result_path(...)` validates and persists the provider result manifest, updates gate status, and syncs board card state; `approve_review(task_id, evidence=[...])` advances a reviewed task from `review` to `completed` and syncs board card state.
 - `write_fixture_provider_result(task_envelope_path=..., provider=...)` is a deterministic fake-provider helper for contract tests and local dry-runs; do not treat it as a real provider implementation.
 
 These helpers are deliberately small and provider-agnostic. Extend them by contract tests first; do not reintroduce legacy orchestration coupling.

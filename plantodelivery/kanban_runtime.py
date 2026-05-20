@@ -12,6 +12,18 @@ PROVIDER_SCHEMA = "provider-manifest/v1"
 PROVIDER_REGISTRY_SCHEMA = "provider-registry/v1"
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
 STATE_SCHEMA = "plantodelivery-kanban-state/v1"
+DISPLAY_GATE_STATUSES = {
+    "backlog": "待办",
+    "ready": "待派发",
+    "dispatched": "已派发",
+    "running": "进行中",
+    "review": "待审查",
+    "blocked": "已阻塞",
+    "partial": "部分完成",
+    "completed": "已完成",
+    "failed": "失败",
+    "cancelled": "已取消",
+}
 
 
 class KanbanContractError(ValueError):
@@ -51,6 +63,38 @@ class ReviewRecord:
     task_id: str
     gate_status: str
     evidence: list[str]
+
+
+@dataclass(frozen=True)
+class BoardEvent:
+    task_id: str
+    gate_status: str
+    display_status: str
+    action: str
+
+
+class InMemoryKanbanBoardAdapter:
+    """Test/dry-run board adapter mirroring task state as visible Kanban cards."""
+
+    def __init__(self) -> None:
+        self.cards: dict[str, dict[str, Any]] = {}
+        self.events: list[dict[str, Any]] = []
+
+    def upsert_card(self, task: dict[str, Any], *, action: str = "upsert") -> None:
+        task_id = task["task_id"]
+        gate_status = task.get("gate_status", "dispatched")
+        card = dict(self.cards.get(task_id, {}))
+        card.update(task)
+        card["display_status"] = display_gate_status(gate_status)
+        self.cards[task_id] = card
+        self.events.append(
+            {
+                "task_id": task_id,
+                "gate_status": gate_status,
+                "display_status": card["display_status"],
+                "action": action,
+            }
+        )
 
 
 class KanbanStateStore:
@@ -160,10 +204,11 @@ class KanbanStateStore:
 class KanbanOrchestrator:
     """Minimal PlanToDelivery orchestration API over registry + state store."""
 
-    def __init__(self, *, project_root: str | Path, providers_root: str | Path, state_root: str | Path | None = None) -> None:
+    def __init__(self, *, project_root: str | Path, providers_root: str | Path, state_root: str | Path | None = None, board: InMemoryKanbanBoardAdapter | None = None) -> None:
         self.project_root = Path(project_root)
         self.providers_root = Path(providers_root)
         self.store = KanbanStateStore(state_root or self.project_root / "project-state" / "kanban")
+        self.board = board
 
     def dispatch_task(
         self,
@@ -193,6 +238,8 @@ class KanbanOrchestrator:
             allowed_side_effects=allowed_side_effects,
         )
         task_path = self.store.record_task(envelope)
+        if self.board is not None:
+            self.board.upsert_card(self.store.load_index()["tasks"][task_id], action="dispatch")
         return DispatchRecord(
             provider=provider.provider,
             capability=capability,
@@ -212,6 +259,8 @@ class KanbanOrchestrator:
             expected_capability=task["capability"],
         )
         result_path = self.store.record_result(validated)
+        if self.board is not None:
+            self.board.upsert_card(self.store.load_index()["tasks"][task_id], action="ingest_result")
         return IngestRecord(
             task_id=task_id,
             capability=validated["capability"],
@@ -225,6 +274,8 @@ class KanbanOrchestrator:
 
     def approve_review(self, task_id: str, *, evidence: list[str]) -> ReviewRecord:
         self.store.approve_review(task_id, evidence)
+        if self.board is not None:
+            self.board.upsert_card(self.store.load_index()["tasks"][task_id], action="approve_review")
         return ReviewRecord(task_id=task_id, gate_status="completed", evidence=list(evidence))
 
 
@@ -247,6 +298,10 @@ def _require_fields(data: dict[str, Any], fields: set[str]) -> None:
     missing = sorted(field for field in fields if field not in data)
     if missing:
         raise KanbanContractError(f"missing required fields: {', '.join(missing)}")
+
+
+def display_gate_status(gate_status: str) -> str:
+    return DISPLAY_GATE_STATUSES.get(gate_status, gate_status)
 
 
 def load_provider_registry_config(path: str | Path) -> dict[str, Any]:
