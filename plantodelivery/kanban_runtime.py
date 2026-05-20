@@ -97,6 +97,36 @@ class InMemoryKanbanBoardAdapter:
         )
 
 
+class JsonKanbanBoardAdapter(InMemoryKanbanBoardAdapter):
+    """Persistent board adapter for the minimal DB-backed Kanban state seam.
+
+    The file is intentionally tiny and JSON-based for now: it behaves like a
+    DB table snapshot with cards and events, while keeping the orchestrator
+    coupled only to the `upsert_card` adapter method.
+    """
+
+    def __init__(self, path: str | Path) -> None:
+        self.path = Path(path)
+        if self.path.exists():
+            data = _load_json(self.path)
+            self.cards = data.get("cards", {})
+            self.events = data.get("events", [])
+        else:
+            self.cards = {}
+            self.events = []
+
+    def upsert_card(self, task: dict[str, Any], *, action: str = "upsert") -> None:
+        super().upsert_card(task, action=action)
+        _write_json(
+            self.path,
+            {
+                "schema": "plantodelivery-kanban-board/v1",
+                "cards": self.cards,
+                "events": self.events,
+            },
+        )
+
+
 class KanbanStateStore:
     """Persist the minimal Javis Kanban task/result/gate state on disk."""
 

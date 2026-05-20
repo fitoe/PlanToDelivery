@@ -5,6 +5,7 @@ import pytest
 
 from plantodelivery.kanban_runtime import (
     InMemoryKanbanBoardAdapter,
+    JsonKanbanBoardAdapter,
     KanbanContractError,
     KanbanOrchestrator,
     KanbanStateStore,
@@ -311,6 +312,49 @@ def test_board_adapter_records_chinese_display_status_for_task_flow(tmp_path: Pa
     assert board.cards["task-board"]["gate_status"] == "completed"
     assert board.cards["task-board"]["display_status"] == "已完成"
     assert board.cards["task-board"]["review"]["evidence"] == ["人工审查通过"]
+
+
+def test_json_board_adapter_persists_chinese_display_status_for_reload(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+    write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
+    board_path = tmp_path / "kanban-board.json"
+    board = JsonKanbanBoardAdapter(board_path)
+    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root, board=board)
+
+    orchestrator.dispatch_task(
+        task_id="task-db-board",
+        capability="visual_implementation",
+        active_slice={"page": "/mall", "goal": "持久化中文看板状态"},
+        input_artifact_refs=[],
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=[],
+        allowed_side_effects=["write output_root only"],
+    )
+    persisted = JsonKanbanBoardAdapter(board_path)
+    assert persisted.cards["task-db-board"]["gate_status"] == "dispatched"
+    assert persisted.cards["task-db-board"]["display_status"] == "已派发"
+
+    orchestrator.ingest_result(
+        {
+            "schema": "kanban-capability-result/v1",
+            "task_id": "task-db-board",
+            "capability": "visual_implementation",
+            "provider": "design-to-code",
+            "result": "blocked",
+            "changed_files": [],
+            "produced_artifacts": [],
+            "evidence": [],
+            "blockers": ["等待设计冻结"],
+            "debts": [],
+            "review_required": False,
+            "suggested_gate_updates": [],
+            "next_recommended_task": None,
+        }
+    )
+    reloaded = JsonKanbanBoardAdapter(board_path)
+    assert reloaded.cards["task-db-board"]["gate_status"] == "blocked"
+    assert reloaded.cards["task-db-board"]["display_status"] == "已阻塞"
+    assert reloaded.events[-1]["action"] == "ingest_result"
 
 
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
