@@ -25,6 +25,41 @@ The flow is not always strictly linear. PlanToDelivery may skip a capability onl
 
 ## Dispatch contract
 
+### Existing Hermes Kanban bridge
+
+PlanToDelivery must not require custom Hermes Kanban columns or project-local DB fields. For existing Hermes Kanban tasks, P2D-specific routing metadata is carried as an opaque marker in the task body or in a task comment:
+
+```md
+<!-- P2D_META <base64url-json> P2D_META -->
+```
+
+Decoded payload schema:
+
+```json
+{
+  "schema": "p2d-meta/v1",
+  "task_id": "task-001",
+  "capability": "technical_blueprint",
+  "active_slice": {"page": "/mall"},
+  "provider": "idea-to-tech",
+  "output_root": "project-state/kanban/tasks/task-001",
+  "input_artifact_refs": [],
+  "expected_outputs": ["result-manifest.json"],
+  "verification_expectations": [],
+  "allowed_side_effects": ["write output_root only"],
+  "depends_on": []
+}
+```
+
+Rules:
+
+- `schema`, `task_id`, `capability`, and non-empty `active_slice` are required.
+- Body marker and comment marker are both valid. This supports migration from cards whose body is already user-facing prose.
+- If both body and comments contain markers, they must decode to the same object; conflicting markers are invalid and must be resolved before dispatch.
+- The marker is a semantic adapter only. Hermes Kanban remains canonical for claim/complete/block/review lifecycle; P2D marker payloads only compile a card into a `kanban-capability-task/v1` envelope.
+- Prefer comment markers when retrofitting existing tasks to avoid rewriting user-visible task bodies.
+- Use `append_p2d_meta_marker`, `extract_p2d_meta_marker`, `validate_p2d_meta`, and `p2d_meta_to_task_envelope` from `plantodelivery.kanban_runtime` for deterministic migration/validation.
+
 1. Select by requested capability from `provider-registry/v1`.
 2. Load the selected provider's `provider-manifest/v1` snapshot or compact manifest.
 3. Create a `kanban-capability-task/v1` envelope with active-slice artifacts, expected outputs, allowed side effects, review policy, and blocking policy.

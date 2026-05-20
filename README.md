@@ -165,6 +165,22 @@ docs/orchestrator/
   milestones/
 ```
 
+## Provider capability model
+
+PlanToDelivery remains usable even when the full provider set is not installed. Runtime capability checks should distinguish:
+
+- **core capability available**: `plantodelivery.kanban_runtime` imports, `P2DMeta` marker helpers work, and provider registry/task/result schemas validate;
+- **provider registry available**: a `provider-registry/v1` config or discoverable `provider-manifest/v1` snapshots exist;
+- **specialist provider available**: a selected capability resolves to a concrete provider manifest;
+- **Hermes board backend available**: canonical board transitions can be executed through Hermes Kanban. Until that backend is implemented, JSON state is only a fallback/export/dry-run overlay.
+
+Doctor/capability checks should report missing specialist providers as degraded routing, not as failure of the PlanToDelivery skill itself. Safe fallback behavior is:
+
+1. validate or append `P2D_META` marker;
+2. compile marker to `kanban-capability-task/v1` artifact envelope;
+3. run fixture/local dry-run only if explicitly requested;
+4. do not claim Hermes lifecycle transitions unless the Hermes Kanban backend/API is available.
+
 ## 通过 skills CLI 安装
 
 如果你使用的是支持 Agent Skills 生态的工具链，可以直接通过 `skills` CLI 安装本仓库：

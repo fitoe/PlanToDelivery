@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +11,9 @@ TASK_SCHEMA = "kanban-capability-task/v1"
 RESULT_SCHEMA = "kanban-capability-result/v1"
 PROVIDER_SCHEMA = "provider-manifest/v1"
 PROVIDER_REGISTRY_SCHEMA = "provider-registry/v1"
+P2D_META_SCHEMA = "p2d-meta/v1"
+P2D_META_BEGIN = "<!-- P2D_META"
+P2D_META_END = "P2D_META -->"
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
 STATE_SCHEMA = "plantodelivery-kanban-state/v1"
 DISPLAY_GATE_STATUSES = {
@@ -28,6 +32,59 @@ DISPLAY_GATE_STATUSES = {
 
 class KanbanContractError(ValueError):
     """Raised when a Kanban provider contract artifact is invalid."""
+
+
+@dataclass(frozen=True)
+class P2DMeta:
+    task_id: str
+    capability: str
+    active_slice: dict[str, Any]
+    provider: str | None = None
+    output_root: str | None = None
+    input_artifact_refs: list[str] | None = None
+    expected_outputs: list[str] | None = None
+    verification_expectations: list[str] | None = None
+    allowed_side_effects: list[str] | None = None
+    gate_status: str | None = None
+    depends_on: list[str] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "schema": P2D_META_SCHEMA,
+            "task_id": self.task_id,
+            "capability": self.capability,
+            "active_slice": dict(self.active_slice),
+        }
+        optional = {
+            "provider": self.provider,
+            "output_root": self.output_root,
+            "input_artifact_refs": self.input_artifact_refs,
+            "expected_outputs": self.expected_outputs,
+            "verification_expectations": self.verification_expectations,
+            "allowed_side_effects": self.allowed_side_effects,
+            "gate_status": self.gate_status,
+            "depends_on": self.depends_on,
+        }
+        for key, value in optional.items():
+            if value is not None:
+                data[key] = value
+        return validate_p2d_meta(data).to_dict_raw()
+
+    def to_dict_raw(self) -> dict[str, Any]:
+        return {
+            "schema": P2D_META_SCHEMA,
+            "task_id": self.task_id,
+            "capability": self.capability,
+            "active_slice": dict(self.active_slice),
+            **({"provider": self.provider} if self.provider is not None else {}),
+            **({"output_root": self.output_root} if self.output_root is not None else {}),
+            **({"input_artifact_refs": list(self.input_artifact_refs)} if self.input_artifact_refs is not None else {}),
+            **({"expected_outputs": list(self.expected_outputs)} if self.expected_outputs is not None else {}),
+            **({"verification_expectations": list(self.verification_expectations)} if self.verification_expectations is not None else {}),
+            **({"allowed_side_effects": list(self.allowed_side_effects)} if self.allowed_side_effects is not None else {}),
+            **({"gate_status": self.gate_status} if self.gate_status is not None else {}),
+            **({"depends_on": list(self.depends_on)} if self.depends_on is not None else {}),
+        }
 
 
 @dataclass(frozen=True)
@@ -347,6 +404,120 @@ def _require_fields(data: dict[str, Any], fields: set[str]) -> None:
     missing = sorted(field for field in fields if field not in data)
     if missing:
         raise KanbanContractError(f"missing required fields: {', '.join(missing)}")
+
+
+def validate_p2d_meta(data: P2DMeta | dict[str, Any]) -> P2DMeta:
+    raw = data.to_dict_raw() if isinstance(data, P2DMeta) else dict(data)
+    _require_fields(raw, {"schema", "task_id", "capability", "active_slice"})
+    if raw["schema"] != P2D_META_SCHEMA:
+        raise KanbanContractError(f"unsupported P2D_META schema: {raw['schema']}")
+    for field in ["task_id", "capability"]:
+        if not isinstance(raw[field], str) or not raw[field].strip():
+            raise KanbanContractError(f"{field} must be a non-empty string")
+    if not isinstance(raw["active_slice"], dict) or not raw["active_slice"]:
+        raise KanbanContractError("active_slice must be a non-empty object")
+    for field in ["provider", "output_root", "gate_status"]:
+        if field in raw and raw[field] is not None and not isinstance(raw[field], str):
+            raise KanbanContractError(f"{field} must be a string")
+    for field in ["input_artifact_refs", "expected_outputs", "verification_expectations", "allowed_side_effects", "depends_on"]:
+        if field in raw and raw[field] is not None:
+            if not isinstance(raw[field], list) or not all(isinstance(item, str) for item in raw[field]):
+                raise KanbanContractError(f"{field} must be a list of strings")
+    return P2DMeta(
+        task_id=raw["task_id"],
+        capability=raw["capability"],
+        active_slice=raw["active_slice"],
+        provider=raw.get("provider"),
+        output_root=raw.get("output_root"),
+        input_artifact_refs=list(raw["input_artifact_refs"]) if raw.get("input_artifact_refs") is not None else None,
+        expected_outputs=list(raw["expected_outputs"]) if raw.get("expected_outputs") is not None else None,
+        verification_expectations=list(raw["verification_expectations"]) if raw.get("verification_expectations") is not None else None,
+        allowed_side_effects=list(raw["allowed_side_effects"]) if raw.get("allowed_side_effects") is not None else None,
+        gate_status=raw.get("gate_status"),
+        depends_on=list(raw["depends_on"]) if raw.get("depends_on") is not None else None,
+    )
+
+
+def append_p2d_meta_marker(text: str, meta: P2DMeta | dict[str, Any]) -> str:
+    validated = validate_p2d_meta(meta).to_dict_raw()
+    payload = json.dumps(validated, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    encoded = base64.urlsafe_b64encode(payload).decode("ascii")
+    marker = f"{P2D_META_BEGIN} {encoded} {P2D_META_END}"
+    return f"{text.rstrip()}\n\n{marker}\n" if text.strip() else f"{marker}\n"
+
+
+def _iter_p2d_meta_payloads(text: str) -> list[str]:
+    payloads: list[str] = []
+    start = 0
+    while True:
+        begin = text.find(P2D_META_BEGIN, start)
+        if begin < 0:
+            break
+        payload_start = begin + len(P2D_META_BEGIN)
+        end = text.find(P2D_META_END, payload_start)
+        if end < 0:
+            raise KanbanContractError("unterminated P2D_META marker")
+        payload = text[payload_start:end].strip()
+        if not payload:
+            raise KanbanContractError("empty P2D_META marker")
+        payloads.append(payload)
+        start = end + len(P2D_META_END)
+    return payloads
+
+
+def _decode_p2d_meta_payload(payload: str) -> P2DMeta:
+    try:
+        decoded = base64.urlsafe_b64decode(payload.encode("ascii"))
+        raw = json.loads(decoded.decode("utf-8"))
+    except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise KanbanContractError(f"invalid P2D_META marker: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise KanbanContractError("P2D_META marker must decode to an object")
+    return validate_p2d_meta(raw)
+
+
+def extract_p2d_meta_marker(*, body: str, comments: list[str] | None = None) -> P2DMeta | None:
+    markers: list[P2DMeta] = []
+    for payload in _iter_p2d_meta_payloads(body or ""):
+        markers.append(_decode_p2d_meta_payload(payload))
+    for comment in comments or []:
+        for payload in _iter_p2d_meta_payloads(comment or ""):
+            markers.append(_decode_p2d_meta_payload(payload))
+    if not markers:
+        return None
+    first = markers[0]
+    for marker in markers[1:]:
+        if marker.to_dict_raw() != first.to_dict_raw():
+            raise KanbanContractError("conflicting P2D_META markers")
+    return first
+
+
+def p2d_meta_to_task_envelope(
+    meta: P2DMeta | dict[str, Any],
+    *,
+    project_root: str | Path,
+    default_output_root: str | Path | None = None,
+) -> dict[str, Any]:
+    validated = validate_p2d_meta(meta)
+    output_root = validated.output_root or default_output_root
+    if output_root is None:
+        output_root = Path(project_root) / "project-state" / "kanban" / "tasks" / validated.task_id
+    envelope = create_task_envelope(
+        task_id=validated.task_id,
+        capability=validated.capability,
+        project_root=project_root,
+        active_slice=validated.active_slice,
+        input_artifact_refs=validated.input_artifact_refs or [],
+        output_root=output_root,
+        expected_outputs=validated.expected_outputs or ["result-manifest.json"],
+        verification_expectations=validated.verification_expectations or [],
+        allowed_side_effects=validated.allowed_side_effects or ["write output_root only"],
+    )
+    if validated.provider is not None:
+        envelope["provider_hint"] = validated.provider
+    if validated.depends_on is not None:
+        envelope["depends_on"] = list(validated.depends_on)
+    return envelope
 
 
 def _dependencies_completed(task: dict[str, Any], tasks: dict[str, dict[str, Any]]) -> bool:

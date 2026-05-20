@@ -9,13 +9,18 @@ from plantodelivery.kanban_runtime import (
     DispatchRecord,
     IngestRecord,
     KanbanStateStore,
+    P2DMeta,
     ReviewRecord,
+    append_p2d_meta_marker,
     bootstrap_provider_registry_from_manifests,
     create_task_envelope,
     decide_gate_status,
     display_gate_status,
+    extract_p2d_meta_marker,
     load_provider_registry,
     load_provider_registry_config,
+    p2d_meta_to_task_envelope,
+    validate_p2d_meta,
     validate_result_manifest,
     write_fixture_provider_result,
     write_provider_registry_config,
@@ -43,6 +48,82 @@ def write_manifest(path: Path, provider: str, capabilities: list[str]) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def test_p2d_meta_marker_round_trips_from_body_and_comments() -> None:
+    meta = P2DMeta(
+        task_id="task-001",
+        capability="technical_blueprint",
+        active_slice={"page": "/mall", "goal": "define seams"},
+        provider="idea-to-tech",
+        output_root="project-state/kanban/tasks/task-001",
+        input_artifact_refs=["project-state/design/mall-handoff.json"],
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["schema-valid result manifest"],
+        allowed_side_effects=["write output_root only"],
+    )
+
+    body = append_p2d_meta_marker("Implement the next bounded slice.", meta)
+    extracted = extract_p2d_meta_marker(body=body, comments=[])
+
+    assert extracted is not None
+    assert extracted.task_id == "task-001"
+    assert extracted.capability == "technical_blueprint"
+    assert extracted.provider == "idea-to-tech"
+    assert extracted.active_slice["page"] == "/mall"
+    assert extracted.to_dict()["schema"] == "p2d-meta/v1"
+
+    comment_marker = append_p2d_meta_marker("", meta)
+    assert extract_p2d_meta_marker(body="plain user task", comments=["noise", comment_marker]) == extracted
+
+
+def test_p2d_meta_marker_rejects_invalid_or_conflicting_markers() -> None:
+    valid = append_p2d_meta_marker(
+        "body",
+        {
+            "schema": "p2d-meta/v1",
+            "task_id": "task-001",
+            "capability": "visual_implementation",
+            "active_slice": {"page": "/mall"},
+            "output_root": "project-state/kanban/tasks/task-001",
+        },
+    )
+    conflict = append_p2d_meta_marker(
+        "comment",
+        {
+            "schema": "p2d-meta/v1",
+            "task_id": "task-002",
+            "capability": "visual_implementation",
+            "active_slice": {"page": "/mall"},
+            "output_root": "project-state/kanban/tasks/task-002",
+        },
+    )
+
+    with pytest.raises(KanbanContractError, match="conflicting P2D_META markers"):
+        extract_p2d_meta_marker(body=valid, comments=[conflict])
+
+    with pytest.raises(KanbanContractError, match="missing required fields"):
+        validate_p2d_meta({"schema": "p2d-meta/v1", "task_id": "missing-capability"})
+
+
+def test_p2d_meta_marker_creates_task_envelope_without_extra_board_fields(tmp_path: Path) -> None:
+    meta = P2DMeta(
+        task_id="task-from-card",
+        capability="product_visual_design",
+        active_slice={"page": "/home"},
+        provider="idea-to-design",
+        output_root="project-state/kanban/tasks/task-from-card",
+        depends_on=["idea-freeze"],
+    )
+
+    envelope = p2d_meta_to_task_envelope(meta, project_root=tmp_path)
+
+    assert envelope["schema"] == "kanban-capability-task/v1"
+    assert envelope["task_id"] == "task-from-card"
+    assert envelope["capability"] == "product_visual_design"
+    assert envelope["provider_hint"] == "idea-to-design"
+    assert envelope["depends_on"] == ["idea-freeze"]
+    assert "p2d_meta" not in envelope
 
 
 def test_registry_loads_replaceable_providers_by_capability(tmp_path: Path) -> None:
