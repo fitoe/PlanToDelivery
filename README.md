@@ -111,13 +111,16 @@ PlanToDelivery 以阶段状态机为核心：
 - 需要写模板时先查 `templates/index.md`
 - 再加载对应的 reference / template / skill
 
-## 三 Skill 协作方式
+## Provider 协作方式
 
-PlanToDelivery 可以作为总控，推荐这样协作：
+PlanToDelivery 是 Javis/Kanban V2 的 canonical orchestrator。它按 capability 分发 provider，不按 provider 内部实现耦合。默认 provider 关系：
 
-- `idea-to-design`：负责把想法整理成产品结构、页面规划、设计说明和视觉稿
-- `design-to-code`：负责把已批准设计源转成高还原代码，并处理缺图补足
-- `PlanToDelivery`：负责阶段、门禁、状态、验收和交付闭环
+- `idea-to-design`：`product_visual_design`、`visual_source_creation`，负责产品/设计 artifact、视觉源和 Level-3 handoff
+- `IdeaToTech`：`technical_blueprint`、`implementation_planning`、`verification_strategy`，负责技术决策、实施计划和验证矩阵
+- `design-to-code`：`visual_implementation`，负责从 approved visual/design handoff 生成代码、截图和 parity evidence
+- `PlanToDelivery`：负责 provider registry、task envelope、result manifest ingestion、canonical gates、状态、验收和交付闭环
+
+详细协作边界见 [docs/contracts/provider-collaboration-v2.md](./docs/contracts/provider-collaboration-v2.md)。
 
 三者不是硬耦合关系。PlanToDelivery 接受等价产物：
 
@@ -201,8 +204,8 @@ npx skills add .
 - 核心 references / templates 已建立
 - durable docs 协议已建立
 - GitHub 协作文件已补齐
-- `idea-to-design`、`design-to-code`、Playwright、imagegen 的路由已接入
-- 轻量启动、artifact 契约和模板索引已补齐
+- `idea-to-design`、`IdeaToTech`、`design-to-code`、Playwright、imagegen 的路由已接入
+- 轻量启动、artifact 契约、provider registry、provider collaboration 和模板索引已补齐
 
 下一步最重要的是：
 

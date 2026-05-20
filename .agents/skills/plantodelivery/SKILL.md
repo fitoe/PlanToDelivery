@@ -181,6 +181,7 @@ Load only when needed:
 - `references/kanban-skill-v2-redesign.md` — V2 redesign direction and role boundaries.
 - `docs/contracts/kanban-capability-envelope-v1.md` — task/result envelope details.
 - `docs/contracts/provider-registry-v1.md` — registry semantics.
+- `docs/contracts/provider-collaboration-v2.md` — provider roles, capability flow, review/block semantics, and alignment checklist.
 - `docs/contracts/kanban-gate-policy-v1.md` — review/block/gate policy.
 - `docs/contracts/provider-onboarding-checklist.md` — adding or replacing providers.
 - `references/main-skill-full-reference.md` — legacy detailed workflow only when the compact kernel is insufficient.

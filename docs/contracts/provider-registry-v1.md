@@ -58,3 +58,15 @@ A registry is valid when:
 - Every capability is a non-empty string.
 - Duplicate provider IDs are rejected.
 - Missing manifests are blockers before dispatch.
+
+## Cross-Provider Alignment
+
+Default registry entries must stay aligned with provider-side manifests and collaboration docs:
+
+| Provider | Provider-side manifest | Collaboration doc |
+|---|---|---|
+| `idea-to-design` | `IdeaToDesign/contracts/provider-manifest.json` | `IdeaToDesign/docs/provider-collaboration-v2.md` |
+| `idea-to-tech` | `IdeaToTech/contracts/provider-manifest.json` | `IdeaToTech/docs/provider-collaboration-v2.md` |
+| `design-to-code` | `DesignToCode/contracts/provider-manifest.json` | `DesignToCode/docs/provider-collaboration-v2.md` |
+
+PlanToDelivery owns only the normalized registry snapshot and canonical gate decisions. Provider repositories own their own task/result contract details. When a provider changes capability names, review semantics, or result fields, update both the provider manifest and this registry contract before dispatching new tasks.
