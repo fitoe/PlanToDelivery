@@ -622,8 +622,9 @@ def test_orchestrator_dispatches_next_ready_recommended_task_from_db_state(tmp_p
     recovered = KanbanOrchestrator(
         project_root=tmp_path,
         providers_root=providers_root,
-        state_store=KanbanSQLiteStateStore(state_root),
+        state_backend="sqlite",
     )
+    assert isinstance(recovered.store, KanbanSQLiteStateStore)
     dispatch = recovered.dispatch_next_ready_task()
 
     assert isinstance(dispatch, DispatchRecord)

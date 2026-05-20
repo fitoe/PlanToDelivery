@@ -560,10 +560,26 @@ class KanbanSQLiteStateStore(KanbanStateStore):
 class KanbanOrchestrator:
     """Minimal PlanToDelivery orchestration API over registry + state store."""
 
-    def __init__(self, *, project_root: str | Path, providers_root: str | Path, state_root: str | Path | None = None, state_store: KanbanStateStore | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        project_root: str | Path,
+        providers_root: str | Path,
+        state_root: str | Path | None = None,
+        state_store: KanbanStateStore | None = None,
+        state_backend: str = "json",
+    ) -> None:
         self.project_root = Path(project_root)
         self.providers_root = Path(providers_root)
-        self.store = state_store or KanbanStateStore(state_root or self.project_root / "project-state" / "kanban")
+        resolved_state_root = state_root or self.project_root / "project-state" / "kanban"
+        if state_store is not None:
+            self.store = state_store
+        elif state_backend == "json":
+            self.store = KanbanStateStore(resolved_state_root)
+        elif state_backend == "sqlite":
+            self.store = KanbanSQLiteStateStore(resolved_state_root)
+        else:
+            raise KanbanContractError(f"unsupported state_backend: {state_backend}")
 
     def dispatch_task(
         self,
