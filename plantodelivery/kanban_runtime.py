@@ -180,6 +180,7 @@ class KanbanStateStore:
         task_entry["display_status"] = display_gate_status("completed")
         task_entry["review"] = {"status": "approved", "evidence": list(evidence)}
         self._sync_card(index, task_id, action="approve_review")
+        self._record_dependency_unlock_events(index, completed_task_id=task_id)
         self._rebuild_gates(index)
         self._write_index(index)
 
@@ -204,6 +205,27 @@ class KanbanStateStore:
                 "action": action,
             }
         )
+
+    @staticmethod
+    def _record_dependency_unlock_events(index: dict[str, Any], *, completed_task_id: str) -> None:
+        tasks = index.get("tasks", {})
+        for task_id, task in sorted(tasks.items()):
+            if task.get("gate_status") != "ready":
+                continue
+            if completed_task_id not in (task.get("depends_on") or []):
+                continue
+            if not _dependencies_completed(task, tasks):
+                continue
+            display_status = display_gate_status("ready")
+            task["display_status"] = display_status
+            index.setdefault("events", []).append(
+                {
+                    "task_id": task_id,
+                    "gate_status": "ready",
+                    "display_status": display_status,
+                    "action": "dependency_unlocked",
+                }
+            )
 
     @staticmethod
     def _rebuild_gates(index: dict[str, Any]) -> None:
@@ -374,6 +396,7 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                 (task_id, "approved", json.dumps(list(evidence), ensure_ascii=False)),
             )
         self._sync_card_db(task_id, task_entry, action="approve_review")
+        self._record_dependency_unlock_events_db(completed_task_id=task_id)
 
     def export_index(self) -> Path:
         self._write_index(self.load_index())
@@ -420,6 +443,25 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                 "insert into kanban_events(task_id, gate_status, display_status, action) values (?, ?, ?, ?)",
                 (task_id, gate_status, task_entry["display_status"], action),
             )
+
+    def _record_dependency_unlock_events_db(self, *, completed_task_id: str) -> None:
+        index = self.load_index()
+        tasks = index.get("tasks", {})
+        for task_id, task in sorted(tasks.items()):
+            if task.get("gate_status") != "ready":
+                continue
+            if completed_task_id not in (task.get("depends_on") or []):
+                continue
+            if not _dependencies_completed(task, tasks):
+                continue
+            display_status = display_gate_status("ready")
+            task["display_status"] = display_status
+            self._upsert_task(task, envelope=None, result_manifest=None)
+            with self._connect() as conn:
+                conn.execute(
+                    "insert into kanban_events(task_id, gate_status, display_status, action) values (?, ?, ?, ?)",
+                    (task_id, "ready", display_status, "dependency_unlocked"),
+                )
 
     def _apply_provider_recommendations(self, manifest: dict[str, Any]) -> None:
         for update in manifest.get("suggested_gate_updates") or []:

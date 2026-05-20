@@ -681,6 +681,68 @@ def test_orchestrator_skips_ready_task_until_dependencies_completed(tmp_path: Pa
     assert KanbanSQLiteStateStore(state_root).load_index()["tasks"]["task-implementation"]["gate_status"] == "ready"
 
 
+def test_approve_review_unlocks_dependent_ready_task_and_records_unlock_event(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+    write_manifest(providers_root / "idea-to-tech" / "provider-manifest.json", "idea-to-tech", ["technical_blueprint"])
+    write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
+    state_root = tmp_path / "project-state" / "kanban"
+    orchestrator = KanbanOrchestrator(
+        project_root=tmp_path,
+        providers_root=providers_root,
+        state_store=KanbanSQLiteStateStore(state_root),
+    )
+
+    source = orchestrator.dispatch_task(
+        task_id="task-review-blueprint",
+        capability="technical_blueprint",
+        active_slice={"feature": "review unlock dependency"},
+        input_artifact_refs=[],
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["review must approve before implementation"],
+        allowed_side_effects=["write output_root only"],
+    )
+    result_path = write_fixture_provider_result(
+        task_envelope_path=source.task_path,
+        provider="idea-to-tech",
+        result="completed",
+        changed_files=[],
+        produced_artifacts=["project-state/tech/blueprint.md"],
+        evidence=["blueprint reviewed by provider"],
+        review_required=True,
+    )
+    manifest = json.loads(result_path.read_text(encoding="utf-8"))
+    manifest["next_recommended_task"] = {
+        "task_id": "task-dependent-implementation",
+        "capability": "visual_implementation",
+        "active_slice": {"page": "/after-review"},
+        "input_artifact_refs": ["project-state/tech/blueprint.md"],
+        "expected_outputs": ["result-manifest.json"],
+        "verification_expectations": ["dependency unlock is recorded"],
+        "allowed_side_effects": ["edit approved page files"],
+        "depends_on": ["task-review-blueprint"],
+    }
+    result_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    orchestrator.ingest_result_path(result_path)
+
+    assert orchestrator.dispatch_next_ready_task() is None
+
+    orchestrator.approve_review("task-review-blueprint", evidence=["human approved blueprint"])
+    recovered = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root, state_store=KanbanSQLiteStateStore(state_root))
+    dispatch = recovered.dispatch_next_ready_task()
+    index = KanbanSQLiteStateStore(state_root).load_index()
+
+    assert isinstance(dispatch, DispatchRecord)
+    assert dispatch.envelope["task_id"] == "task-dependent-implementation"
+    assert index["tasks"]["task-review-blueprint"]["gate_status"] == "completed"
+    assert index["tasks"]["task-dependent-implementation"]["gate_status"] == "dispatched"
+    assert {
+        "task_id": "task-dependent-implementation",
+        "gate_status": "ready",
+        "display_status": display_gate_status("ready"),
+        "action": "dependency_unlocked",
+    } in index["events"]
+
+
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "idea-to-design" / "provider-manifest.json", "idea-to-design", ["product_visual_design"])
