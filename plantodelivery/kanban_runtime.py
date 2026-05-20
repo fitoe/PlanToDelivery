@@ -340,9 +340,12 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                 "result": validated["result"],
                 "gate_status": gate_status,
                 "display_status": display_gate_status(gate_status),
+                "suggested_gate_updates": list(validated.get("suggested_gate_updates") or []),
+                "next_recommended_task": validated.get("next_recommended_task"),
             }
         )
         self._upsert_task(existing, envelope=None, result_manifest=validated)
+        self._apply_provider_recommendations(validated)
         self._sync_card_db(task_id, existing, action="ingest_result")
         self._record_artifact(task_id, "result_manifest", result_path)
         return result_path
@@ -410,6 +413,44 @@ class KanbanSQLiteStateStore(KanbanStateStore):
                 "insert into kanban_events(task_id, gate_status, display_status, action) values (?, ?, ?, ?)",
                 (task_id, gate_status, task_entry["display_status"], action),
             )
+
+    def _apply_provider_recommendations(self, manifest: dict[str, Any]) -> None:
+        for update in manifest.get("suggested_gate_updates") or []:
+            if not isinstance(update, dict):
+                raise KanbanContractError("suggested_gate_updates entries must be objects")
+            _require_fields(update, {"task_id", "gate_status"})
+            gate_status = update["gate_status"]
+            if not isinstance(gate_status, str) or not gate_status:
+                raise KanbanContractError("suggested gate_status must be a non-empty string")
+            task_id = update["task_id"]
+            if not isinstance(task_id, str) or not task_id:
+                raise KanbanContractError("suggested task_id must be a non-empty string")
+            task_entry = self.load_index().get("tasks", {}).get(task_id, {"task_id": task_id})
+            task_entry.update({k: v for k, v in update.items() if k not in {"reason"}})
+            task_entry.setdefault("capability", update.get("capability") or "")
+            task_entry["gate_status"] = gate_status
+            task_entry["display_status"] = display_gate_status(gate_status)
+            if "reason" in update:
+                task_entry["gate_reason"] = update["reason"]
+            self._upsert_task(task_entry, envelope=None, result_manifest=None)
+            self._sync_card_db(task_id, task_entry, action="suggested_gate_update")
+
+        next_task = manifest.get("next_recommended_task")
+        if next_task is None:
+            return
+        if not isinstance(next_task, dict):
+            raise KanbanContractError("next_recommended_task must be an object or null")
+        _require_fields(next_task, {"task_id", "capability"})
+        task_id = next_task["task_id"]
+        if not isinstance(task_id, str) or not task_id:
+            raise KanbanContractError("next_recommended_task.task_id must be a non-empty string")
+        task_entry = self.load_index().get("tasks", {}).get(task_id, {"task_id": task_id})
+        task_entry.update(next_task)
+        task_entry.setdefault("depends_on", [manifest["task_id"]])
+        task_entry.setdefault("gate_status", "ready")
+        task_entry["display_status"] = display_gate_status(task_entry["gate_status"])
+        self._upsert_task(task_entry, envelope=None, result_manifest=None)
+        self._sync_card_db(task_id, task_entry, action="next_recommended_task")
 
     def _record_artifact(self, task_id: str, artifact_type: str, path: Path) -> None:
         with self._connect() as conn:

@@ -520,6 +520,58 @@ def test_orchestrator_can_use_sqlite_state_store_for_e2e_recovery(tmp_path: Path
     assert KanbanSQLiteStateStore(state_root).load_index()["gates"]["completed"] == ["task-db-e2e"]
 
 
+def test_sqlite_state_store_persists_provider_recommendations_for_dag_unlock(tmp_path: Path) -> None:
+    store = KanbanSQLiteStateStore(tmp_path / "project-state" / "kanban")
+    envelope = create_task_envelope(
+        task_id="task-db-dag-source",
+        capability="technical_blueprint",
+        project_root=tmp_path,
+        active_slice={"feature": "provider driven task DAG"},
+        input_artifact_refs=[],
+        output_root=tmp_path / "project-state" / "kanban" / "tasks" / "task-db-dag-source",
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["recommendations persist in db"],
+        allowed_side_effects=["write output_root only"],
+    )
+    store.record_task(envelope)
+
+    store.record_result(
+        {
+            "schema": "kanban-capability-result/v1",
+            "task_id": "task-db-dag-source",
+            "capability": "technical_blueprint",
+            "provider": "idea-to-tech",
+            "result": "completed",
+            "changed_files": [],
+            "produced_artifacts": ["project-state/tech/blueprint.md"],
+            "evidence": ["blueprint contract checked"],
+            "blockers": [],
+            "debts": [],
+            "review_required": False,
+            "suggested_gate_updates": [
+                {"task_id": "visual-pass", "gate_status": "ready", "reason": "blueprint complete"},
+            ],
+            "next_recommended_task": {
+                "task_id": "visual-pass",
+                "capability": "visual_implementation",
+                "active_slice": {"page": "/mall"},
+                "depends_on": ["task-db-dag-source"],
+            },
+        }
+    )
+
+    reloaded = KanbanSQLiteStateStore(tmp_path / "project-state" / "kanban")
+    index = reloaded.load_index()
+    source = index["tasks"]["task-db-dag-source"]
+    assert source["suggested_gate_updates"] == [
+        {"task_id": "visual-pass", "gate_status": "ready", "reason": "blueprint complete"},
+    ]
+    assert source["next_recommended_task"]["task_id"] == "visual-pass"
+    assert index["tasks"]["visual-pass"]["gate_status"] == "ready"
+    assert index["tasks"]["visual-pass"]["depends_on"] == ["task-db-dag-source"]
+    assert index["gates"]["ready"] == ["visual-pass"]
+
+
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "idea-to-design" / "provider-manifest.json", "idea-to-design", ["product_visual_design"])
