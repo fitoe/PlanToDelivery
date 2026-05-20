@@ -1,0 +1,187 @@
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+
+TASK_SCHEMA = "kanban-capability-task/v1"
+RESULT_SCHEMA = "kanban-capability-result/v1"
+PROVIDER_SCHEMA = "provider-manifest/v1"
+VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
+
+
+class KanbanContractError(ValueError):
+    """Raised when a Kanban provider contract artifact is invalid."""
+
+
+@dataclass(frozen=True)
+class ProviderCapability:
+    provider: str
+    capability: str
+    manifest_path: Path
+    task_schema: str = TASK_SCHEMA
+    result_schema: str = RESULT_SCHEMA
+    priority: int | None = None
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise KanbanContractError(f"invalid json: {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise KanbanContractError(f"manifest must be an object: {path}")
+    return data
+
+
+def _require_fields(data: dict[str, Any], fields: set[str]) -> None:
+    missing = sorted(field for field in fields if field not in data)
+    if missing:
+        raise KanbanContractError(f"missing required fields: {', '.join(missing)}")
+
+
+def load_provider_registry(root: str | Path) -> dict[str, ProviderCapability]:
+    """Load provider manifests and index them by replaceable capability.
+
+    Duplicate capabilities are rejected unless one entry has a lower numeric
+    priority than the other. This keeps routing capability-first while making
+    provider replacement explicit instead of hidden in import order.
+    """
+
+    root = Path(root)
+    registry: dict[str, ProviderCapability] = {}
+    for manifest_path in sorted(root.rglob("provider-manifest.json")):
+        manifest = _load_json(manifest_path)
+        _require_fields(manifest, {"schema", "provider", "capabilities"})
+        if manifest["schema"] != PROVIDER_SCHEMA:
+            raise KanbanContractError(f"unsupported provider schema in {manifest_path}: {manifest['schema']}")
+        provider = manifest["provider"]
+        capabilities = manifest["capabilities"]
+        if not isinstance(capabilities, list):
+            raise KanbanContractError(f"capabilities must be a list in {manifest_path}")
+        for item in capabilities:
+            if not isinstance(item, dict):
+                raise KanbanContractError(f"capability entry must be an object in {manifest_path}")
+            _require_fields(item, {"name"})
+            capability = item["name"]
+            entry = ProviderCapability(
+                provider=provider,
+                capability=capability,
+                manifest_path=manifest_path,
+                task_schema=item.get("task_schema", TASK_SCHEMA),
+                result_schema=item.get("result_schema", RESULT_SCHEMA),
+                priority=item.get("priority", manifest.get("priority")),
+            )
+            existing = registry.get(capability)
+            if existing is None:
+                registry[capability] = entry
+                continue
+            if existing.priority is None and entry.priority is None:
+                raise KanbanContractError(
+                    f"duplicate capability without priority: {capability} ({existing.provider}, {entry.provider})"
+                )
+            if entry.priority is None:
+                continue
+            if existing.priority is None or entry.priority < existing.priority:
+                registry[capability] = entry
+    return registry
+
+
+def create_task_envelope(
+    *,
+    task_id: str,
+    capability: str,
+    project_root: str | Path,
+    active_slice: dict[str, Any],
+    input_artifact_refs: list[str],
+    output_root: str | Path,
+    expected_outputs: list[str],
+    verification_expectations: list[str],
+    allowed_side_effects: list[str],
+    review_policy: dict[str, Any] | None = None,
+    blocking_policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if not task_id:
+        raise KanbanContractError("task_id is required")
+    if not capability:
+        raise KanbanContractError("capability is required")
+    if not isinstance(active_slice, dict) or not active_slice:
+        raise KanbanContractError("active_slice must be a non-empty object")
+    return {
+        "schema": TASK_SCHEMA,
+        "task_id": task_id,
+        "capability": capability,
+        "project_root": str(Path(project_root)),
+        "active_slice": active_slice,
+        "input_artifact_refs": list(input_artifact_refs),
+        "output_root": str(Path(output_root)),
+        "expected_outputs": list(expected_outputs),
+        "verification_expectations": list(verification_expectations),
+        "allowed_side_effects": list(allowed_side_effects),
+        "review_policy": {
+            "route_review_required_to": "review",
+            **(review_policy or {}),
+        },
+        "blocking_policy": {
+            "blocked_only_for_missing_or_unsafe_input": True,
+            **(blocking_policy or {}),
+        },
+    }
+
+
+def validate_result_manifest(
+    manifest: dict[str, Any],
+    *,
+    expected_task_id: str | None = None,
+    expected_capability: str | None = None,
+) -> dict[str, Any]:
+    required = {
+        "schema",
+        "task_id",
+        "capability",
+        "provider",
+        "result",
+        "changed_files",
+        "produced_artifacts",
+        "evidence",
+        "blockers",
+        "debts",
+        "review_required",
+        "suggested_gate_updates",
+        "next_recommended_task",
+    }
+    _require_fields(manifest, required)
+    if manifest["schema"] != RESULT_SCHEMA:
+        raise KanbanContractError(f"unsupported result schema: {manifest['schema']}")
+    if expected_task_id is not None and manifest["task_id"] != expected_task_id:
+        raise KanbanContractError(f"task_id mismatch: expected {expected_task_id}, got {manifest['task_id']}")
+    if expected_capability is not None and manifest["capability"] != expected_capability:
+        raise KanbanContractError(
+            f"capability mismatch: expected {expected_capability}, got {manifest['capability']}"
+        )
+    if manifest["result"] not in VALID_RESULTS:
+        raise KanbanContractError(f"invalid result: {manifest['result']}")
+    for list_field in ["changed_files", "produced_artifacts", "evidence", "blockers", "debts", "suggested_gate_updates"]:
+        if not isinstance(manifest[list_field], list):
+            raise KanbanContractError(f"{list_field} must be a list")
+    if not isinstance(manifest["review_required"], bool):
+        raise KanbanContractError("review_required must be a boolean")
+    return manifest
+
+
+def decide_gate_status(result_manifest: dict[str, Any]) -> str:
+    """Convert a provider result recommendation into Javis gate state."""
+
+    result = result_manifest.get("result")
+    blockers = result_manifest.get("blockers") or []
+    if result == "blocked":
+        return "blocked"
+    if blockers:
+        return "blocked"
+    if result_manifest.get("review_required"):
+        return "review"
+    if result in VALID_RESULTS:
+        return result
+    raise KanbanContractError(f"invalid result: {result}")

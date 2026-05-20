@@ -55,6 +55,19 @@ Match by capability. Provider identity must be replaceable.
 
 Do not import provider internals. Do not assume provider file layouts beyond the registry/manifest contract.
 
+### Runtime helpers
+
+The canonical in-repo runtime entry is `plantodelivery.kanban_runtime`.
+
+Use it for deterministic contract work before/after provider dispatch:
+
+- `load_provider_registry(root)` scans `provider-manifest.json` files and returns a capability-indexed registry.
+- `create_task_envelope(...)` builds capability-first `kanban-capability-task/v1` payloads without embedding provider identity.
+- `validate_result_manifest(...)` checks `kanban-capability-result/v1` provider outputs before state updates.
+- `decide_gate_status(manifest)` maps provider results into Javis gate states; `review_required` becomes `review`, while real blockers remain `blocked`.
+
+These helpers are deliberately small and provider-agnostic. Extend them by contract tests first; do not reintroduce legacy orchestration coupling.
+
 ## Task envelope contract
 
 Every provider invocation should be represented as `kanban-capability-task/v1`.
