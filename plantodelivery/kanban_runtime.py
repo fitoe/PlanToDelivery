@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 import subprocess
@@ -200,6 +201,12 @@ class KanbanStateStore:
         if not task_dir.exists():
             raise KanbanContractError(f"cannot record result for unknown task: {task_id}")
         result_path = task_dir / "result-manifest.json"
+        provenance = {
+            **dict(validated.get("provenance") or {}),
+            **_task_provenance(task_dir),
+            "produced_artifact_hashes": _artifact_hashes(list(validated.get("produced_artifacts") or [])),
+        }
+        validated = {**validated, "provenance": provenance}
         _write_json(result_path, validated)
 
         index = self.load_index()
@@ -508,7 +515,7 @@ class HermesKanbanBackend(KanbanStateStore):
         )
         super().approve_review(task_id, evidence)
 
-    def audit_enforcement(self, *, strict_digest: bool = False) -> dict[str, Any]:
+    def audit_enforcement(self, *, strict_digest: bool = False, strict_provenance: bool = False) -> dict[str, Any]:
         raw_cards = self._run("--board", self.board, "list", "--json", json_output=True)
         cards = raw_cards.get("tasks", raw_cards) if isinstance(raw_cards, dict) else raw_cards
         if not isinstance(cards, list):
@@ -555,6 +562,26 @@ class HermesKanbanBackend(KanbanStateStore):
             if result_path.exists():
                 result = _load_json(result_path)
                 gate_status = decide_gate_status(validate_result_manifest(result, expected_task_id=meta.task_id, expected_capability=meta.capability))
+                if strict_provenance:
+                    provenance = result.get("provenance")
+                    if not isinstance(provenance, dict):
+                        violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "missing_result_provenance", "message": "result-manifest.json has no provenance object"})
+                    else:
+                        expected_task_path = self.tasks_root / meta.task_id / "task-envelope.json"
+                        expected_digest_path = self.tasks_root / meta.task_id / "active-slice-digest.json"
+                        if expected_task_path.exists() and provenance.get("task_envelope_sha256") != calculate_file_sha256(expected_task_path):
+                            violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "mismatched_result_task_hash", "message": "result provenance task_envelope_sha256 does not match current task-envelope.json"})
+                        if expected_digest_path.exists() and provenance.get("active_slice_digest_sha256") != calculate_file_sha256(expected_digest_path):
+                            violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "mismatched_result_digest_hash", "message": "result provenance active_slice_digest_sha256 does not match current active-slice-digest.json"})
+                        recorded_artifacts = provenance.get("produced_artifact_hashes", [])
+                        if not isinstance(recorded_artifacts, list):
+                            violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "invalid_artifact_provenance", "message": "produced_artifact_hashes must be a list"})
+                        else:
+                            recorded_by_path = {str(item.get("path")): item.get("sha256") for item in recorded_artifacts if isinstance(item, dict)}
+                            for artifact in result.get("produced_artifacts") or []:
+                                artifact_path = Path(str(artifact))
+                                if artifact_path.exists() and artifact_path.is_file() and recorded_by_path.get(str(artifact_path)) != calculate_file_sha256(artifact_path):
+                                    violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "mismatched_artifact_hash", "message": f"artifact hash mismatch: {artifact_path}"})
                 has_approval = any("P2D REVIEW APPROVED" in comment for comment in comments)
                 if gate_status == "review" and status == "done" and not has_approval:
                     violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "missing_review_approval", "message": "review-required task is done without P2D REVIEW APPROVED comment"})
@@ -675,6 +702,39 @@ def _write_json(path: Path, data: dict[str, Any]) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def calculate_file_sha256(path: str | Path) -> str:
+    """Return the sha256 hex digest for a local file."""
+
+    file_path = Path(path)
+    hasher = hashlib.sha256()
+    with file_path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def _artifact_hashes(paths: list[str]) -> list[dict[str, str]]:
+    hashes: list[dict[str, str]] = []
+    for raw_path in paths:
+        path = Path(raw_path)
+        if path.exists() and path.is_file():
+            hashes.append({"path": str(path), "sha256": calculate_file_sha256(path)})
+    return hashes
+
+
+def _task_provenance(task_dir: Path) -> dict[str, Any]:
+    task_path = task_dir / "task-envelope.json"
+    digest_path = task_dir / "active-slice-digest.json"
+    provenance: dict[str, Any] = {}
+    if task_path.exists():
+        provenance["task_envelope_path"] = str(task_path)
+        provenance["task_envelope_sha256"] = calculate_file_sha256(task_path)
+    if digest_path.exists():
+        provenance["active_slice_digest_path"] = str(digest_path)
+        provenance["active_slice_digest_sha256"] = calculate_file_sha256(digest_path)
+    return provenance
+
+
 def _require_fields(data: dict[str, Any], fields: set[str]) -> None:
     missing = sorted(field for field in fields if field not in data)
     if missing:
@@ -697,6 +757,13 @@ def validate_active_slice_digest(digest: dict[str, Any]) -> dict[str, Any]:
         raise KanbanContractError("read_first must be a list of strings")
     if not isinstance(raw["handoff"], dict):
         raise KanbanContractError("handoff must be an object")
+    if "provenance" in raw:
+        provenance = raw["provenance"]
+        if not isinstance(provenance, dict):
+            raise KanbanContractError("provenance must be an object")
+        for field in ["task_envelope_path", "task_envelope_sha256"]:
+            if field not in provenance or not isinstance(provenance[field], str) or not provenance[field].strip():
+                raise KanbanContractError(f"provenance.{field} must be a non-empty string")
     for field in ["input_artifact_refs", "expected_outputs", "verification_expectations", "allowed_side_effects", "stop_rules"]:
         if field in raw and (not isinstance(raw[field], list) or not all(isinstance(item, str) for item in raw[field])):
             raise KanbanContractError(f"{field} must be a list of strings")
@@ -734,6 +801,13 @@ def build_active_slice_digest(
             "result_manifest_path": str(output_root / "result-manifest.json"),
         },
     }
+    if task_path is not None:
+        task_file = Path(task_path)
+        if task_file.exists():
+            digest["provenance"] = {
+                "task_envelope_path": str(task_file),
+                "task_envelope_sha256": calculate_file_sha256(task_file),
+            }
     validated = validate_active_slice_digest(digest)
     if len(json.dumps(validated, ensure_ascii=False)) > max_chars:
         raise KanbanContractError(f"active-slice digest exceeds max_chars: {max_chars}")
