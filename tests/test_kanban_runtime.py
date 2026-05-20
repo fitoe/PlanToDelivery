@@ -6,6 +6,7 @@ import pytest
 from plantodelivery.kanban_runtime import (
     KanbanContractError,
     KanbanOrchestrator,
+    HermesKanbanBackend,
     DispatchRecord,
     IngestRecord,
     KanbanStateStore,
@@ -49,6 +50,110 @@ def write_manifest(path: Path, provider: str, capabilities: list[str]) -> None:
         encoding="utf-8",
     )
 
+
+
+def test_hermes_kanban_backend_cli_create_read_claim_complete_block(tmp_path: Path) -> None:
+    hermes_home = tmp_path / "hermes-home"
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    backend = HermesKanbanBackend(
+        project_root=project_root,
+        board="p2d-smoke",
+        hermes_home=hermes_home,
+    )
+
+    completed_meta = P2DMeta(
+        task_id="p2d-complete",
+        capability="technical_blueprint",
+        active_slice={"goal": "prove complete path"},
+        provider="idea-to-tech",
+        output_root=str(project_root / "project-state" / "kanban" / "tasks" / "p2d-complete"),
+    )
+    task_path = backend.record_task(
+        p2d_meta_to_task_envelope(completed_meta, project_root=project_root)
+    )
+
+    assert task_path == project_root / "project-state" / "kanban" / "tasks" / "p2d-complete" / "task-envelope.json"
+    created = backend.load_task("p2d-complete")
+    assert created["task_id"] == "p2d-complete"
+    assert created["capability"] == "technical_blueprint"
+    assert created["provider_hint"] == "idea-to-tech"
+
+    claimed = backend.claim_task("p2d-complete", ttl_seconds=30)
+    assert claimed["status"] == "running"
+
+    result_path = backend.record_result({
+        "schema": "kanban-capability-result/v1",
+        "task_id": "p2d-complete",
+        "capability": "technical_blueprint",
+        "provider": "idea-to-tech",
+        "result": "completed",
+        "changed_files": [],
+        "produced_artifacts": [],
+        "evidence": [],
+        "blockers": [],
+        "debts": [],
+        "review_required": False,
+        "suggested_gate_updates": [],
+        "next_recommended_task": None,
+    })
+    assert result_path == project_root / "project-state" / "kanban" / "tasks" / "p2d-complete" / "result-manifest.json"
+    assert backend.show_card("p2d-complete")["task"]["status"] == "done"
+
+    blocked_meta = P2DMeta(
+        task_id="p2d-blocked",
+        capability="visual_implementation",
+        active_slice={"goal": "prove block path"},
+        provider="design-to-code",
+    )
+    backend.record_task(p2d_meta_to_task_envelope(blocked_meta, project_root=project_root))
+    blocked_result = backend.record_result({
+        "schema": "kanban-capability-result/v1",
+        "task_id": "p2d-blocked",
+        "capability": "visual_implementation",
+        "provider": "design-to-code",
+        "result": "blocked",
+        "changed_files": [],
+        "produced_artifacts": [],
+        "evidence": [],
+        "blockers": ["missing approved source"],
+        "debts": [],
+        "review_required": False,
+        "suggested_gate_updates": [],
+        "next_recommended_task": None,
+    })
+    assert blocked_result.exists()
+    blocked_card = backend.show_card("p2d-blocked")
+    assert blocked_card["task"]["status"] == "blocked"
+    assert any("missing approved source" in c["body"] for c in blocked_card["comments"])
+
+
+def test_orchestrator_uses_hermes_backend_for_state_backend_hermes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    write_manifest(tmp_path / "providers" / "idea-to-tech" / "provider-manifest.json", "idea-to-tech", ["technical_blueprint"])
+    hermes_home = tmp_path / "hermes-home"
+    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+
+    orchestrator = KanbanOrchestrator(
+        project_root=tmp_path,
+        providers_root=tmp_path / "providers",
+        state_backend="hermes",
+        board="p2d-orchestrator",
+    )
+    dispatch = orchestrator.dispatch_task(
+        task_id="orch-001",
+        capability="technical_blueprint",
+        active_slice={"goal": "dispatch through Hermes"},
+        input_artifact_refs=[],
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["card contains P2D_META"],
+        allowed_side_effects=["write output_root only"],
+    )
+
+    assert dispatch.provider == "idea-to-tech"
+    assert dispatch.task_path.exists()
+    card = orchestrator.store.show_card("orch-001")
+    assert card["task"]["status"] == "ready"
+    assert extract_p2d_meta_marker(body=card["task"]["body"], comments=[]) is not None
 
 def test_p2d_meta_marker_round_trips_from_body_and_comments() -> None:
     meta = P2DMeta(

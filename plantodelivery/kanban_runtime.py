@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -295,6 +297,156 @@ class KanbanStateStore:
 
 
 
+class HermesKanbanBackend(KanbanStateStore):
+    """Hermes Kanban CLI-backed execution store with JSON artifact overlay."""
+
+    def __init__(
+        self,
+        *,
+        project_root: str | Path,
+        state_root: str | Path | None = None,
+        board: str = "plantodelivery",
+        hermes_home: str | Path | None = None,
+        hermes_cmd: list[str] | None = None,
+    ) -> None:
+        self.project_root = Path(project_root)
+        super().__init__(state_root or self.project_root / "project-state" / "kanban")
+        self.board = board
+        self.hermes_home = Path(hermes_home) if hermes_home is not None else None
+        self.hermes_cmd = list(hermes_cmd or ["hermes"])
+        self._ensure_board()
+
+    def _env(self) -> dict[str, str]:
+        env = dict(os.environ)
+        if self.hermes_home is not None:
+            env["HERMES_HOME"] = str(self.hermes_home)
+        return env
+
+    def _run(self, *args: str, json_output: bool = False) -> Any:
+        proc = subprocess.run(
+            [*self.hermes_cmd, "kanban", *args],
+            cwd=str(self.project_root),
+            env=self._env(),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise KanbanContractError(
+                f"hermes kanban {' '.join(args)} failed ({proc.returncode}): {proc.stderr.strip() or proc.stdout.strip()}"
+            )
+        if json_output:
+            try:
+                return json.loads(proc.stdout)
+            except json.JSONDecodeError as exc:
+                raise KanbanContractError(f"invalid hermes kanban JSON output: {exc}: {proc.stdout}") from exc
+        return proc.stdout
+
+    def _ensure_board(self) -> None:
+        self._run("init")
+        boards = self._run("boards", "list", "--json", json_output=True)
+        if not any(item.get("slug") == self.board for item in boards):
+            self._run("boards", "create", self.board, "--default-workdir", str(self.project_root))
+
+    def _card_body(self, envelope: dict[str, Any]) -> str:
+        meta = P2DMeta(
+            task_id=envelope["task_id"],
+            capability=envelope["capability"],
+            active_slice=envelope["active_slice"],
+            provider=envelope.get("provider_hint"),
+            output_root=envelope["output_root"],
+            input_artifact_refs=envelope.get("input_artifact_refs") or [],
+            expected_outputs=envelope.get("expected_outputs") or [],
+            verification_expectations=envelope.get("verification_expectations") or [],
+            allowed_side_effects=envelope.get("allowed_side_effects") or [],
+            depends_on=envelope.get("depends_on") or None,
+        )
+        body = (
+            f"P2D capability: {envelope['capability']}\n"
+            f"Output root: {envelope['output_root']}\n"
+        )
+        return append_p2d_meta_marker(body, meta)
+
+    def record_task(self, envelope: dict[str, Any]) -> Path:
+        _require_fields(envelope, {"schema", "task_id", "capability", "output_root"})
+        if envelope["schema"] != TASK_SCHEMA:
+            raise KanbanContractError(f"unsupported task schema: {envelope['schema']}")
+        task_path = super().record_task(envelope)
+        created = self._run(
+            "--board", self.board,
+            "create", envelope["task_id"],
+            "--body", self._card_body(envelope),
+            "--assignee", envelope.get("provider_hint") or envelope["capability"],
+            "--workspace", f"dir:{self.project_root}",
+            "--created-by", "plantodelivery",
+            "--initial-status", "running",
+            "--idempotency-key", f"p2d:{envelope['task_id']}",
+            "--json",
+            json_output=True,
+        )
+        hermes_task_id = created.get("id")
+        if not isinstance(hermes_task_id, str) or not hermes_task_id:
+            raise KanbanContractError("hermes kanban create returned no task id")
+        _write_json(self.tasks_root / envelope["task_id"] / "hermes-card.json", {"id": hermes_task_id})
+        for parent in envelope.get("depends_on") or []:
+            self._run("--board", self.board, "link", self._hermes_task_id(parent), hermes_task_id)
+        return task_path
+
+    def _hermes_task_id(self, task_id: str) -> str:
+        mapping_path = self.tasks_root / task_id / "hermes-card.json"
+        if mapping_path.exists():
+            mapped = _load_json(mapping_path).get("id")
+            if isinstance(mapped, str) and mapped:
+                return mapped
+        if task_id.startswith("t_"):
+            return task_id
+        return task_id
+
+    def show_card(self, task_id: str) -> dict[str, Any]:
+        return self._run("--board", self.board, "show", self._hermes_task_id(task_id), "--json", json_output=True)
+
+    def load_task(self, task_id: str) -> dict[str, Any]:
+        local_path = self.tasks_root / task_id / "task-envelope.json"
+        if local_path.exists():
+            return _load_json(local_path)
+        card = self.show_card(task_id)
+        task = card.get("task") or {}
+        meta = extract_p2d_meta_marker(
+            body=task.get("body"),
+            comments=[comment.get("body", "") for comment in card.get("comments", [])],
+        )
+        if meta is None:
+            raise KanbanContractError(f"task has no P2D_META marker: {task_id}")
+        envelope = p2d_meta_to_task_envelope(meta, project_root=self.project_root)
+        if meta.provider:
+            envelope["provider_hint"] = meta.provider
+        return envelope
+
+    def claim_task(self, task_id: str, *, ttl_seconds: int | None = None) -> dict[str, Any]:
+        args = ["--board", self.board, "claim", self._hermes_task_id(task_id)]
+        if ttl_seconds is not None:
+            args.extend(["--ttl", str(ttl_seconds)])
+        self._run(*args)
+        return self.show_card(task_id)["task"]
+
+    def record_result(self, manifest: dict[str, Any]) -> Path:
+        validated = validate_result_manifest(manifest)
+        result_path = super().record_result(validated)
+        task_id = validated["task_id"]
+        if decide_gate_status(validated) == "blocked":
+            reason = "; ".join(validated.get("blockers") or []) or validated["result"]
+            self._run("--board", self.board, "block", self._hermes_task_id(task_id), reason)
+        else:
+            summary = json.dumps(validated, ensure_ascii=False, separators=(",", ":"))
+            self._run(
+                "--board", self.board,
+                "complete", self._hermes_task_id(task_id),
+                "--result", validated["result"],
+                "--summary", summary,
+            )
+        return result_path
+
+
 class KanbanOrchestrator:
     """Minimal PlanToDelivery orchestration API over registry + state store."""
 
@@ -306,6 +458,7 @@ class KanbanOrchestrator:
         state_root: str | Path | None = None,
         state_store: KanbanStateStore | None = None,
         state_backend: str = "json",
+        board: str = "plantodelivery",
     ) -> None:
         self.project_root = Path(project_root)
         self.providers_root = Path(providers_root)
@@ -315,7 +468,7 @@ class KanbanOrchestrator:
         elif state_backend == "json":
             self.store = KanbanStateStore(resolved_state_root)
         elif state_backend == "hermes":
-            raise KanbanContractError("Hermes Kanban board backend is not implemented yet")
+            self.store = HermesKanbanBackend(project_root=self.project_root, state_root=resolved_state_root, board=board)
         else:
             raise KanbanContractError(f"unsupported state_backend: {state_backend}")
 
@@ -346,6 +499,8 @@ class KanbanOrchestrator:
             verification_expectations=verification_expectations,
             allowed_side_effects=allowed_side_effects,
         )
+        if isinstance(self.store, HermesKanbanBackend):
+            envelope["provider_hint"] = provider.provider
         task_path = self.store.record_task(envelope)
         return DispatchRecord(
             provider=provider.provider,
