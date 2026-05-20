@@ -829,6 +829,75 @@ def test_dependency_unlock_event_db_key_rejects_duplicate_writes(tmp_path: Path)
             )
 
 
+def test_sqlite_store_migrates_legacy_event_schema_without_losing_events(tmp_path: Path) -> None:
+    state_root = tmp_path / "project-state" / "kanban"
+    db_path = state_root / "kanban-state.sqlite3"
+    state_root.mkdir(parents=True)
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            """
+            create table kanban_tasks (
+                task_id text primary key,
+                capability text not null,
+                provider text,
+                task_path text,
+                result_path text,
+                result text,
+                gate_status text not null,
+                display_status text not null,
+                task_json text,
+                result_json text,
+                review_json text
+            );
+            create table kanban_cards (
+                task_id text primary key,
+                gate_status text not null,
+                display_status text not null,
+                card_json text not null
+            );
+            create table kanban_events (
+                id integer primary key autoincrement,
+                task_id text not null,
+                gate_status text not null,
+                display_status text not null,
+                action text not null
+            );
+            create table kanban_artifacts (
+                id integer primary key autoincrement,
+                task_id text not null,
+                artifact_type text not null,
+                path text not null
+            );
+            create table kanban_reviews (
+                task_id text primary key,
+                status text not null,
+                evidence_json text not null
+            );
+            """
+        )
+        conn.execute(
+            "insert into kanban_events(task_id, gate_status, display_status, action) values (?, ?, ?, ?)",
+            ("task-legacy", "completed", display_gate_status("completed"), "ingest_result"),
+        )
+
+    store = KanbanSQLiteStateStore(state_root)
+    index = store.load_index()
+
+    assert index["events"] == [
+        {
+            "task_id": "task-legacy",
+            "gate_status": "completed",
+            "display_status": display_gate_status("completed"),
+            "action": "ingest_result",
+        }
+    ]
+    with sqlite3.connect(store.db_path) as conn:
+        columns = {row[1] for row in conn.execute("pragma table_info(kanban_events)").fetchall()}
+        indexes = {row[1] for row in conn.execute("pragma index_list(kanban_events)").fetchall()}
+    assert "event_key" in columns
+    assert "idx_kanban_events_event_key" in indexes
+
+
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "idea-to-design" / "provider-manifest.json", "idea-to-design", ["product_visual_design"])
