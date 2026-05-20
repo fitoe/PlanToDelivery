@@ -4,8 +4,6 @@ from pathlib import Path
 import pytest
 
 from plantodelivery.kanban_runtime import (
-    InMemoryKanbanBoardAdapter,
-    JsonKanbanBoardAdapter,
     KanbanContractError,
     KanbanOrchestrator,
     KanbanStateStore,
@@ -266,37 +264,43 @@ def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path) -
     assert orchestrator.store.load_index()["gates"]["completed"] == ["task-002"]
 
 
-def test_board_adapter_records_chinese_display_status_for_task_flow(tmp_path: Path) -> None:
-    providers_root = tmp_path / "providers"
-    write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
-    board = InMemoryKanbanBoardAdapter()
-    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root, board=board)
-
-    assert display_gate_status("dispatched") == "已派发"
-
-    orchestrator.dispatch_task(
-        task_id="task-board",
+def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_path: Path) -> None:
+    store = KanbanStateStore(tmp_path / "project-state" / "kanban")
+    envelope = create_task_envelope(
+        task_id="task-canonical",
         capability="visual_implementation",
-        active_slice={"page": "/mall", "goal": "中文看板状态"},
+        project_root=tmp_path,
+        active_slice={"page": "/mall", "goal": "canonical kanban 状态"},
         input_artifact_refs=[],
+        output_root=tmp_path / "project-state" / "kanban" / "tasks" / "task-canonical",
         expected_outputs=["result-manifest.json"],
         verification_expectations=[],
         allowed_side_effects=["write output_root only"],
     )
-    assert board.cards["task-board"]["gate_status"] == "dispatched"
-    assert board.cards["task-board"]["display_status"] == "已派发"
-    assert board.events[-1]["display_status"] == "已派发"
 
-    orchestrator.ingest_result(
+    store.record_task(envelope)
+    index = store.load_index()
+    task = index["tasks"]["task-canonical"]
+    assert task["gate_status"] == "dispatched"
+    assert task["display_status"] == "已派发"
+    assert index["cards"]["task-canonical"]["display_status"] == "已派发"
+    assert index["events"][-1] == {
+        "task_id": "task-canonical",
+        "gate_status": "dispatched",
+        "display_status": "已派发",
+        "action": "dispatch",
+    }
+
+    store.record_result(
         {
             "schema": "kanban-capability-result/v1",
-            "task_id": "task-board",
+            "task_id": "task-canonical",
             "capability": "visual_implementation",
             "provider": "design-to-code",
             "result": "completed",
             "changed_files": ["src/pages/mall.vue"],
-            "produced_artifacts": ["project-state/kanban/tasks/task-board/parity-report.md"],
-            "evidence": ["project-state/kanban/tasks/task-board/mobile.png"],
+            "produced_artifacts": ["project-state/kanban/tasks/task-canonical/parity-report.md"],
+            "evidence": ["project-state/kanban/tasks/task-canonical/mobile.png"],
             "blockers": [],
             "debts": [],
             "review_required": True,
@@ -304,22 +308,25 @@ def test_board_adapter_records_chinese_display_status_for_task_flow(tmp_path: Pa
             "next_recommended_task": None,
         }
     )
-    assert board.cards["task-board"]["gate_status"] == "review"
-    assert board.cards["task-board"]["display_status"] == "待审查"
-    assert board.cards["task-board"]["result"] == "completed"
+    index = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
+    assert index["tasks"]["task-canonical"]["gate_status"] == "review"
+    assert index["tasks"]["task-canonical"]["display_status"] == "待审查"
+    assert index["cards"]["task-canonical"]["result"] == "completed"
+    assert index["cards"]["task-canonical"]["display_status"] == "待审查"
+    assert index["events"][-1]["action"] == "ingest_result"
 
-    orchestrator.approve_review("task-board", evidence=["人工审查通过"])
-    assert board.cards["task-board"]["gate_status"] == "completed"
-    assert board.cards["task-board"]["display_status"] == "已完成"
-    assert board.cards["task-board"]["review"]["evidence"] == ["人工审查通过"]
+    store.approve_review("task-canonical", ["人工审查通过"])
+    index = store.load_index()
+    assert index["tasks"]["task-canonical"]["gate_status"] == "completed"
+    assert index["tasks"]["task-canonical"]["display_status"] == "已完成"
+    assert index["cards"]["task-canonical"]["review"]["evidence"] == ["人工审查通过"]
+    assert index["events"][-1]["action"] == "approve_review"
 
 
-def test_json_board_adapter_persists_chinese_display_status_for_reload(tmp_path: Path) -> None:
+def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_path: Path) -> None:
     providers_root = tmp_path / "providers"
     write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
-    board_path = tmp_path / "kanban-board.json"
-    board = JsonKanbanBoardAdapter(board_path)
-    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root, board=board)
+    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root)
 
     orchestrator.dispatch_task(
         task_id="task-db-board",
@@ -330,9 +337,9 @@ def test_json_board_adapter_persists_chinese_display_status_for_reload(tmp_path:
         verification_expectations=[],
         allowed_side_effects=["write output_root only"],
     )
-    persisted = JsonKanbanBoardAdapter(board_path)
-    assert persisted.cards["task-db-board"]["gate_status"] == "dispatched"
-    assert persisted.cards["task-db-board"]["display_status"] == "已派发"
+    reloaded = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
+    assert reloaded["cards"]["task-db-board"]["gate_status"] == "dispatched"
+    assert reloaded["cards"]["task-db-board"]["display_status"] == "已派发"
 
     orchestrator.ingest_result(
         {
@@ -351,10 +358,10 @@ def test_json_board_adapter_persists_chinese_display_status_for_reload(tmp_path:
             "next_recommended_task": None,
         }
     )
-    reloaded = JsonKanbanBoardAdapter(board_path)
-    assert reloaded.cards["task-db-board"]["gate_status"] == "blocked"
-    assert reloaded.cards["task-db-board"]["display_status"] == "已阻塞"
-    assert reloaded.events[-1]["action"] == "ingest_result"
+    reloaded = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
+    assert reloaded["cards"]["task-db-board"]["gate_status"] == "blocked"
+    assert reloaded["cards"]["task-db-board"]["display_status"] == "已阻塞"
+    assert reloaded["events"][-1]["action"] == "ingest_result"
 
 
 def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:

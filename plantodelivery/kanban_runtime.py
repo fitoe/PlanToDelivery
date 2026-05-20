@@ -66,69 +66,19 @@ class ReviewRecord:
 
 
 @dataclass(frozen=True)
-class BoardEvent:
+class KanbanEvent:
     task_id: str
     gate_status: str
     display_status: str
     action: str
 
-
-class InMemoryKanbanBoardAdapter:
-    """Test/dry-run board adapter mirroring task state as visible Kanban cards."""
-
-    def __init__(self) -> None:
-        self.cards: dict[str, dict[str, Any]] = {}
-        self.events: list[dict[str, Any]] = []
-
-    def upsert_card(self, task: dict[str, Any], *, action: str = "upsert") -> None:
-        task_id = task["task_id"]
-        gate_status = task.get("gate_status", "dispatched")
-        card = dict(self.cards.get(task_id, {}))
-        card.update(task)
-        card["display_status"] = display_gate_status(gate_status)
-        self.cards[task_id] = card
-        self.events.append(
-            {
-                "task_id": task_id,
-                "gate_status": gate_status,
-                "display_status": card["display_status"],
-                "action": action,
-            }
-        )
-
-
-class JsonKanbanBoardAdapter(InMemoryKanbanBoardAdapter):
-    """Persistent board adapter for the minimal DB-backed Kanban state seam.
-
-    The file is intentionally tiny and JSON-based for now: it behaves like a
-    DB table snapshot with cards and events, while keeping the orchestrator
-    coupled only to the `upsert_card` adapter method.
-    """
-
-    def __init__(self, path: str | Path) -> None:
-        self.path = Path(path)
-        if self.path.exists():
-            data = _load_json(self.path)
-            self.cards = data.get("cards", {})
-            self.events = data.get("events", [])
-        else:
-            self.cards = {}
-            self.events = []
-
-    def upsert_card(self, task: dict[str, Any], *, action: str = "upsert") -> None:
-        super().upsert_card(task, action=action)
-        _write_json(
-            self.path,
-            {
-                "schema": "plantodelivery-kanban-board/v1",
-                "cards": self.cards,
-                "events": self.events,
-            },
-        )
-
-
 class KanbanStateStore:
-    """Persist the minimal Javis Kanban task/result/gate state on disk."""
+    """Canonical PlanToDelivery Kanban state source.
+
+    The state index is the source of truth for tasks, gates, visible cards,
+    and events. Task/result JSON files remain artifact evidence referenced by
+    the canonical Kanban state.
+    """
 
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root)
@@ -137,12 +87,14 @@ class KanbanStateStore:
 
     def load_index(self) -> dict[str, Any]:
         if not self.index_path.exists():
-            return {"schema": STATE_SCHEMA, "tasks": {}, "gates": {}}
+            return {"schema": STATE_SCHEMA, "tasks": {}, "gates": {}, "cards": {}, "events": []}
         index = _load_json(self.index_path)
         if index.get("schema") != STATE_SCHEMA:
             raise KanbanContractError(f"unsupported state schema: {index.get('schema')}")
         index.setdefault("tasks", {})
         index.setdefault("gates", {})
+        index.setdefault("cards", {})
+        index.setdefault("events", [])
         return index
 
     def record_task(self, envelope: dict[str, Any]) -> Path:
@@ -163,7 +115,9 @@ class KanbanStateStore:
             "result_path": None,
             "result": None,
             "gate_status": "dispatched",
+            "display_status": display_gate_status("dispatched"),
         }
+        self._sync_card(index, task_id, action="dispatch")
         self._rebuild_gates(index)
         self._write_index(index)
         return task_path
@@ -196,8 +150,10 @@ class KanbanStateStore:
                 "result_path": str(result_path),
                 "result": validated["result"],
                 "gate_status": decide_gate_status(validated),
+                "display_status": display_gate_status(decide_gate_status(validated)),
             }
         )
+        self._sync_card(index, task_id, action="ingest_result")
         self._rebuild_gates(index)
         self._write_index(index)
         return result_path
@@ -213,13 +169,33 @@ class KanbanStateStore:
         if task_entry.get("gate_status") != "review":
             raise KanbanContractError(f"task is not in review: {task_id}")
         task_entry["gate_status"] = "completed"
+        task_entry["display_status"] = display_gate_status("completed")
         task_entry["review"] = {"status": "approved", "evidence": list(evidence)}
+        self._sync_card(index, task_id, action="approve_review")
         self._rebuild_gates(index)
         self._write_index(index)
 
     def _write_index(self, index: dict[str, Any]) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         _write_json(self.index_path, index)
+
+    @staticmethod
+    def _sync_card(index: dict[str, Any], task_id: str, *, action: str) -> None:
+        task = index["tasks"][task_id]
+        gate_status = task.get("gate_status", "dispatched")
+        task["display_status"] = display_gate_status(gate_status)
+        card = dict(index.setdefault("cards", {}).get(task_id, {}))
+        card.update(task)
+        card["display_status"] = task["display_status"]
+        index["cards"][task_id] = card
+        index.setdefault("events", []).append(
+            {
+                "task_id": task_id,
+                "gate_status": gate_status,
+                "display_status": task["display_status"],
+                "action": action,
+            }
+        )
 
     @staticmethod
     def _rebuild_gates(index: dict[str, Any]) -> None:
@@ -234,11 +210,10 @@ class KanbanStateStore:
 class KanbanOrchestrator:
     """Minimal PlanToDelivery orchestration API over registry + state store."""
 
-    def __init__(self, *, project_root: str | Path, providers_root: str | Path, state_root: str | Path | None = None, board: InMemoryKanbanBoardAdapter | None = None) -> None:
+    def __init__(self, *, project_root: str | Path, providers_root: str | Path, state_root: str | Path | None = None) -> None:
         self.project_root = Path(project_root)
         self.providers_root = Path(providers_root)
         self.store = KanbanStateStore(state_root or self.project_root / "project-state" / "kanban")
-        self.board = board
 
     def dispatch_task(
         self,
@@ -268,8 +243,6 @@ class KanbanOrchestrator:
             allowed_side_effects=allowed_side_effects,
         )
         task_path = self.store.record_task(envelope)
-        if self.board is not None:
-            self.board.upsert_card(self.store.load_index()["tasks"][task_id], action="dispatch")
         return DispatchRecord(
             provider=provider.provider,
             capability=capability,
@@ -289,8 +262,6 @@ class KanbanOrchestrator:
             expected_capability=task["capability"],
         )
         result_path = self.store.record_result(validated)
-        if self.board is not None:
-            self.board.upsert_card(self.store.load_index()["tasks"][task_id], action="ingest_result")
         return IngestRecord(
             task_id=task_id,
             capability=validated["capability"],
@@ -304,8 +275,6 @@ class KanbanOrchestrator:
 
     def approve_review(self, task_id: str, *, evidence: list[str]) -> ReviewRecord:
         self.store.approve_review(task_id, evidence)
-        if self.board is not None:
-            self.board.upsert_card(self.store.load_index()["tasks"][task_id], action="approve_review")
         return ReviewRecord(task_id=task_id, gate_status="completed", evidence=list(evidence))
 
 
