@@ -1,155 +1,129 @@
 ---
 name: PlanToDelivery
-description: Use when orchestrating a project from idea or plan through staged delivery, checkpoints, skill routing, gates, progress reporting, and handoff.
+description: Javis/Kanban orchestrator kernel. Use when coordinating project delivery through state recovery, capability registry matching, provider task envelopes, result manifest ingestion, review gates, progress reporting, and checkpoint handoff.
 ---
 
-# Plan To Delivery
+# PlanToDelivery — Javis Orchestrator Kernel
 
-## Purpose
+## Role
 
-Orchestrate delivery without duplicating specialist skills. Own stage state, gates, routing, progress reporting, verification discipline, and handoff claims.
+PlanToDelivery is the canonical **Javis** project orchestrator. It owns project state, capability routing, provider dispatch, result ingestion, review/block/gate decisions, progress rollup, and final handoff.
 
-## Core Responsibilities
+It does **not** own specialist implementation details. Design, technical planning, and implementation are provided by capability providers through explicit contracts.
 
-- maintain current stage, milestone, blockers, and next action
-- route work to the right skill or workflow
-- enforce hard gates before stage transitions
-- keep progress visible and truthful
-- commit/push meaningful verified checkpoints when appropriate
-- report debt, waivers, and incomplete verification explicitly
+Canonical project root for Javis work:
 
-## Stage Machine
+```text
+/mnt/c/Users/imjzq/Projects/PlanToDelivery
+```
 
-Default stages:
-1. intake / context recovery
-2. decision closure
-3. UI definition / design handoff if UI-bearing
-4. milestone plan
-5. execution
-6. verification / hardening
-7. release / final handoff
+The previous `JavisKanban` project is not canonical.
 
-Do not skip gates because implementation “looks done”. However, best practice is not “more steps”; it is the smallest process that removes the largest delivery risk and produces verifiable progress.
+## When to activate
 
-## Delivery Mode Calibration
+Use this skill when:
 
-Before starting or resuming a project, classify the lightest delivery mode that still controls the main risk:
+- the user says `贾维斯`, `贾维斯继续`, `Javis`, `kanban`, or asks to continue a project through orchestration;
+- a workflow references `kanban-capability-task/v1`, `provider-manifest/v1`, `provider-registry/v1`, review gates, or provider result manifests;
+- multiple specialist capabilities must be sequenced, reviewed, or checkpointed;
+- project state must be recovered and the next capability selected.
 
-| Mode | Use when | Default workflow |
+## Core loop
+
+1. **Recover state** — read durable project state first: `.hermes/project-state/*`, `project-state/*`, or legacy `docs/orchestrator/*` only as fallback.
+2. **Select active slice** — identify the smallest project/page/feature slice that can move next.
+3. **Choose capability** — match the next need to a capability, not to a hard-coded provider.
+4. **Create task envelope** — produce one bounded `kanban-capability-task/v1` per provider invocation.
+5. **Dispatch provider** — call or instruct the provider using artifact paths, expected outputs, allowed side effects, and review policy.
+6. **Ingest manifest** — require a `kanban-capability-result/v1`-shaped result before updating canonical state.
+7. **Decide gate** — record review, blocked, partial, or completed status from evidence, not prose confidence.
+8. **Roll up progress** — update state, artifact index, blockers/debts, and user-facing checkpoint.
+9. **Continue or hand off** — route the next capability unless a hard blocker, destructive action, secret/auth issue, or user approval gate requires stopping.
+
+## Capability registry
+
+Match by capability. Provider identity must be replaceable.
+
+| Capability | Default provider | Purpose |
 |---|---|---|
-| **Lightweight** | Small fix, single bug, copy/style tweak, clearly bounded task | confirm target → implement → narrow verification → report |
-| **Standard** | New page/module/H5/website slice with moderate ambiguity | 30-60 min calibration → decisionable artifact → key direction approval → sliced execution → evidence checkpoint |
-| **Strict** | New product/system, many pages/stakeholders, high ambiguity, costly rework, complex data/auth/compliance | discovery → scope/design/tech freeze → milestone plan → execution gates → hardening/release |
+| `product_visual_design` | `idea-to-design` | product/design spec, flows, page inventory, visual direction |
+| `visual_source_creation` | `idea-to-design` | persisted visual source, design freeze evidence, handoff inputs |
+| `technical_blueprint` | `IdeaToTech` | architecture seams, API/state/mock/dependency decisions |
+| `implementation_planning` | `IdeaToTech` | implementation sequence, feature recipes, file map |
+| `verification_strategy` | `IdeaToTech` | mock/local/real/edge verification matrix |
+| `visual_implementation` | `design-to-code` | code changes from approved visual handoff, screenshots, parity evidence |
+
+Do not import provider internals. Do not assume provider file layouts beyond the registry/manifest contract.
+
+## Task envelope contract
+
+Every provider invocation should be represented as `kanban-capability-task/v1`.
+
+Minimum fields:
+
+```json
+{
+  "schema": "kanban-capability-task/v1",
+  "task_id": "",
+  "capability": "",
+  "project_root": "",
+  "active_slice": {},
+  "input_artifact_refs": [],
+  "output_root": "",
+  "expected_outputs": [],
+  "verification_expectations": [],
+  "allowed_side_effects": [],
+  "review_policy": {},
+  "blocking_policy": {}
+}
+```
 
 Rules:
-- Default to the lightest mode that controls the actual risk; do not use Strict only because a project is new.
-- Escalate one level only when ambiguity, integration, data/auth, compliance, brand/visual, or rework cost is high.
-- Downgrade when the task is local and reversible; do not force full project gates for small fixes.
-- State the chosen mode, why, and the first deliverable slice before deep planning.
 
-## Speed and Output Discipline
+- The task describes the need, not the implementation provider.
+- Keep provider prompts short and artifact-path based.
+- Pass only active-slice context unless a gate explicitly requires global reconciliation.
+- Make allowed side effects explicit before code, file, network, deploy, or destructive actions.
 
-- First loop for a new project must produce a **decisionable artifact** within 30-60 minutes: project type/risk/mode, first slice, assumptions, blockers, and at least one concrete artifact path or preview plan.
-- Prefer artifacts over prose: route/page inventory, IA, state matrix, visual board, screenshot, diff, demo, build result, or concise decision log.
-- Do not run two consecutive planning loops with only narrative analysis and no new decision, artifact, screenshot, code, test, or documented gate result.
-- Use explicit low-risk assumptions instead of blocking on every unknown; reserve hard blockers for destructive actions, secrets, irreversible choices, auth/permission, or direction-level ambiguity.
-- Each execution/repair loop should target the largest **1-3** product-breaking gaps, then checkpoint remaining debt instead of polishing everything equally.
+## Result manifest contract
 
-## Parallel Progress Rule
+Providers return `kanban-capability-result/v1`-shaped manifests.
 
-When workstreams do not depend on each other, run them in parallel or delegate them separately:
-- product/IA clarification can run beside tech environment/API discovery;
-- visual direction exploration can run beside route/data/state inventory;
-- implementation can run beside mock data/assets preparation;
-- screenshot evidence can run beside Top-gap/debt summarization.
+Minimum fields:
 
-Main session owns mode, gates, and acceptance; subagents may own bounded pages/components/research tasks. Do not serialize independent work just because the written workflow is ordered.
+```json
+{
+  "schema": "kanban-capability-result/v1",
+  "task_id": "",
+  "capability": "",
+  "provider": "",
+  "result": "completed | partial | blocked | failed",
+  "changed_files": [],
+  "produced_artifacts": [],
+  "evidence": [],
+  "blockers": [],
+  "debts": [],
+  "review_required": false,
+  "suggested_gate_updates": [],
+  "next_recommended_task": null
+}
+```
 
-## Low-Token Routing Protocol
+Long reasoning, screenshots, diffs, prompt logs, Visual IR, spikes, parity reports, and repair notes belong in files referenced by the manifest.
 
-When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or asks to continue a project, default to low-token orchestration:
+## Gate and state semantics
 
-1. Keep `PlanToDelivery` as the only persistent owner until a gate requires a specialist.
-2. Restore durable state first; prefer `.hermes/project-state/current-state.md`, `.hermes/project-state/active-slice.json`, and an artifact/manifest index when present. If legacy `docs/orchestrator/*` state exists, use it as fallback.
-3. Route by current stage and active slice, not by habit. Specialist skills are stage tools, not persistent context.
-4. Load at most one specialist skill by default:
-   - `idea-to-design` only for product/visual exploration, visual source approval, Visual Freeze, Post-Visual Extraction, or missing/stale design handoff.
-   - `IdeaToTech` only for API/state/dependency/mock-to-real/platform/security/performance decisions, feature recipes, or verification strategy that must be fixed before coding.
-   - `design-to-code` only after approved design/handoff for implementation, Visual IR, section anchors, screenshots, parity repair, and UI handoff evidence.
-5. Do not co-load `idea-to-design`, `IdeaToTech`, and `design-to-code` unless a gate explicitly needs cross-skill conflict resolution. If more than one is needed, load sequentially and pass artifact paths, not full conversation history.
-6. Make specialist outputs durable artifacts. The orchestrator consumes manifests, current-state updates, changed-file lists, verification summaries, and blocker/debt ledgers instead of long prose.
-7. Keep each execution loop scoped to one feature slice, page, route, or section. Split broad requests into visible checkpoints.
-8. Large logs, diffs, screenshots, browser snapshots, and file reads should be saved or summarized; avoid pasting full raw output into the main conversation when a path plus concise summary is enough.
-9. For GPT Image 2/mockup UI work, default to `standard-fidelity`: keep high-fidelity expectations, but scope each loop to the active page/section and use Visual IR/source/screenshot paths instead of long visual prose.
-10. Do not downgrade high-fidelity UI to a fast/loose mode just to save tokens. Escalate to `strict-fidelity` only for core screens, full-page regeneration, complex assets, final parity acceptance, or repeated parity failure.
-11. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
+- `review_required` / `review-required` routes to `review`, not generic `blocked`.
+- `blocked` is only for missing input, external dependency, contradictory requirements, unsafe/destructive action, auth/permission, or secret issues.
+- `partial` preserves usable artifacts and routes only the missing capability.
+- Provider output is a recommendation until Javis records canonical project state, artifact manifest, and gate decision.
+- Review completion is where downstream children may be unlocked.
+- Skipped verification is `skipped` or `waived`, never `passed`.
 
-## Kanban Orchestrator Mode
-
-Use this mode when the project is operated by Javis/Kanban, when a task references `kanban-capability-task/v1`, or when provider manifests / registry / review gates are part of the workflow.
-
-Responsibilities:
-- act as the orchestrator only: state machine, capability matching, dispatch, gate decisions, progress rollup, and final handoff;
-- do not hard-code specialist internals or import provider implementation details; route through a capability registry and task envelope;
-- match work by capability (`product_visual_design`, `visual_source_creation`, `technical_blueprint`, `implementation_planning`, `verification_strategy`, `visual_implementation`) rather than by tool identity;
-- create one bounded `kanban-capability-task/v1` envelope per provider invocation with project root, active slice, input artifact refs, expected output schema, verification expectations, and allowed side effects;
-- require providers to return `kanban-capability-result/v1`-shaped manifests with `result`, `changed_files`, `produced_artifacts`, `evidence`, `blockers`, `debts`, and `next_recommended_task`;
-- consume provider output as suggestions until the orchestrator records the canonical project-state, artifact manifest, and gate status; providers must not mark global gates passed themselves.
-
-Gate semantics:
-- `review_required` / `review-required` means route the item to `review`, not generic `blocked`;
-- `blocked` is reserved for real missing input, external dependency, contradictory requirements, unsafe/destructive action, auth/permission, or secret issues;
-- review completion is the point where downstream children may be unlocked;
-- if a provider result is partial, record usable artifacts and route only the missing capability instead of rerunning the whole workflow.
-
-Runtime contract discipline:
-- task describes the need, not the implementation provider;
-- provider advertises capability, not privileged identity;
-- orchestrator matches contract and readiness evidence, not prose confidence;
-- keep provider prompts short and artifact-path based; do not pass full conversation history unless a gate explicitly requires it;
-- prefer schema-valid JSON/manifest files under project-state or the project-approved contracts directory for durable handoff.
-
-## Skill Routing
-
-- Use `idea-to-design` for product/visual exploration, design approval, Visual Freeze, Post-Visual Extraction, and Level 3 handoff.
-- Use `design-to-code` after approved design handoff for implementation, Visual IR, `data-section`, screenshot parity, and visual repair. For GPT Image 2/mockup UI, route with `standard-fidelity` by default; use `strict-fidelity` only when exact final parity, full-page regeneration, complex assets, or repeated repair failure requires heavier references.
-- Use `IdeaToTech` or project planning workflows for technical/API/state/dependency decisions when needed.
-- Use framework skills only for concrete implementation details.
-
-### UI Handoff Boundary
-
-Once the visual source is user-approved and has Visual Freeze + Post-Visual Extraction + implementation-ready handoff, route routine UI implementation to `design-to-code`. Return to `idea-to-design` only for stale/missing/conflicting design source, product changes, missing handoff, or requested redesign.
-
-When the user asks to整理/生成/更新产品设计文档 after design approval, route to `idea-to-design` to consolidate the approved design into `Design-Spec.md` or an equivalent product/design document, recording source paths, approval notes, and implementation-critical design decisions. This is a documentation capability, not a default hard gate; it should not block existing implementation flow unless the project state or user explicitly requires it.
-
-For flat PNG/GPT Image 2 sources, prefer Visual IR + section parity evidence over prose-only briefs.
-
-## Gate Checks
-
-Gates are decision points, not ritual confirmations. Every gate must answer:
-1. Can we safely move to the next stage now?
-2. What evidence or artifact supports that decision?
-3. If blocked, what are the smallest 1-3 missing conditions?
-4. Which unknowns can be carried as explicit assumptions/debt?
-5. Who owns the next action?
-
-Before major transitions, record:
-- required artifacts
-- pass/fail/n/a for each
-- allowed vs blocked
-- owner of next step
-- verification evidence or explicit waiver
-
-Hard-block on:
-- destructive changes without scope confirmation
-- secrets/token persistence
-- unknown auth/permission requirements for real API work
-- claiming completion without verification or waiver
-- design parity claims without design source and visual evidence
-
-## Progress Reporting Standard
+## Progress reporting
 
 For Weixin/project checkpoints, include:
+
 - status label
 - backend execution: yes/no
 - completed in the last window
@@ -157,37 +131,51 @@ For Weixin/project checkpoints, include:
 - next step
 - next expected report
 
-Batch updates; avoid noisy micro-messages.
+Batch updates. Do not send noisy micro-progress.
 
-## Verification Discipline
+## Dispatch discipline
 
-During active implementation, avoid expensive broad checks after every edit unless needed. At checkpoints/gates, run the narrowest relevant verification first, then broader checks when release/merge readiness is claimed.
+- Keep only one persistent orchestrator context.
+- Load at most one provider skill per dispatch unless a gate explicitly needs cross-provider conflict resolution.
+- Prefer manifest paths over chat history.
+- Use parallel or delegated work only for independent slices.
+- After answering routine user questions, continue the active orchestration loop unless the user pauses or changes direction.
 
-Report skipped checks as skipped, not passed.
+## Hard stops
 
-## Progressive Loading
+Stop and ask/record a blocker when the next step requires:
+
+- destructive changes without explicit scope;
+- secrets, tokens, passwords, or credential persistence;
+- unknown auth/permission for real API work;
+- irreversible external side effects;
+- user approval for a direction-level visual/product decision;
+- claiming completion without evidence or explicit waiver.
+
+## Progressive references
 
 Load only when needed:
-- `references/workflow.md` — full stage workflow
-- `references/stage-gates.md` — detailed gate matrix
-- `references/skill-routing.md` — routing details
-- `references/cross-skill-contracts.md` — contracts with IdeaToDesign/DesignToCode/IdeaToTech
-- `references/testing-strategy.md` — verification strategy
-- `references/efficiency-rules.md` — low-token/low-cost execution rules
-- `references/vue-progress-overlay.md` — progress overlay implementation
-- `templates/index.md` — artifact templates
-- `templates/active-slice-template.json` — low-token active slice/project-state seed
-- `references/main-skill-full-reference.md` — full legacy detail if this compact guide is insufficient
 
-## Common Pitfalls
+- `references/kanban-skill-v2-redesign.md` — V2 redesign direction and role boundaries.
+- `docs/contracts/kanban-capability-envelope-v1.md` — task/result envelope details.
+- `docs/contracts/provider-registry-v1.md` — registry semantics.
+- `docs/contracts/kanban-gate-policy-v1.md` — review/block/gate policy.
+- `docs/contracts/provider-onboarding-checklist.md` — adding or replacing providers.
+- `references/main-skill-full-reference.md` — legacy detailed workflow only when the compact kernel is insufficient.
+- `references/stage-gates.md` — legacy gate matrix for non-kanban delivery.
+- `references/skill-routing.md` — legacy routing details for non-provider work.
+- `references/testing-strategy.md` — verification strategy details.
+- `references/efficiency-rules.md` — low-token/low-cost execution rules.
+- `templates/index.md` — artifact template index.
+
+## Common pitfalls
 
 | Pitfall | Fix |
 |---|---|
-| Loading every reference immediately | Load only the reference required for the current decision |
-| Treating smoke tests as visual parity | Require design-source/section evidence for visual claims |
-| Letting orchestration become implementation | Route to specialist skills and verify outputs |
-| Stopping on routine user questions | Answer briefly, then continue unless user pauses/stops |
-| Treating best practice as maximum process | Choose the lightest delivery mode that controls risk |
-| Producing two planning rounds with no artifact | Create a decisionable artifact or move into a bounded execution slice |
-| Polishing many minor issues equally | Fix the Top 1-3 product-breaking gaps and record the rest as debt |
-| Serializing independent workstreams | Parallelize/delegate independent discovery, design, implementation, and evidence tasks |
+| Treating Javis as an implementation skill | Keep Javis as state/dispatch/gate owner; route work to providers |
+| Matching by provider name first | Match by capability and registry |
+| Passing full conversation history | Pass artifact refs and active slice |
+| Provider marks global gate passed | Provider recommends; Javis records canonical gate state |
+| Visual review becomes blocked | Use `review`, reserve `blocked` for real missing/unsafe input |
+| Re-running whole workflows after partial result | Preserve artifacts and route only missing capability |
+| Keeping all historical playbooks in main skill | Move depth to references and load only on trigger |
