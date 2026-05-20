@@ -11,6 +11,7 @@ from typing import Any
 
 TASK_SCHEMA = "kanban-capability-task/v1"
 RESULT_SCHEMA = "kanban-capability-result/v1"
+ACTIVE_SLICE_DIGEST_SCHEMA = "active-slice-digest/v1"
 PROVIDER_SCHEMA = "provider-manifest/v1"
 PROVIDER_REGISTRY_SCHEMA = "provider-registry/v1"
 P2D_META_SCHEMA = "p2d-meta/v1"
@@ -106,6 +107,7 @@ class DispatchRecord:
     envelope: dict[str, Any]
     task_path: Path
     output_root: Path
+    digest_path: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -165,12 +167,16 @@ class KanbanStateStore:
         task_dir.mkdir(parents=True, exist_ok=True)
         task_path = task_dir / "task-envelope.json"
         _write_json(task_path, envelope)
+        digest_path = task_dir / "active-slice-digest.json"
+        digest = build_active_slice_digest(envelope, task_path=task_path)
+        _write_json(digest_path, digest)
 
         index = self.load_index()
         index["tasks"][task_id] = {
             "task_id": task_id,
             "capability": envelope["capability"],
             "task_path": str(task_path),
+            "digest_path": str(digest_path),
             "result_path": None,
             "result": None,
             "gate_status": "dispatched",
@@ -372,10 +378,16 @@ class HermesKanbanBackend(KanbanStateStore):
         if envelope["schema"] != TASK_SCHEMA:
             raise KanbanContractError(f"unsupported task schema: {envelope['schema']}")
         task_path = super().record_task(envelope)
+        digest_path = self.tasks_root / envelope["task_id"] / "active-slice-digest.json"
+        card_envelope = dict(envelope)
+        card_envelope["input_artifact_refs"] = [
+            *list(envelope.get("input_artifact_refs") or []),
+            str(digest_path),
+        ]
         created = self._run(
             "--board", self.board,
             "create", envelope["task_id"],
-            "--body", self._card_body(envelope),
+            "--body", self._card_body(card_envelope),
             "--assignee", envelope.get("provider_hint") or envelope["capability"],
             "--workspace", f"dir:{self.project_root}",
             "--created-by", "plantodelivery",
@@ -496,7 +508,7 @@ class HermesKanbanBackend(KanbanStateStore):
         )
         super().approve_review(task_id, evidence)
 
-    def audit_enforcement(self) -> dict[str, Any]:
+    def audit_enforcement(self, *, strict_digest: bool = False) -> dict[str, Any]:
         raw_cards = self._run("--board", self.board, "list", "--json", json_output=True)
         cards = raw_cards.get("tasks", raw_cards) if isinstance(raw_cards, dict) else raw_cards
         if not isinstance(cards, list):
@@ -524,6 +536,17 @@ class HermesKanbanBackend(KanbanStateStore):
             if meta is None:
                 violations.append({"task_id": title, "hermes_task_id": hermes_id, "code": "missing_p2d_meta", "message": "card has no P2D_META marker"})
                 continue
+            if strict_digest:
+                digest_path = self.tasks_root / meta.task_id / "active-slice-digest.json"
+                if not digest_path.exists():
+                    violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "missing_active_slice_digest", "message": "task has no active-slice-digest.json"})
+                else:
+                    try:
+                        digest = validate_active_slice_digest(_load_json(digest_path))
+                        if digest["task_id"] != meta.task_id or digest["capability"] != meta.capability:
+                            violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "mismatched_active_slice_digest", "message": "digest task_id/capability does not match P2D_META"})
+                    except KanbanContractError as exc:
+                        violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "invalid_active_slice_digest", "message": str(exc)})
             result_path = self.tasks_root / meta.task_id / "result-manifest.json"
             status = task.get("status")
             if status == "done" and not result_path.exists():
@@ -595,12 +618,16 @@ class KanbanOrchestrator:
         if isinstance(self.store, HermesKanbanBackend):
             envelope["provider_hint"] = provider.provider
         task_path = self.store.record_task(envelope)
+        task_entry = self.store.load_index()["tasks"].get(task_id, {})
+        digest_path_raw = task_entry.get("digest_path")
+        digest_path = Path(digest_path_raw) if isinstance(digest_path_raw, str) and digest_path_raw else None
         return DispatchRecord(
             provider=provider.provider,
             capability=capability,
             envelope=envelope,
             task_path=task_path,
             output_root=output_root,
+            digest_path=digest_path,
         )
 
     def ingest_result(self, manifest: dict[str, Any]) -> IngestRecord:
@@ -652,6 +679,75 @@ def _require_fields(data: dict[str, Any], fields: set[str]) -> None:
     missing = sorted(field for field in fields if field not in data)
     if missing:
         raise KanbanContractError(f"missing required fields: {', '.join(missing)}")
+
+
+def validate_active_slice_digest(digest: dict[str, Any]) -> dict[str, Any]:
+    raw = dict(digest)
+    _require_fields(raw, {"schema", "task_id", "capability", "active_slice", "context_budget", "read_first", "handoff"})
+    if raw["schema"] != ACTIVE_SLICE_DIGEST_SCHEMA:
+        raise KanbanContractError(f"unsupported active-slice digest schema: {raw['schema']}")
+    for field in ["task_id", "capability"]:
+        if not isinstance(raw[field], str) or not raw[field].strip():
+            raise KanbanContractError(f"{field} must be a non-empty string")
+    if not isinstance(raw["active_slice"], dict) or not raw["active_slice"]:
+        raise KanbanContractError("active_slice must be a non-empty object")
+    if not isinstance(raw["context_budget"], dict):
+        raise KanbanContractError("context_budget must be an object")
+    if not isinstance(raw["read_first"], list) or not all(isinstance(item, str) for item in raw["read_first"]):
+        raise KanbanContractError("read_first must be a list of strings")
+    if not isinstance(raw["handoff"], dict):
+        raise KanbanContractError("handoff must be an object")
+    for field in ["input_artifact_refs", "expected_outputs", "verification_expectations", "allowed_side_effects", "stop_rules"]:
+        if field in raw and (not isinstance(raw[field], list) or not all(isinstance(item, str) for item in raw[field])):
+            raise KanbanContractError(f"{field} must be a list of strings")
+    return raw
+
+
+def build_active_slice_digest(
+    envelope: dict[str, Any],
+    *,
+    task_path: str | Path | None = None,
+    max_chars: int = 6000,
+    stop_rules: list[str] | None = None,
+) -> dict[str, Any]:
+    _require_fields(envelope, {"schema", "task_id", "capability", "active_slice", "output_root"})
+    if envelope["schema"] != TASK_SCHEMA:
+        raise KanbanContractError(f"unsupported task schema: {envelope['schema']}")
+    output_root = Path(envelope["output_root"])
+    digest = {
+        "schema": ACTIVE_SLICE_DIGEST_SCHEMA,
+        "task_id": envelope["task_id"],
+        "capability": envelope["capability"],
+        "active_slice": dict(envelope["active_slice"]),
+        "context_budget": {
+            "max_chars": max_chars,
+            "policy": "artifact-paths-over-inline-history",
+        },
+        "read_first": [str(Path(task_path))] if task_path is not None else [],
+        "input_artifact_refs": list(envelope.get("input_artifact_refs") or []),
+        "expected_outputs": list(envelope.get("expected_outputs") or []),
+        "verification_expectations": list(envelope.get("verification_expectations") or []),
+        "allowed_side_effects": list(envelope.get("allowed_side_effects") or []),
+        "stop_rules": list(stop_rules or []),
+        "handoff": {
+            "provider_prompt": "Use this digest and referenced artifacts only; do not rely on prior chat history.",
+            "result_manifest_path": str(output_root / "result-manifest.json"),
+        },
+    }
+    validated = validate_active_slice_digest(digest)
+    if len(json.dumps(validated, ensure_ascii=False)) > max_chars:
+        raise KanbanContractError(f"active-slice digest exceeds max_chars: {max_chars}")
+    return validated
+
+
+def render_provider_handoff_prompt(digest_path: str | Path, task_path: str | Path) -> str:
+    return (
+        "Use the active-slice digest and task envelope below. "
+        "Do not rely on prior chat history. Read referenced artifacts as needed.\n"
+        f"- Active slice digest: {digest_path}\n"
+        f"- Task envelope: {task_path}\n"
+        "Return a kanban-capability-result/v1 manifest with evidence paths."
+    )
 
 
 def validate_p2d_meta(data: P2DMeta | dict[str, Any]) -> P2DMeta:

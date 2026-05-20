@@ -60,6 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     audit = sub.add_parser("audit", help="Audit board for P2D bypasses")
     audit.add_argument("--fail-on-violation", action="store_true", default=False)
+    audit.add_argument("--strict-digest", action="store_true", default=False, help="Require active-slice-digest.json for every P2D card")
     return parser
 
 
@@ -90,7 +91,7 @@ def main() -> int:
             _json({"ok": True, "task_id": args.task_id, "gate_status": "completed", "evidence": list(args.evidence)})
             return 0
         if args.command == "audit":
-            report = backend.audit_enforcement()
+            report = backend.audit_enforcement(strict_digest=args.strict_digest)
             _json(report)
             return 1 if args.fail_on_violation and not report["ok"] else 0
     except (KanbanContractError, OSError, json.JSONDecodeError) as exc:

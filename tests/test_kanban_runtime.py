@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from plantodelivery.kanban_runtime import (
+    ACTIVE_SLICE_DIGEST_SCHEMA,
     KanbanContractError,
     KanbanOrchestrator,
     HermesKanbanBackend,
@@ -14,6 +15,7 @@ from plantodelivery.kanban_runtime import (
     ReviewRecord,
     append_p2d_meta_marker,
     bootstrap_provider_registry_from_manifests,
+    build_active_slice_digest,
     create_task_envelope,
     decide_gate_status,
     display_gate_status,
@@ -21,11 +23,100 @@ from plantodelivery.kanban_runtime import (
     load_provider_registry,
     load_provider_registry_config,
     p2d_meta_to_task_envelope,
+    render_provider_handoff_prompt,
+    validate_active_slice_digest,
     validate_p2d_meta,
     validate_result_manifest,
     write_fixture_provider_result,
     write_provider_registry_config,
 )
+
+
+def test_active_slice_digest_validator_and_builder_exclude_chat_history(tmp_path: Path) -> None:
+    envelope = create_task_envelope(
+        task_id="digest-001",
+        capability="technical_blueprint",
+        project_root=tmp_path,
+        active_slice={"goal": "short-context handoff", "page": "/mall"},
+        input_artifact_refs=["project-state/design/handoff.json"],
+        output_root=tmp_path / "project-state" / "kanban" / "tasks" / "digest-001",
+        expected_outputs=["result-manifest.json", "blueprint.md"],
+        verification_expectations=["schema valid", "no chat history"],
+        allowed_side_effects=["write output_root only"],
+    )
+    envelope["conversation"] = "should not be copied"
+    envelope["chat_history"] = ["old turn"]
+    envelope["messages"] = [{"role": "user", "content": "old context"}]
+
+    digest = build_active_slice_digest(
+        envelope,
+        task_path=tmp_path / "project-state" / "kanban" / "tasks" / "digest-001" / "task-envelope.json",
+        stop_rules=["block instead of guessing"],
+    )
+
+    assert digest["schema"] == ACTIVE_SLICE_DIGEST_SCHEMA
+    assert digest["task_id"] == "digest-001"
+    assert digest["capability"] == "technical_blueprint"
+    assert digest["active_slice"]["page"] == "/mall"
+    assert digest["input_artifact_refs"] == ["project-state/design/handoff.json"]
+    assert digest["expected_outputs"] == ["result-manifest.json", "blueprint.md"]
+    assert digest["stop_rules"] == ["block instead of guessing"]
+    assert digest["context_budget"]["policy"] == "artifact-paths-over-inline-history"
+    assert digest["read_first"] == [str(tmp_path / "project-state" / "kanban" / "tasks" / "digest-001" / "task-envelope.json")]
+    assert digest["handoff"]["result_manifest_path"].endswith("result-manifest.json")
+    serialized = json.dumps(digest, ensure_ascii=False)
+    assert "should not be copied" not in serialized
+    assert "chat_history" not in serialized
+    assert "messages" not in serialized
+    assert validate_active_slice_digest(digest) == digest
+
+
+def test_active_slice_digest_rejects_invalid_schema_missing_fields_and_oversize(tmp_path: Path) -> None:
+    valid = {
+        "schema": ACTIVE_SLICE_DIGEST_SCHEMA,
+        "task_id": "digest-002",
+        "capability": "visual_implementation",
+        "active_slice": {"goal": "implement"},
+        "context_budget": {"max_chars": 6000, "policy": "artifact-paths-over-inline-history"},
+        "read_first": [],
+        "handoff": {"provider_prompt": "Use artifacts only", "result_manifest_path": "result-manifest.json"},
+    }
+    assert validate_active_slice_digest(valid)["task_id"] == "digest-002"
+
+    with pytest.raises(KanbanContractError, match="missing required fields"):
+        validate_active_slice_digest({"schema": ACTIVE_SLICE_DIGEST_SCHEMA, "task_id": "digest-002"})
+
+    invalid = dict(valid)
+    invalid["schema"] = "active-slice-digest/v0"
+    with pytest.raises(KanbanContractError, match="unsupported active-slice digest schema"):
+        validate_active_slice_digest(invalid)
+
+    envelope = create_task_envelope(
+        task_id="digest-oversize",
+        capability="technical_blueprint",
+        project_root=tmp_path,
+        active_slice={"goal": "x" * 200},
+        input_artifact_refs=[],
+        output_root=tmp_path / "tasks" / "digest-oversize",
+        expected_outputs=[],
+        verification_expectations=[],
+        allowed_side_effects=[],
+    )
+    with pytest.raises(KanbanContractError, match="active-slice digest exceeds max_chars"):
+        build_active_slice_digest(envelope, max_chars=80)
+
+
+def test_render_provider_handoff_prompt_is_short_and_path_based(tmp_path: Path) -> None:
+    digest_path = tmp_path / "tasks" / "digest-001" / "active-slice-digest.json"
+    task_path = tmp_path / "tasks" / "digest-001" / "task-envelope.json"
+
+    prompt = render_provider_handoff_prompt(digest_path, task_path)
+
+    assert str(digest_path) in prompt
+    assert str(task_path) in prompt
+    assert "kanban-capability-result/v1" in prompt
+    assert "Do not rely on prior chat history" in prompt
+    assert len(prompt) < 1000
 
 
 def write_manifest(path: Path, provider: str, capabilities: list[str]) -> None:
@@ -152,9 +243,20 @@ def test_orchestrator_uses_hermes_backend_for_state_backend_hermes(tmp_path: Pat
 
     assert dispatch.provider == "idea-to-tech"
     assert dispatch.task_path.exists()
+    assert dispatch.digest_path is not None
+    assert dispatch.digest_path.exists()
+    assert dispatch.digest_path == tmp_path / "project-state" / "kanban" / "tasks" / "orch-001" / "active-slice-digest.json"
+    digest = json.loads(dispatch.digest_path.read_text(encoding="utf-8"))
+    assert digest["schema"] == ACTIVE_SLICE_DIGEST_SCHEMA
+    assert digest["task_id"] == "orch-001"
+    assert digest["read_first"] == [str(dispatch.task_path)]
+    index_entry = orchestrator.store.load_index()["tasks"]["orch-001"]
+    assert index_entry["digest_path"] == str(dispatch.digest_path)
     card = orchestrator.store.show_card("orch-001")
     assert card["task"]["status"] == "ready"
-    assert extract_p2d_meta_marker(body=card["task"]["body"], comments=[]) is not None
+    meta = extract_p2d_meta_marker(body=card["task"]["body"], comments=[])
+    assert meta is not None
+    assert str(dispatch.digest_path) in (meta.input_artifact_refs or [])
 
 
 def test_hermes_backend_enforces_claimed_before_result_and_review_before_done(tmp_path: Path) -> None:
@@ -232,6 +334,33 @@ def test_audit_enforcement_reports_missing_marker_and_done_without_result(tmp_pa
     assert "missing_p2d_meta" in codes
     assert "done_without_result_manifest" in codes
     assert "missing_review_approval" not in codes
+
+
+def test_strict_digest_audit_reports_missing_or_invalid_digest(tmp_path: Path) -> None:
+    hermes_home = tmp_path / "hermes-home"
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    backend = HermesKanbanBackend(project_root=project_root, board="p2d-strict-digest", hermes_home=hermes_home)
+
+    envelope = create_task_envelope(
+        task_id="p2d-missing-digest",
+        capability="technical_blueprint",
+        project_root=project_root,
+        active_slice={"goal": "strict digest audit"},
+        input_artifact_refs=[],
+        output_root=project_root / "project-state" / "kanban" / "tasks" / "p2d-missing-digest",
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["digest exists"],
+        allowed_side_effects=["write output_root only"],
+    )
+    backend.record_task(envelope)
+    digest_path = project_root / "project-state" / "kanban" / "tasks" / "p2d-missing-digest" / "active-slice-digest.json"
+    digest_path.unlink()
+
+    report = backend.audit_enforcement(strict_digest=True)
+
+    assert report["ok"] is False
+    assert any(violation["code"] == "missing_active_slice_digest" for violation in report["violations"])
 
 def test_p2d_meta_marker_round_trips_from_body_and_comments() -> None:
     meta = P2DMeta(

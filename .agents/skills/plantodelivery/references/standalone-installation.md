@@ -97,11 +97,16 @@ python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
 # CI/checkpoint audit: fails non-zero with --fail-on-violation
 python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
   --project-root . --board plantodelivery audit --fail-on-violation
+
+# Strict digest audit also requires active-slice-digest.json beside each task envelope
+python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
+  --project-root . --board plantodelivery audit --strict-digest --fail-on-violation
 ```
 
 Current strict gates:
 
 - missing or conflicting `P2D_META` markers are audit violations;
+- dispatch/record-task writes `active-slice-digest.json` beside `task-envelope.json`; `audit --strict-digest` reports missing, invalid, or mismatched digests;
 - result ingest is rejected unless the Hermes card status is `running`;
 - `review_required=true` writes the result manifest and comments `P2D RESULT READY FOR REVIEW`, then blocks the card as a review gate instead of completing it;
 - review approval requires non-empty evidence and comments `P2D REVIEW APPROVED` before completing the Hermes card;
