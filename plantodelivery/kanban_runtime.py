@@ -542,6 +542,63 @@ def write_provider_registry_config(path: str | Path, *, providers: dict[str, str
     return config_path
 
 
+def _normalize_provider_manifest(manifest_path: Path, target_path: Path) -> tuple[str, Path]:
+    manifest = _load_json(manifest_path)
+    if manifest.get("schema") == PROVIDER_SCHEMA and "provider" in manifest:
+        provider = manifest["provider"]
+        _write_json(target_path, manifest)
+        return provider, target_path
+
+    if manifest.get("schema_version") != PROVIDER_SCHEMA:
+        raise KanbanContractError(f"unsupported provider schema in {manifest_path}: {manifest.get('schema') or manifest.get('schema_version')}")
+    _require_fields(manifest, {"provider_id", "capabilities"})
+    capabilities = manifest["capabilities"]
+    if not isinstance(capabilities, list):
+        raise KanbanContractError(f"capabilities must be a list in {manifest_path}")
+    normalized = {
+        "schema": PROVIDER_SCHEMA,
+        "provider": manifest["provider_id"],
+        "display_name": manifest.get("display_name", manifest["provider_id"]),
+        "version": manifest.get("version", "0.1.0"),
+        "capabilities": [
+            {
+                "name": capability,
+                "task_schema": TASK_SCHEMA,
+                "result_schema": RESULT_SCHEMA,
+            }
+            for capability in capabilities
+        ],
+        "source_manifest_path": str(manifest_path),
+    }
+    _write_json(target_path, normalized)
+    return normalized["provider"], target_path
+
+
+def bootstrap_provider_registry_from_manifests(
+    path: str | Path,
+    *,
+    provider_manifests: dict[str, str | Path],
+) -> Path:
+    """Create a provider-registry/v1 config from real provider manifests.
+
+    Real provider kernels currently expose compact manifests with
+    schema_version/provider_id/capabilities. The runtime registry keeps a single
+    contract shape (schema/provider/capability objects), so bootstrap writes
+    normalized manifest snapshots next to the registry config and points the
+    registry at those snapshots.
+    """
+
+    config_path = Path(path)
+    normalized_root = config_path.parent / "provider-manifests"
+    providers: dict[str, str | Path] = {}
+    for provider_hint, source_path in sorted(provider_manifests.items()):
+        source = Path(source_path)
+        target = normalized_root / provider_hint / "provider-manifest.json"
+        provider, normalized_path = _normalize_provider_manifest(source, target)
+        providers[provider] = normalized_path
+    return write_provider_registry_config(config_path, providers=providers)
+
+
 def _provider_manifest_paths(root: Path) -> list[Path]:
     if root.is_file():
         config = load_provider_registry_config(root)

@@ -61,7 +61,8 @@ The canonical in-repo runtime entry is `plantodelivery.kanban_runtime`.
 
 Use it for deterministic contract work before/after provider dispatch:
 
-- `write_provider_registry_config(path, providers={...})` writes `provider-registry/v1` with explicit real provider manifest paths such as IdeaToDesign, IdeaToTech, and DesignToCode.
+- `write_provider_registry_config(path, providers={...})` writes `provider-registry/v1` with explicit normalized provider manifest paths.
+- `bootstrap_provider_registry_from_manifests(path, provider_manifests={...})` bootstraps the canonical registry from real IdeaToDesign, IdeaToTech, and DesignToCode `contracts/provider-manifest.json` files. It normalizes compact provider manifests (`schema_version`, `provider_id`, string capabilities) into runtime `provider-manifest/v1` snapshots beside the registry config, then routes dispatch through those snapshots.
 - `load_provider_registry_config(path)` validates that registry config before dispatch.
 - `load_provider_registry(root_or_config)` scans `provider-manifest.json` files from either a directory or a `provider-registry/v1` config file and returns a capability-indexed registry.
 - `create_task_envelope(...)` builds capability-first `kanban-capability-task/v1` payloads without embedding provider identity.

@@ -9,6 +9,7 @@ from plantodelivery.kanban_runtime import (
     KanbanOrchestrator,
     KanbanSQLiteStateStore,
     KanbanStateStore,
+    bootstrap_provider_registry_from_manifests,
     create_task_envelope,
     decide_gate_status,
     display_gate_status,
@@ -86,6 +87,51 @@ def test_provider_registry_config_records_real_provider_paths(tmp_path: Path) ->
     assert registry["design-to-code-capability"].provider == "design-to-code"
     assert registry["design-to-code-capability"].manifest_path == providers["design-to-code"]
 
+
+def test_bootstrap_real_provider_manifests_into_sqlite_backed_orchestrator(tmp_path: Path) -> None:
+    source_manifests = {
+        "idea-to-design": Path("/mnt/c/Users/imjzq/Projects/IdeaToDesign/contracts/provider-manifest.json"),
+        "idea-to-tech": Path("/mnt/c/Users/imjzq/Projects/IdeaToTech/contracts/provider-manifest.json"),
+        "design-to-code": Path("/mnt/c/Users/imjzq/Projects/DesignToCode/contracts/provider-manifest.json"),
+    }
+    registry_config = bootstrap_provider_registry_from_manifests(
+        tmp_path / "project-state" / "kanban" / "provider-registry.json",
+        provider_manifests=source_manifests,
+    )
+    state_root = tmp_path / "project-state" / "kanban"
+    orchestrator = KanbanOrchestrator(
+        project_root=tmp_path,
+        providers_root=registry_config,
+        state_store=KanbanSQLiteStateStore(state_root),
+    )
+
+    expectations = {
+        "product_visual_design": "idea-to-design",
+        "visual_source_creation": "idea-to-design",
+        "technical_blueprint": "idea-to-tech",
+        "implementation_planning": "idea-to-tech",
+        "verification_strategy": "idea-to-tech",
+        "visual_implementation": "design-to-code",
+    }
+    dispatches = {}
+    for capability, provider in expectations.items():
+        dispatches[capability] = orchestrator.dispatch_task(
+            task_id=f"task-{capability.replace('_', '-')}",
+            capability=capability,
+            active_slice={"goal": f"dispatch {capability} from real provider manifest"},
+            input_artifact_refs=[],
+            expected_outputs=["result-manifest.json"],
+            verification_expectations=["db-backed registry dispatch"],
+            allowed_side_effects=["write output_root only"],
+        )
+        assert dispatches[capability].provider == provider
+
+    registry = load_provider_registry(registry_config)
+    assert {capability: registry[capability].provider for capability in expectations} == expectations
+    index = KanbanSQLiteStateStore(state_root).load_index()
+    expected_task_ids = [f"task-{capability.replace('_', '-')}" for capability in expectations]
+    assert sorted(index["gates"]["dispatched"]) == sorted(expected_task_ids)
+    assert index["cards"]["task-visual-implementation"]["display_status"] == "已派发"
 
 def test_task_envelope_is_capability_first_and_bounded(tmp_path: Path) -> None:
     envelope = create_task_envelope(
