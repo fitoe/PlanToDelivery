@@ -10,6 +10,7 @@ TASK_SCHEMA = "kanban-capability-task/v1"
 RESULT_SCHEMA = "kanban-capability-result/v1"
 PROVIDER_SCHEMA = "provider-manifest/v1"
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
+STATE_SCHEMA = "plantodelivery-kanban-state/v1"
 
 
 class KanbanContractError(ValueError):
@@ -26,6 +27,98 @@ class ProviderCapability:
     priority: int | None = None
 
 
+class KanbanStateStore:
+    """Persist the minimal Javis Kanban task/result/gate state on disk."""
+
+    def __init__(self, root: str | Path) -> None:
+        self.root = Path(root)
+        self.tasks_root = self.root / "tasks"
+        self.index_path = self.root / "kanban-state.json"
+
+    def load_index(self) -> dict[str, Any]:
+        if not self.index_path.exists():
+            return {"schema": STATE_SCHEMA, "tasks": {}, "gates": {}}
+        index = _load_json(self.index_path)
+        if index.get("schema") != STATE_SCHEMA:
+            raise KanbanContractError(f"unsupported state schema: {index.get('schema')}")
+        index.setdefault("tasks", {})
+        index.setdefault("gates", {})
+        return index
+
+    def record_task(self, envelope: dict[str, Any]) -> Path:
+        _require_fields(envelope, {"schema", "task_id", "capability", "output_root"})
+        if envelope["schema"] != TASK_SCHEMA:
+            raise KanbanContractError(f"unsupported task schema: {envelope['schema']}")
+        task_id = envelope["task_id"]
+        task_dir = self.tasks_root / task_id
+        task_dir.mkdir(parents=True, exist_ok=True)
+        task_path = task_dir / "task-envelope.json"
+        _write_json(task_path, envelope)
+
+        index = self.load_index()
+        index["tasks"][task_id] = {
+            "task_id": task_id,
+            "capability": envelope["capability"],
+            "task_path": str(task_path),
+            "result_path": None,
+            "result": None,
+            "gate_status": "dispatched",
+        }
+        self._rebuild_gates(index)
+        self._write_index(index)
+        return task_path
+
+    def load_task(self, task_id: str) -> dict[str, Any]:
+        return _load_json(self.tasks_root / task_id / "task-envelope.json")
+
+    def record_result(self, manifest: dict[str, Any]) -> Path:
+        validated = validate_result_manifest(manifest)
+        task_id = validated["task_id"]
+        task_dir = self.tasks_root / task_id
+        if not task_dir.exists():
+            raise KanbanContractError(f"cannot record result for unknown task: {task_id}")
+        result_path = task_dir / "result-manifest.json"
+        _write_json(result_path, validated)
+
+        index = self.load_index()
+        task_entry = index["tasks"].setdefault(
+            task_id,
+            {
+                "task_id": task_id,
+                "capability": validated["capability"],
+                "task_path": str(task_dir / "task-envelope.json"),
+            },
+        )
+        task_entry.update(
+            {
+                "capability": validated["capability"],
+                "provider": validated["provider"],
+                "result_path": str(result_path),
+                "result": validated["result"],
+                "gate_status": decide_gate_status(validated),
+            }
+        )
+        self._rebuild_gates(index)
+        self._write_index(index)
+        return result_path
+
+    def load_result(self, task_id: str) -> dict[str, Any]:
+        return _load_json(self.tasks_root / task_id / "result-manifest.json")
+
+    def _write_index(self, index: dict[str, Any]) -> None:
+        self.root.mkdir(parents=True, exist_ok=True)
+        _write_json(self.index_path, index)
+
+    @staticmethod
+    def _rebuild_gates(index: dict[str, Any]) -> None:
+        gates: dict[str, list[str]] = {}
+        for task_id, task in sorted(index.get("tasks", {}).items()):
+            gate_status = task.get("gate_status")
+            if gate_status:
+                gates.setdefault(gate_status, []).append(task_id)
+        index["gates"] = gates
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -34,6 +127,11 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise KanbanContractError(f"manifest must be an object: {path}")
     return data
+
+
+def _write_json(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def _require_fields(data: dict[str, Any], fields: set[str]) -> None:

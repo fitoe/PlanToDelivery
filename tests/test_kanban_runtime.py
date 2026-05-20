@@ -5,6 +5,7 @@ import pytest
 
 from plantodelivery.kanban_runtime import (
     KanbanContractError,
+    KanbanStateStore,
     create_task_envelope,
     decide_gate_status,
     load_provider_registry,
@@ -132,3 +133,51 @@ def test_result_manifest_rejects_task_or_capability_mismatch() -> None:
 
     with pytest.raises(KanbanContractError, match="task_id mismatch"):
         validate_result_manifest(manifest, expected_task_id="task-001", expected_capability="technical_blueprint")
+
+
+def test_state_store_persists_task_result_and_gate_index(tmp_path: Path) -> None:
+    store = KanbanStateStore(tmp_path / "project-state" / "kanban")
+    envelope = create_task_envelope(
+        task_id="task-001",
+        capability="visual_implementation",
+        project_root=tmp_path,
+        active_slice={"page": "/mall", "goal": "implement approved design"},
+        input_artifact_refs=["project-state/design/mall-handoff.json"],
+        output_root=tmp_path / "project-state" / "kanban" / "tasks" / "task-001",
+        expected_outputs=["result-manifest.json", "parity-report.md"],
+        verification_expectations=["screenshot parity evidence"],
+        allowed_side_effects=["write implementation files"],
+    )
+
+    task_path = store.record_task(envelope)
+
+    assert task_path == tmp_path / "project-state" / "kanban" / "tasks" / "task-001" / "task-envelope.json"
+    assert json.loads(task_path.read_text(encoding="utf-8"))["capability"] == "visual_implementation"
+    assert store.load_task("task-001")["active_slice"]["page"] == "/mall"
+    assert store.load_index()["tasks"]["task-001"]["gate_status"] == "dispatched"
+
+    result_manifest = {
+        "schema": "kanban-capability-result/v1",
+        "task_id": "task-001",
+        "capability": "visual_implementation",
+        "provider": "design-to-code",
+        "result": "completed",
+        "changed_files": ["src/pages/mall.vue"],
+        "produced_artifacts": ["project-state/kanban/tasks/task-001/parity-report.md"],
+        "evidence": ["project-state/kanban/tasks/task-001/mobile.png"],
+        "blockers": [],
+        "debts": [],
+        "review_required": True,
+        "suggested_gate_updates": [],
+        "next_recommended_task": None,
+    }
+
+    result_path = store.record_result(result_manifest)
+
+    assert result_path == tmp_path / "project-state" / "kanban" / "tasks" / "task-001" / "result-manifest.json"
+    index = store.load_index()
+    assert index["schema"] == "plantodelivery-kanban-state/v1"
+    assert index["tasks"]["task-001"]["result"] == "completed"
+    assert index["tasks"]["task-001"]["gate_status"] == "review"
+    assert index["gates"]["review"] == ["task-001"]
+    assert store.load_result("task-001")["provider"] == "design-to-code"

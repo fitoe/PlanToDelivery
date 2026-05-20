@@ -65,6 +65,7 @@ Use it for deterministic contract work before/after provider dispatch:
 - `create_task_envelope(...)` builds capability-first `kanban-capability-task/v1` payloads without embedding provider identity.
 - `validate_result_manifest(...)` checks `kanban-capability-result/v1` provider outputs before state updates.
 - `decide_gate_status(manifest)` maps provider results into Javis gate states; `review_required` becomes `review`, while real blockers remain `blocked`.
+- `KanbanStateStore(root)` persists the minimal task/result/gate loop under `project-state/kanban`: task envelopes, result manifests, `kanban-state.json`, and gate indexes.
 
 These helpers are deliberately small and provider-agnostic. Extend them by contract tests first; do not reintroduce legacy orchestration coupling.
 
