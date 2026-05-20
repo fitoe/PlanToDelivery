@@ -5,6 +5,7 @@ import pytest
 
 from plantodelivery.kanban_runtime import (
     KanbanContractError,
+    KanbanOrchestrator,
     KanbanStateStore,
     create_task_envelope,
     decide_gate_status,
@@ -181,3 +182,72 @@ def test_state_store_persists_task_result_and_gate_index(tmp_path: Path) -> None
     assert index["tasks"]["task-001"]["gate_status"] == "review"
     assert index["gates"]["review"] == ["task-001"]
     assert store.load_result("task-001")["provider"] == "design-to-code"
+
+
+def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+    write_manifest(providers_root / "design-to-code" / "provider-manifest.json", "design-to-code", ["visual_implementation"])
+    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root)
+
+    dispatch = orchestrator.dispatch_task(
+        task_id="task-002",
+        capability="visual_implementation",
+        active_slice={"page": "/mall", "goal": "implement approved design"},
+        input_artifact_refs=["project-state/design/mall-handoff.json"],
+        expected_outputs=["result-manifest.json", "parity-report.md"],
+        verification_expectations=["screenshot parity evidence"],
+        allowed_side_effects=["write implementation files"],
+    )
+
+    assert dispatch.provider == "design-to-code"
+    assert dispatch.envelope["capability"] == "visual_implementation"
+    assert "provider" not in dispatch.envelope
+    assert dispatch.task_path.exists()
+    assert dispatch.output_root == tmp_path / "project-state" / "kanban" / "tasks" / "task-002"
+
+    result_manifest = {
+        "schema": "kanban-capability-result/v1",
+        "task_id": "task-002",
+        "capability": "visual_implementation",
+        "provider": "design-to-code",
+        "result": "completed",
+        "changed_files": ["src/pages/mall.vue"],
+        "produced_artifacts": ["project-state/kanban/tasks/task-002/parity-report.md"],
+        "evidence": ["project-state/kanban/tasks/task-002/mobile.png"],
+        "blockers": [],
+        "debts": [],
+        "review_required": True,
+        "suggested_gate_updates": [],
+        "next_recommended_task": None,
+    }
+
+    ingest = orchestrator.ingest_result(result_manifest)
+
+    assert ingest.gate_status == "review"
+    assert ingest.result_path.exists()
+    assert orchestrator.store.load_index()["gates"]["review"] == ["task-002"]
+
+    review = orchestrator.approve_review("task-002", evidence=["manual visual review approved"])
+
+    assert review.gate_status == "completed"
+    task = orchestrator.store.load_index()["tasks"]["task-002"]
+    assert task["review"]["status"] == "approved"
+    assert task["review"]["evidence"] == ["manual visual review approved"]
+    assert orchestrator.store.load_index()["gates"]["completed"] == ["task-002"]
+
+
+def test_orchestrator_rejects_unknown_capability(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+    write_manifest(providers_root / "idea-to-design" / "provider-manifest.json", "idea-to-design", ["product_visual_design"])
+    orchestrator = KanbanOrchestrator(project_root=tmp_path, providers_root=providers_root)
+
+    with pytest.raises(KanbanContractError, match="no provider for capability"):
+        orchestrator.dispatch_task(
+            task_id="task-missing",
+            capability="visual_implementation",
+            active_slice={"page": "/mall"},
+            input_artifact_refs=[],
+            expected_outputs=[],
+            verification_expectations=[],
+            allowed_side_effects=[],
+        )

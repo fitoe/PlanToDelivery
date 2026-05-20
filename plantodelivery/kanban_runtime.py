@@ -27,6 +27,31 @@ class ProviderCapability:
     priority: int | None = None
 
 
+@dataclass(frozen=True)
+class DispatchRecord:
+    provider: str
+    capability: str
+    envelope: dict[str, Any]
+    task_path: Path
+    output_root: Path
+
+
+@dataclass(frozen=True)
+class IngestRecord:
+    task_id: str
+    capability: str
+    provider: str
+    gate_status: str
+    result_path: Path
+
+
+@dataclass(frozen=True)
+class ReviewRecord:
+    task_id: str
+    gate_status: str
+    evidence: list[str]
+
+
 class KanbanStateStore:
     """Persist the minimal Javis Kanban task/result/gate state on disk."""
 
@@ -105,6 +130,18 @@ class KanbanStateStore:
     def load_result(self, task_id: str) -> dict[str, Any]:
         return _load_json(self.tasks_root / task_id / "result-manifest.json")
 
+    def approve_review(self, task_id: str, evidence: list[str]) -> None:
+        index = self.load_index()
+        task_entry = index["tasks"].get(task_id)
+        if task_entry is None:
+            raise KanbanContractError(f"unknown task: {task_id}")
+        if task_entry.get("gate_status") != "review":
+            raise KanbanContractError(f"task is not in review: {task_id}")
+        task_entry["gate_status"] = "completed"
+        task_entry["review"] = {"status": "approved", "evidence": list(evidence)}
+        self._rebuild_gates(index)
+        self._write_index(index)
+
     def _write_index(self, index: dict[str, Any]) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         _write_json(self.index_path, index)
@@ -117,6 +154,74 @@ class KanbanStateStore:
             if gate_status:
                 gates.setdefault(gate_status, []).append(task_id)
         index["gates"] = gates
+
+
+class KanbanOrchestrator:
+    """Minimal PlanToDelivery orchestration API over registry + state store."""
+
+    def __init__(self, *, project_root: str | Path, providers_root: str | Path, state_root: str | Path | None = None) -> None:
+        self.project_root = Path(project_root)
+        self.providers_root = Path(providers_root)
+        self.store = KanbanStateStore(state_root or self.project_root / "project-state" / "kanban")
+
+    def dispatch_task(
+        self,
+        *,
+        task_id: str,
+        capability: str,
+        active_slice: dict[str, Any],
+        input_artifact_refs: list[str],
+        expected_outputs: list[str],
+        verification_expectations: list[str],
+        allowed_side_effects: list[str],
+    ) -> DispatchRecord:
+        registry = load_provider_registry(self.providers_root)
+        provider = registry.get(capability)
+        if provider is None:
+            raise KanbanContractError(f"no provider for capability: {capability}")
+        output_root = self.store.tasks_root / task_id
+        envelope = create_task_envelope(
+            task_id=task_id,
+            capability=capability,
+            project_root=self.project_root,
+            active_slice=active_slice,
+            input_artifact_refs=input_artifact_refs,
+            output_root=output_root,
+            expected_outputs=expected_outputs,
+            verification_expectations=verification_expectations,
+            allowed_side_effects=allowed_side_effects,
+        )
+        task_path = self.store.record_task(envelope)
+        return DispatchRecord(
+            provider=provider.provider,
+            capability=capability,
+            envelope=envelope,
+            task_path=task_path,
+            output_root=output_root,
+        )
+
+    def ingest_result(self, manifest: dict[str, Any]) -> IngestRecord:
+        task_id = manifest.get("task_id")
+        if not isinstance(task_id, str) or not task_id:
+            raise KanbanContractError("task_id is required")
+        task = self.store.load_task(task_id)
+        validated = validate_result_manifest(
+            manifest,
+            expected_task_id=task_id,
+            expected_capability=task["capability"],
+        )
+        result_path = self.store.record_result(validated)
+        return IngestRecord(
+            task_id=task_id,
+            capability=validated["capability"],
+            provider=validated["provider"],
+            gate_status=decide_gate_status(validated),
+            result_path=result_path,
+        )
+
+    def approve_review(self, task_id: str, *, evidence: list[str]) -> ReviewRecord:
+        self.store.approve_review(task_id, evidence)
+        return ReviewRecord(task_id=task_id, gate_status="completed", evidence=list(evidence))
 
 
 def _load_json(path: Path) -> dict[str, Any]:
