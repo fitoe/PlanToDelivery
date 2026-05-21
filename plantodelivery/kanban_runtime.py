@@ -19,6 +19,8 @@ P2D_META_SCHEMA = "p2d-meta/v1"
 P2D_META_BEGIN = "<!-- P2D_META"
 P2D_META_END = "P2D_META -->"
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
+GLOBAL_STOP_RULES = {"direction_decision", "human_acceptance", "credential_required", "destructive_action", "external_side_effect", "high_risk_uncertainty", "user_pause"}
+LOCAL_STOP_RULES = {"hard_blocker", "blocked", "human_review_required"}
 STATE_SCHEMA = "plantodelivery-kanban-state/v1"
 DISPLAY_KANBAN_STATUSES = {
     "backlog": "待梳理",
@@ -234,6 +236,7 @@ class KanbanStateStore:
                 "display_status": display_kanban_status(decide_kanban_status(validated)),
                 "suggested_kanban_updates": list(validated.get("suggested_kanban_updates") or []),
                 "next_recommended_task": validated.get("next_recommended_task"),
+                "run_policy": decide_kanban_run_policy(validated),
             }
         )
         self._sync_card(index, task_id, action="ingest_result")
@@ -1342,6 +1345,83 @@ def validate_result_manifest(
     if not isinstance(manifest["review_required"], bool):
         raise KanbanContractError("review_required must be a boolean")
     return manifest
+
+
+def decide_kanban_run_policy(result_manifest: dict[str, Any], *, stop_rules: list[str] | None = None) -> dict[str, Any]:
+    """Decide whether the Kanban runner should continue after a task result.
+
+    The default policy is continuous progress: completed/partial cards without
+    explicit stop rules keep the runner moving to the next ready card. Only
+    review, real blockers, failures, or explicit stop rules pause the loop.
+    Local stops keep other independent ready cards safe to continue; global
+    stops require user decision before the whole run loop continues.
+    """
+
+    rules = list(stop_rules or [])
+    global_rules = [rule for rule in rules if rule in GLOBAL_STOP_RULES]
+    if global_rules:
+        return {
+            "decision": "stop",
+            "auto_continue": False,
+            "requires_user_decision": True,
+            "safe_to_continue_other_cards": False,
+            "stop_reason": "global_stop_rule",
+            "stop_rules": rules,
+            "next_recommended_task": result_manifest.get("next_recommended_task"),
+        }
+
+    local_rules = [rule for rule in rules if rule in LOCAL_STOP_RULES]
+    if local_rules:
+        return {
+            "decision": "stop",
+            "auto_continue": False,
+            "requires_user_decision": "human_review_required" in local_rules,
+            "safe_to_continue_other_cards": True,
+            "stop_reason": local_rules[0],
+            "stop_rules": rules,
+            "next_recommended_task": result_manifest.get("next_recommended_task"),
+        }
+
+    kanban_status = decide_kanban_status(result_manifest)
+    if kanban_status == "review":
+        return {
+            "decision": "stop",
+            "auto_continue": False,
+            "requires_user_decision": True,
+            "safe_to_continue_other_cards": True,
+            "stop_reason": "human_review_required",
+            "stop_rules": rules,
+            "next_recommended_task": result_manifest.get("next_recommended_task"),
+        }
+    if kanban_status == "blocked":
+        return {
+            "decision": "stop",
+            "auto_continue": False,
+            "requires_user_decision": False,
+            "safe_to_continue_other_cards": True,
+            "stop_reason": "blocked",
+            "stop_rules": rules,
+            "next_recommended_task": result_manifest.get("next_recommended_task"),
+        }
+    if kanban_status == "failed":
+        return {
+            "decision": "stop",
+            "auto_continue": False,
+            "requires_user_decision": False,
+            "safe_to_continue_other_cards": False,
+            "stop_reason": "failed",
+            "stop_rules": rules,
+            "next_recommended_task": result_manifest.get("next_recommended_task"),
+        }
+    return {
+        "decision": "continue",
+        "auto_continue": True,
+        "requires_user_decision": False,
+        "safe_to_continue_other_cards": True,
+        "stop_reason": None,
+        "stop_rules": rules,
+        "next_recommended_task": result_manifest.get("next_recommended_task"),
+    }
 
 
 def decide_kanban_status(result_manifest: dict[str, Any]) -> str:

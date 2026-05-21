@@ -17,6 +17,7 @@ from plantodelivery.kanban_runtime import (
     bootstrap_provider_registry_from_manifests,
     build_active_slice_digest,
     create_task_envelope,
+    decide_kanban_run_policy,
     decide_kanban_status,
     display_kanban_status,
     extract_p2d_meta_marker,
@@ -597,6 +598,71 @@ def test_kanban_decision_keeps_real_blockers_separate_from_review() -> None:
     assert decide_kanban_status({"result": "failed", "review_required": False, "blockers": []}) == "failed"
 
 
+def test_kanban_run_policy_auto_continues_until_hard_stop() -> None:
+    completed = {
+        "schema": "kanban-capability-result/v1",
+        "task_id": "task-auto",
+        "capability": "technical_blueprint",
+        "provider": "idea-to-tech",
+        "result": "completed",
+        "changed_files": ["project-state/tech/blueprint.md"],
+        "produced_artifacts": ["project-state/tech/blueprint.md"],
+        "evidence": ["blueprint verified"],
+        "blockers": [],
+        "debts": [],
+        "review_required": False,
+        "suggested_kanban_updates": [],
+        "next_recommended_task": {"task_id": "visual-pass", "capability": "product_visual_design"},
+    }
+
+    policy = decide_kanban_run_policy(completed)
+
+    assert policy["decision"] == "continue"
+    assert policy["auto_continue"] is True
+    assert policy["requires_user_decision"] is False
+    assert policy["safe_to_continue_other_cards"] is True
+    assert policy["stop_reason"] is None
+    assert policy["next_recommended_task"]["task_id"] == "visual-pass"
+
+
+@pytest.mark.parametrize(
+    ("manifest", "stop_reason"),
+    [
+        ({"result": "completed", "review_required": True, "blockers": []}, "human_review_required"),
+        ({"result": "blocked", "review_required": False, "blockers": ["missing credential"]}, "blocked"),
+        ({"result": "failed", "review_required": False, "blockers": []}, "failed"),
+    ],
+)
+def test_kanban_run_policy_stops_only_for_review_blocked_or_failed(manifest: dict[str, object], stop_reason: str) -> None:
+    policy = decide_kanban_run_policy(manifest)
+
+    assert policy["decision"] == "stop"
+    assert policy["auto_continue"] is False
+    assert policy["requires_user_decision"] is (stop_reason == "human_review_required")
+    assert policy["safe_to_continue_other_cards"] is (stop_reason != "failed")
+    assert policy["stop_reason"] == stop_reason
+
+
+def test_kanban_run_policy_marks_stop_rules_as_local_or_global() -> None:
+    local = decide_kanban_run_policy(
+        {"result": "blocked", "review_required": False, "blockers": ["waiting on one design asset"]},
+        stop_rules=["hard_blocker"],
+    )
+    global_stop = decide_kanban_run_policy(
+        {"result": "completed", "review_required": False, "blockers": []},
+        stop_rules=["direction_decision", "destructive_action", "external_side_effect"],
+    )
+
+    assert local["decision"] == "stop"
+    assert local["safe_to_continue_other_cards"] is True
+    assert local["stop_rules"] == ["hard_blocker"]
+    assert global_stop["decision"] == "stop"
+    assert global_stop["requires_user_decision"] is True
+    assert global_stop["safe_to_continue_other_cards"] is False
+    assert global_stop["stop_reason"] == "global_stop_rule"
+    assert global_stop["stop_rules"] == ["direction_decision", "destructive_action", "external_side_effect"]
+
+
 def test_result_manifest_rejects_missing_required_fields() -> None:
     with pytest.raises(KanbanContractError, match="missing required fields"):
         validate_result_manifest({"schema": "kanban-capability-result/v1", "task_id": "task-001"})
@@ -667,6 +733,9 @@ def test_state_store_persists_task_result_and_kanban_index(tmp_path: Path) -> No
     assert index["schema"] == "plantodelivery-kanban-state/v1"
     assert index["tasks"]["task-001"]["result"] == "completed"
     assert index["tasks"]["task-001"]["kanban_status"] == "review"
+    assert index["tasks"]["task-001"]["run_policy"]["decision"] == "stop"
+    assert index["tasks"]["task-001"]["run_policy"]["stop_reason"] == "human_review_required"
+    assert index["tasks"]["task-001"]["run_policy"]["safe_to_continue_other_cards"] is True
     assert index["columns"]["review"] == ["task-001"]
     assert store.load_result("task-001")["provider"] == "design-to-code"
 
