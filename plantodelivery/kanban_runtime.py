@@ -20,7 +20,7 @@ P2D_META_BEGIN = "<!-- P2D_META"
 P2D_META_END = "P2D_META -->"
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
 STATE_SCHEMA = "plantodelivery-kanban-state/v1"
-DISPLAY_GATE_STATUSES = {
+DISPLAY_KANBAN_STATUSES = {
     "backlog": "待办",
     "ready": "待派发",
     "dispatched": "已派发",
@@ -49,7 +49,7 @@ class P2DMeta:
     expected_outputs: list[str] | None = None
     verification_expectations: list[str] | None = None
     allowed_side_effects: list[str] | None = None
-    gate_status: str | None = None
+    kanban_status: str | None = None
     depends_on: list[str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -66,7 +66,7 @@ class P2DMeta:
             "expected_outputs": self.expected_outputs,
             "verification_expectations": self.verification_expectations,
             "allowed_side_effects": self.allowed_side_effects,
-            "gate_status": self.gate_status,
+            "kanban_status": self.kanban_status,
             "depends_on": self.depends_on,
         }
         for key, value in optional.items():
@@ -86,7 +86,7 @@ class P2DMeta:
             **({"expected_outputs": list(self.expected_outputs)} if self.expected_outputs is not None else {}),
             **({"verification_expectations": list(self.verification_expectations)} if self.verification_expectations is not None else {}),
             **({"allowed_side_effects": list(self.allowed_side_effects)} if self.allowed_side_effects is not None else {}),
-            **({"gate_status": self.gate_status} if self.gate_status is not None else {}),
+            **({"kanban_status": self.kanban_status} if self.kanban_status is not None else {}),
             **({"depends_on": list(self.depends_on)} if self.depends_on is not None else {}),
         }
 
@@ -116,21 +116,21 @@ class IngestRecord:
     task_id: str
     capability: str
     provider: str
-    gate_status: str
+    kanban_status: str
     result_path: Path
 
 
 @dataclass(frozen=True)
 class ReviewRecord:
     task_id: str
-    gate_status: str
+    kanban_status: str
     evidence: list[str]
 
 
 @dataclass(frozen=True)
 class KanbanEvent:
     task_id: str
-    gate_status: str
+    kanban_status: str
     display_status: str
     action: str
 
@@ -149,12 +149,12 @@ class KanbanStateStore:
 
     def load_index(self) -> dict[str, Any]:
         if not self.index_path.exists():
-            return {"schema": STATE_SCHEMA, "tasks": {}, "gates": {}, "cards": {}, "events": []}
+            return {"schema": STATE_SCHEMA, "tasks": {}, "columns": {}, "cards": {}, "events": []}
         index = _load_json(self.index_path)
         if index.get("schema") != STATE_SCHEMA:
             raise KanbanContractError(f"unsupported state schema: {index.get('schema')}")
         index.setdefault("tasks", {})
-        index.setdefault("gates", {})
+        index.setdefault("columns", {})
         index.setdefault("cards", {})
         index.setdefault("events", [])
         return index
@@ -163,6 +163,7 @@ class KanbanStateStore:
         _require_fields(envelope, {"schema", "task_id", "capability", "output_root"})
         if envelope["schema"] != TASK_SCHEMA:
             raise KanbanContractError(f"unsupported task schema: {envelope['schema']}")
+        enforce_kanban_task_admission(envelope)
         task_id = envelope["task_id"]
         task_dir = self.tasks_root / task_id
         task_dir.mkdir(parents=True, exist_ok=True)
@@ -180,11 +181,13 @@ class KanbanStateStore:
             "digest_path": str(digest_path),
             "result_path": None,
             "result": None,
-            "gate_status": "dispatched",
-            "display_status": display_gate_status("dispatched"),
+            "kanban_status": "dispatched",
+            "display_status": display_kanban_status("dispatched"),
+            "depends_on": list(envelope.get("depends_on") or []),
+            "kanban_contract": dict(envelope.get("kanban_contract") or {}),
         }
         self._sync_card(index, task_id, action="dispatch")
-        self._rebuild_gates(index)
+        self._rebuild_columns(index)
         self._write_index(index)
         return task_path
 
@@ -200,6 +203,9 @@ class KanbanStateStore:
         task_dir = self.tasks_root / task_id
         if not task_dir.exists():
             raise KanbanContractError(f"cannot record result for unknown task: {task_id}")
+        task_envelope_path = task_dir / "task-envelope.json"
+        if task_envelope_path.exists():
+            enforce_kanban_result_admission(validated, _load_json(task_envelope_path))
         result_path = task_dir / "result-manifest.json"
         provenance = {
             **dict(validated.get("provenance") or {}),
@@ -224,14 +230,14 @@ class KanbanStateStore:
                 "provider": validated["provider"],
                 "result_path": str(result_path),
                 "result": validated["result"],
-                "gate_status": decide_gate_status(validated),
-                "display_status": display_gate_status(decide_gate_status(validated)),
-                "suggested_gate_updates": list(validated.get("suggested_gate_updates") or []),
+                "kanban_status": decide_kanban_status(validated),
+                "display_status": display_kanban_status(decide_kanban_status(validated)),
+                "suggested_kanban_updates": list(validated.get("suggested_kanban_updates") or []),
                 "next_recommended_task": validated.get("next_recommended_task"),
             }
         )
         self._sync_card(index, task_id, action="ingest_result")
-        self._rebuild_gates(index)
+        self._rebuild_columns(index)
         self._write_index(index)
         return result_path
 
@@ -243,14 +249,14 @@ class KanbanStateStore:
         task_entry = index["tasks"].get(task_id)
         if task_entry is None:
             raise KanbanContractError(f"unknown task: {task_id}")
-        if task_entry.get("gate_status") != "review":
+        if task_entry.get("kanban_status") != "review":
             raise KanbanContractError(f"task is not in review: {task_id}")
-        task_entry["gate_status"] = "completed"
-        task_entry["display_status"] = display_gate_status("completed")
+        task_entry["kanban_status"] = "completed"
+        task_entry["display_status"] = display_kanban_status("completed")
         task_entry["review"] = {"status": "approved", "evidence": list(evidence)}
         self._sync_card(index, task_id, action="approve_review")
         self._record_dependency_unlock_events(index, completed_task_id=task_id)
-        self._rebuild_gates(index)
+        self._rebuild_columns(index)
         self._write_index(index)
 
     def _write_index(self, index: dict[str, Any]) -> None:
@@ -260,8 +266,8 @@ class KanbanStateStore:
     @staticmethod
     def _sync_card(index: dict[str, Any], task_id: str, *, action: str) -> None:
         task = index["tasks"][task_id]
-        gate_status = task.get("gate_status", "dispatched")
-        task["display_status"] = display_gate_status(gate_status)
+        kanban_status = task.get("kanban_status", "dispatched")
+        task["display_status"] = display_kanban_status(kanban_status)
         card = dict(index.setdefault("cards", {}).get(task_id, {}))
         card.update(task)
         card["display_status"] = task["display_status"]
@@ -269,7 +275,7 @@ class KanbanStateStore:
         index.setdefault("events", []).append(
             {
                 "task_id": task_id,
-                "gate_status": gate_status,
+                "kanban_status": kanban_status,
                 "display_status": task["display_status"],
                 "action": action,
             }
@@ -280,7 +286,7 @@ class KanbanStateStore:
         tasks = index.get("tasks", {})
         events = index.setdefault("events", [])
         for task_id, task in sorted(tasks.items()):
-            if task.get("gate_status") != "ready":
+            if task.get("kanban_status") != "ready":
                 continue
             if completed_task_id not in (task.get("depends_on") or []):
                 continue
@@ -288,25 +294,25 @@ class KanbanStateStore:
                 continue
             if _has_dependency_unlock_event(events, task_id=task_id):
                 continue
-            display_status = display_gate_status("ready")
+            display_status = display_kanban_status("ready")
             task["display_status"] = display_status
             events.append(
                 {
                     "task_id": task_id,
-                    "gate_status": "ready",
+                    "kanban_status": "ready",
                     "display_status": display_status,
                     "action": "dependency_unlocked",
                 }
             )
 
     @staticmethod
-    def _rebuild_gates(index: dict[str, Any]) -> None:
-        gates: dict[str, list[str]] = {}
+    def _rebuild_columns(index: dict[str, Any]) -> None:
+        columns: dict[str, list[str]] = {}
         for task_id, task in sorted(index.get("tasks", {}).items()):
-            gate_status = task.get("gate_status")
-            if gate_status:
-                gates.setdefault(gate_status, []).append(task_id)
-        index["gates"] = gates
+            kanban_status = task.get("kanban_status")
+            if kanban_status:
+                columns.setdefault(kanban_status, []).append(task_id)
+        index["columns"] = columns
 
 
 
@@ -469,21 +475,21 @@ class HermesKanbanBackend(KanbanStateStore):
         task_id = validated["task_id"]
         self._require_running(task_id, action="ingest_result")
         result_path = super().record_result(validated)
-        gate_status = decide_gate_status(validated)
-        if gate_status == "blocked":
+        kanban_status = decide_kanban_status(validated)
+        if kanban_status == "blocked":
             reason = "; ".join(validated.get("blockers") or []) or validated["result"]
             self._run("--board", self.board, "block", self._hermes_task_id(task_id), reason)
-        elif gate_status == "review":
+        elif kanban_status == "review":
             summary = json.dumps(validated, ensure_ascii=False, separators=(",", ":"))
             self._comment(task_id, f"P2D RESULT READY FOR REVIEW\n{summary}")
-            self._run("--board", self.board, "block", self._hermes_task_id(task_id), "P2D review gate pending approval")
+            self._run("--board", self.board, "block", self._hermes_task_id(task_id), "P2D review pending approval")
             index = self.load_index()
             task_entry = index["tasks"].get(task_id)
             if task_entry is not None:
-                task_entry["gate_status"] = "review"
-                task_entry["display_status"] = display_gate_status("review")
-                self._sync_card(index, task_id, action="review_gate")
-                self._rebuild_gates(index)
+                task_entry["kanban_status"] = "review"
+                task_entry["display_status"] = display_kanban_status("review")
+                self._sync_card(index, task_id, action="review_required")
+                self._rebuild_columns(index)
                 self._write_index(index)
         else:
             summary = json.dumps(validated, ensure_ascii=False, separators=(",", ":"))
@@ -502,7 +508,7 @@ class HermesKanbanBackend(KanbanStateStore):
         task_entry = index.get("tasks", {}).get(task_id)
         if task_entry is None:
             raise KanbanContractError(f"unknown task: {task_id}")
-        if task_entry.get("gate_status") != "review":
+        if task_entry.get("kanban_status") != "review":
             raise KanbanContractError(f"task is not in review: {task_id}")
         result = self.load_result(task_id)
         self._comment(task_id, "P2D REVIEW APPROVED\n" + json.dumps({"evidence": list(evidence)}, ensure_ascii=False))
@@ -561,7 +567,7 @@ class HermesKanbanBackend(KanbanStateStore):
                 continue
             if result_path.exists():
                 result = _load_json(result_path)
-                gate_status = decide_gate_status(validate_result_manifest(result, expected_task_id=meta.task_id, expected_capability=meta.capability))
+                kanban_status = decide_kanban_status(validate_result_manifest(result, expected_task_id=meta.task_id, expected_capability=meta.capability))
                 if strict_provenance:
                     provenance = result.get("provenance")
                     if not isinstance(provenance, dict):
@@ -583,9 +589,9 @@ class HermesKanbanBackend(KanbanStateStore):
                                 if artifact_path.exists() and artifact_path.is_file() and recorded_by_path.get(str(artifact_path)) != calculate_file_sha256(artifact_path):
                                     violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "mismatched_artifact_hash", "message": f"artifact hash mismatch: {artifact_path}"})
                 has_approval = any("P2D REVIEW APPROVED" in comment for comment in comments)
-                if gate_status == "review" and status == "done" and not has_approval:
+                if kanban_status == "review" and status == "done" and not has_approval:
                     violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "missing_review_approval", "message": "review-required task is done without P2D REVIEW APPROVED comment"})
-                if gate_status != "review" and status == "blocked" and result.get("result") != "blocked":
+                if kanban_status != "review" and status == "blocked" and result.get("result") != "blocked":
                     violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "unexpected_blocked_status", "message": "card is blocked but result is not blocked/review"})
         return {"schema": "p2d-enforcement-audit/v1", "ok": not violations, "board": self.board, "violations": violations}
 
@@ -667,12 +673,13 @@ class KanbanOrchestrator:
             expected_task_id=task_id,
             expected_capability=task["capability"],
         )
+        enforce_kanban_result_admission(validated, task)
         result_path = self.store.record_result(validated)
         return IngestRecord(
             task_id=task_id,
             capability=validated["capability"],
             provider=validated["provider"],
-            gate_status=decide_gate_status(validated),
+            kanban_status=decide_kanban_status(validated),
             result_path=result_path,
         )
 
@@ -681,7 +688,7 @@ class KanbanOrchestrator:
 
     def approve_review(self, task_id: str, *, evidence: list[str]) -> ReviewRecord:
         self.store.approve_review(task_id, evidence)
-        return ReviewRecord(task_id=task_id, gate_status="completed", evidence=list(evidence))
+        return ReviewRecord(task_id=task_id, kanban_status="completed", evidence=list(evidence))
 
     def dispatch_next_ready_task(self) -> DispatchRecord | None:
         raise KanbanContractError("dispatch_next_ready_task requires the Hermes Kanban board backend")
@@ -834,7 +841,7 @@ def validate_p2d_meta(data: P2DMeta | dict[str, Any]) -> P2DMeta:
             raise KanbanContractError(f"{field} must be a non-empty string")
     if not isinstance(raw["active_slice"], dict) or not raw["active_slice"]:
         raise KanbanContractError("active_slice must be a non-empty object")
-    for field in ["provider", "output_root", "gate_status"]:
+    for field in ["provider", "output_root", "kanban_status"]:
         if field in raw and raw[field] is not None and not isinstance(raw[field], str):
             raise KanbanContractError(f"{field} must be a string")
     for field in ["input_artifact_refs", "expected_outputs", "verification_expectations", "allowed_side_effects", "depends_on"]:
@@ -851,7 +858,7 @@ def validate_p2d_meta(data: P2DMeta | dict[str, Any]) -> P2DMeta:
         expected_outputs=list(raw["expected_outputs"]) if raw.get("expected_outputs") is not None else None,
         verification_expectations=list(raw["verification_expectations"]) if raw.get("verification_expectations") is not None else None,
         allowed_side_effects=list(raw["allowed_side_effects"]) if raw.get("allowed_side_effects") is not None else None,
-        gate_status=raw.get("gate_status"),
+        kanban_status=raw.get("kanban_status"),
         depends_on=list(raw["depends_on"]) if raw.get("depends_on") is not None else None,
     )
 
@@ -930,11 +937,10 @@ def p2d_meta_to_task_envelope(
         expected_outputs=validated.expected_outputs or ["result-manifest.json"],
         verification_expectations=validated.verification_expectations or [],
         allowed_side_effects=validated.allowed_side_effects or ["write output_root only"],
+        depends_on=validated.depends_on or [],
     )
     if validated.provider is not None:
         envelope["provider_hint"] = validated.provider
-    if validated.depends_on is not None:
-        envelope["depends_on"] = list(validated.depends_on)
     return envelope
 
 
@@ -946,7 +952,7 @@ def _dependencies_completed(task: dict[str, Any], tasks: dict[str, dict[str, Any
         if not isinstance(dependency_id, str) or not dependency_id:
             raise KanbanContractError("depends_on entries must be non-empty strings")
         dependency = tasks.get(dependency_id)
-        if dependency is None or dependency.get("gate_status") != "completed":
+        if dependency is None or dependency.get("kanban_status") != "completed":
             return False
     return True
 
@@ -958,8 +964,9 @@ def _has_dependency_unlock_event(events: list[dict[str, Any]], *, task_id: str) 
     )
 
 
-def display_gate_status(gate_status: str) -> str:
-    return DISPLAY_GATE_STATUSES.get(gate_status, gate_status)
+def display_kanban_status(kanban_status: str) -> str:
+    return DISPLAY_KANBAN_STATUSES.get(kanban_status, kanban_status)
+
 
 
 def load_provider_registry_config(path: str | Path) -> dict[str, Any]:
@@ -1101,6 +1108,116 @@ def load_provider_registry(root: str | Path) -> dict[str, ProviderCapability]:
     return registry
 
 
+def build_kanban_contract(
+    *,
+    capability: str,
+    active_slice: dict[str, Any],
+    input_artifact_refs: list[str],
+    depends_on: list[str],
+    overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the canonical Kanban process contract for a task.
+
+    Flow control lives entirely in Kanban admission, dependency, status routing,
+    result admission, and audit rules.
+    """
+
+    contract: dict[str, Any] = {
+        "schema": "p2d-kanban-contract/v1",
+        "status_routing": {
+            "review_required_to": "review",
+            "blocked_only_for_missing_or_unsafe_input": True,
+        },
+        "dependency_policy": {
+            "requires_completed_dependencies": True,
+            "depends_on": list(depends_on),
+        },
+        "artifact_policy": {
+            "implementation_screenshot_is_verification_only": True,
+        },
+    }
+    if capability == "visual_implementation":
+        contract["artifact_policy"].update(
+            {
+                "requires_approved_design_source": True,
+                "forbid_implementation_screenshot_as_design_source": True,
+            }
+        )
+    page_role = str(active_slice.get("page_role") or active_slice.get("flow_role") or "").strip()
+    if page_role in {"secondary", "follow_on", "subpage", "detail", "remaining_page"}:
+        contract["dependency_policy"].update(
+            {
+                "requires_primary_visual_approved_first": True,
+                "primary_visual_dependency_required": True,
+            }
+        )
+    if overrides:
+        contract = _deep_merge_dict(contract, overrides)
+    return contract
+
+
+def enforce_kanban_task_admission(envelope: dict[str, Any]) -> None:
+    """Reject tasks that violate Kanban-owned flow constraints before dispatch."""
+
+    contract = envelope.get("kanban_contract")
+    if not isinstance(contract, dict):
+        raise KanbanContractError("kanban_contract must be an object")
+    if contract.get("schema") != "p2d-kanban-contract/v1":
+        raise KanbanContractError("unsupported kanban_contract schema")
+    depends_on = envelope.get("depends_on") or []
+    if not isinstance(depends_on, list) or not all(isinstance(item, str) for item in depends_on):
+        raise KanbanContractError("depends_on must be a list of strings")
+    dependency_policy = contract.get("dependency_policy") or {}
+    if dependency_policy.get("primary_visual_dependency_required") and not depends_on:
+        raise KanbanContractError("kanban contract requires approved primary visual dependency before follow-on page work")
+    refs = [str(ref).lower() for ref in (envelope.get("input_artifact_refs") or [])]
+    artifact_policy = contract.get("artifact_policy") or {}
+    if artifact_policy.get("requires_approved_design_source"):
+        if not any(_is_approved_design_source_ref(ref) for ref in refs):
+            raise KanbanContractError("kanban contract requires an approved design source artifact before visual implementation")
+        if artifact_policy.get("forbid_implementation_screenshot_as_design_source"):
+            suspicious = [ref for ref in refs if _looks_like_implementation_screenshot_ref(ref)]
+            if suspicious and not any(_is_approved_design_source_ref(ref) for ref in refs if ref not in suspicious):
+                raise KanbanContractError("implementation screenshots are verification evidence, not approved design source artifacts")
+
+
+def enforce_kanban_result_admission(result_manifest: dict[str, Any], task_envelope: dict[str, Any]) -> None:
+    """Reject result manifests that try to bypass Kanban artifact/status rules."""
+
+    contract = task_envelope.get("kanban_contract") or {}
+    artifact_policy = contract.get("artifact_policy") or {}
+    if artifact_policy.get("requires_approved_design_source"):
+        refs = [str(ref).lower() for ref in (task_envelope.get("input_artifact_refs") or [])]
+        if not any(_is_approved_design_source_ref(ref) for ref in refs):
+            raise KanbanContractError("kanban result admission requires approved design source provenance")
+        evidence = [str(ref).lower() for ref in (result_manifest.get("evidence") or [])]
+        produced = [str(ref).lower() for ref in (result_manifest.get("produced_artifacts") or [])]
+        if any(_looks_like_implementation_screenshot_ref(ref) for ref in evidence + produced) and not any(_is_approved_design_source_ref(ref) for ref in refs):
+            raise KanbanContractError("implementation screenshot evidence cannot replace approved design source")
+
+
+def _is_approved_design_source_ref(ref: str) -> bool:
+    tokens = ["approved-design", "approved_visual", "approved-visual", "design-source", "visual-source", "gpt-image", "gpt_image", "figma"]
+    if any(token in ref for token in tokens):
+        return True
+    return "design/" in ref and "handoff" in ref
+
+
+def _looks_like_implementation_screenshot_ref(ref: str) -> bool:
+    tokens = ["implementation-screenshot", "dev-screenshot", "localhost", "parity", "screen-after-implementation"]
+    return any(token in ref for token in tokens)
+
+
+def _deep_merge_dict(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge_dict(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def create_task_envelope(
     *,
     task_id: str,
@@ -1112,8 +1229,8 @@ def create_task_envelope(
     expected_outputs: list[str],
     verification_expectations: list[str],
     allowed_side_effects: list[str],
-    review_policy: dict[str, Any] | None = None,
-    blocking_policy: dict[str, Any] | None = None,
+    kanban_contract: dict[str, Any] | None = None,
+    depends_on: list[str] | None = None,
 ) -> dict[str, Any]:
     if not task_id:
         raise KanbanContractError("task_id is required")
@@ -1121,7 +1238,7 @@ def create_task_envelope(
         raise KanbanContractError("capability is required")
     if not isinstance(active_slice, dict) or not active_slice:
         raise KanbanContractError("active_slice must be a non-empty object")
-    return {
+    envelope = {
         "schema": TASK_SCHEMA,
         "task_id": task_id,
         "capability": capability,
@@ -1132,15 +1249,17 @@ def create_task_envelope(
         "expected_outputs": list(expected_outputs),
         "verification_expectations": list(verification_expectations),
         "allowed_side_effects": list(allowed_side_effects),
-        "review_policy": {
-            "route_review_required_to": "review",
-            **(review_policy or {}),
-        },
-        "blocking_policy": {
-            "blocked_only_for_missing_or_unsafe_input": True,
-            **(blocking_policy or {}),
-        },
+        "depends_on": list(depends_on or []),
+        "kanban_contract": build_kanban_contract(
+            capability=capability,
+            active_slice=active_slice,
+            input_artifact_refs=list(input_artifact_refs),
+            depends_on=list(depends_on or []),
+            overrides=kanban_contract,
+        ),
     }
+    enforce_kanban_task_admission(envelope)
+    return envelope
 
 
 def write_fixture_provider_result(
@@ -1154,7 +1273,7 @@ def write_fixture_provider_result(
     evidence: list[str] | None = None,
     blockers: list[str] | None = None,
     debts: list[str] | None = None,
-    suggested_gate_updates: list[dict[str, Any]] | None = None,
+    suggested_kanban_updates: list[dict[str, Any]] | None = None,
     next_recommended_task: dict[str, Any] | None = None,
 ) -> Path:
     envelope = _load_json(Path(task_envelope_path))
@@ -1172,7 +1291,7 @@ def write_fixture_provider_result(
         "blockers": list(blockers or []),
         "debts": list(debts or []),
         "review_required": review_required,
-        "suggested_gate_updates": list(suggested_gate_updates or []),
+        "suggested_kanban_updates": list(suggested_kanban_updates or []),
         "next_recommended_task": next_recommended_task,
     }
     validate_result_manifest(
@@ -1203,7 +1322,7 @@ def validate_result_manifest(
         "blockers",
         "debts",
         "review_required",
-        "suggested_gate_updates",
+        "suggested_kanban_updates",
         "next_recommended_task",
     }
     _require_fields(manifest, required)
@@ -1217,7 +1336,7 @@ def validate_result_manifest(
         )
     if manifest["result"] not in VALID_RESULTS:
         raise KanbanContractError(f"invalid result: {manifest['result']}")
-    for list_field in ["changed_files", "produced_artifacts", "evidence", "blockers", "debts", "suggested_gate_updates"]:
+    for list_field in ["changed_files", "produced_artifacts", "evidence", "blockers", "debts", "suggested_kanban_updates"]:
         if not isinstance(manifest[list_field], list):
             raise KanbanContractError(f"{list_field} must be a list")
     if not isinstance(manifest["review_required"], bool):
@@ -1225,8 +1344,8 @@ def validate_result_manifest(
     return manifest
 
 
-def decide_gate_status(result_manifest: dict[str, Any]) -> str:
-    """Convert a provider result recommendation into Javis gate state."""
+def decide_kanban_status(result_manifest: dict[str, Any]) -> str:
+    """Convert a provider result recommendation into canonical Kanban status."""
 
     result = result_manifest.get("result")
     blockers = result_manifest.get("blockers") or []

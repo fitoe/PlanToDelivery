@@ -19,7 +19,7 @@ def test_record_task_writes_active_slice_digest_with_envelope_hash(tmp_path: Pat
         capability="technical_blueprint",
         project_root=project_root,
         active_slice={"goal": "trace task envelope into digest"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=output_root,
         expected_outputs=["result-manifest.json"],
         verification_expectations=["digest references envelope hash"],
@@ -44,7 +44,7 @@ def test_record_result_adds_manifest_provenance_and_artifact_hashes(tmp_path: Pa
         capability="visual_implementation",
         project_root=project_root,
         active_slice={"goal": "trace produced artifacts"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=output_root,
         expected_outputs=["result-manifest.json", "artifact.txt"],
         verification_expectations=["result references artifact hash"],
@@ -67,7 +67,7 @@ def test_record_result_adds_manifest_provenance_and_artifact_hashes(tmp_path: Pa
         "blockers": [],
         "debts": [],
         "review_required": False,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     })
 
@@ -97,7 +97,7 @@ def test_strict_provenance_audit_detects_tampered_digest(tmp_path: Path, monkeyp
         task_id="p2d-audit-provenance",
         capability="visual_implementation",
         active_slice={"goal": "audit provenance"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         expected_outputs=["result-manifest.json"],
         verification_expectations=["strict provenance audit"],
         allowed_side_effects=["write output_root only"],
@@ -115,7 +115,7 @@ def test_strict_provenance_audit_detects_tampered_digest(tmp_path: Path, monkeyp
         "blockers": [],
         "debts": [],
         "review_required": False,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     }).result_path
 

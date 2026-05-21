@@ -63,7 +63,7 @@ def test_provider_guard_requires_running_card_and_matching_digest(tmp_path: Path
         capability="visual_implementation",
         project_root=project_root,
         active_slice={"goal": "guard running state"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=output_root,
         expected_outputs=["result-manifest.json"],
         verification_expectations=["card running"],

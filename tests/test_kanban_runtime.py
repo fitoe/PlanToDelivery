@@ -17,8 +17,8 @@ from plantodelivery.kanban_runtime import (
     bootstrap_provider_registry_from_manifests,
     build_active_slice_digest,
     create_task_envelope,
-    decide_gate_status,
-    display_gate_status,
+    decide_kanban_status,
+    display_kanban_status,
     extract_p2d_meta_marker,
     load_provider_registry,
     load_provider_registry_config,
@@ -96,7 +96,7 @@ def test_active_slice_digest_rejects_invalid_schema_missing_fields_and_oversize(
         capability="technical_blueprint",
         project_root=tmp_path,
         active_slice={"goal": "x" * 200},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=tmp_path / "tasks" / "digest-oversize",
         expected_outputs=[],
         verification_expectations=[],
@@ -185,7 +185,7 @@ def test_hermes_kanban_backend_cli_create_read_claim_complete_block(tmp_path: Pa
         "blockers": [],
         "debts": [],
         "review_required": False,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     })
     assert result_path == project_root / "project-state" / "kanban" / "tasks" / "p2d-complete" / "result-manifest.json"
@@ -196,6 +196,7 @@ def test_hermes_kanban_backend_cli_create_read_claim_complete_block(tmp_path: Pa
         capability="visual_implementation",
         active_slice={"goal": "prove block path"},
         provider="design-to-code",
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
     )
     backend.record_task(p2d_meta_to_task_envelope(blocked_meta, project_root=project_root))
     backend.claim_task("p2d-blocked", ttl_seconds=30)
@@ -211,7 +212,7 @@ def test_hermes_kanban_backend_cli_create_read_claim_complete_block(tmp_path: Pa
         "blockers": ["missing approved source"],
         "debts": [],
         "review_required": False,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     })
     assert blocked_result.exists()
@@ -265,47 +266,48 @@ def test_hermes_backend_enforces_claimed_before_result_and_review_before_done(tm
     project_root.mkdir()
     backend = HermesKanbanBackend(project_root=project_root, board="p2d-enforce", hermes_home=hermes_home)
     meta = P2DMeta(
-        task_id="p2d-review-gate",
+        task_id="p2d-review-kanban",
         capability="visual_implementation",
         active_slice={"goal": "prove enforcement"},
         provider="design-to-code",
         expected_outputs=["result-manifest.json", "parity-report.md"],
         verification_expectations=["visual evidence must exist"],
         allowed_side_effects=["write output_root only"],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
     )
     backend.record_task(p2d_meta_to_task_envelope(meta, project_root=project_root))
 
     review_manifest = {
         "schema": "kanban-capability-result/v1",
-        "task_id": "p2d-review-gate",
+        "task_id": "p2d-review-kanban",
         "capability": "visual_implementation",
         "provider": "design-to-code",
         "result": "completed",
         "changed_files": ["src/pages/mall.vue"],
-        "produced_artifacts": ["project-state/kanban/tasks/p2d-review-gate/parity-report.md"],
-        "evidence": ["project-state/kanban/tasks/p2d-review-gate/mobile.png"],
+        "produced_artifacts": ["project-state/kanban/tasks/p2d-review-kanban/parity-report.md"],
+        "evidence": ["project-state/kanban/tasks/p2d-review-kanban/mobile.png"],
         "blockers": [],
         "debts": [],
         "review_required": True,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     }
 
     with pytest.raises(KanbanContractError, match="must be claimed/running before ingest_result"):
         backend.record_result(review_manifest)
 
-    backend.claim_task("p2d-review-gate", ttl_seconds=30)
+    backend.claim_task("p2d-review-kanban", ttl_seconds=30)
     result_path = backend.record_result(review_manifest)
 
     assert result_path.exists()
-    assert backend.show_card("p2d-review-gate")["task"]["status"] == "blocked"
-    assert backend.load_index()["tasks"]["p2d-review-gate"]["gate_status"] == "review"
+    assert backend.show_card("p2d-review-kanban")["task"]["status"] == "blocked"
+    assert backend.load_index()["tasks"]["p2d-review-kanban"]["kanban_status"] == "review"
 
     with pytest.raises(KanbanContractError, match="review evidence is required"):
-        backend.approve_review("p2d-review-gate", [])
+        backend.approve_review("p2d-review-kanban", [])
 
-    backend.approve_review("p2d-review-gate", ["visual parity approved"] )
-    card = backend.show_card("p2d-review-gate")
+    backend.approve_review("p2d-review-kanban", ["visual parity approved"] )
+    card = backend.show_card("p2d-review-kanban")
     assert card["task"]["status"] == "done"
     assert any("P2D REVIEW APPROVED" in c["body"] for c in card["comments"])
 
@@ -347,7 +349,7 @@ def test_strict_digest_audit_reports_missing_or_invalid_digest(tmp_path: Path) -
         capability="technical_blueprint",
         project_root=project_root,
         active_slice={"goal": "strict digest audit"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=project_root / "project-state" / "kanban" / "tasks" / "p2d-missing-digest",
         expected_outputs=["result-manifest.json"],
         verification_expectations=["digest exists"],
@@ -514,7 +516,7 @@ def test_bootstrap_real_provider_manifests_into_json_artifact_store(tmp_path: Pa
             task_id=f"task-{capability.replace('_', '-')}",
             capability=capability,
             active_slice={"goal": f"dispatch {capability} from real provider manifest"},
-            input_artifact_refs=[],
+            input_artifact_refs=["project-state/design/approved-design-source.json"] if capability == "visual_implementation" else [],
             expected_outputs=["result-manifest.json"],
             verification_expectations=["db-backed registry dispatch"],
             allowed_side_effects=["write output_root only"],
@@ -525,7 +527,7 @@ def test_bootstrap_real_provider_manifests_into_json_artifact_store(tmp_path: Pa
     assert {capability: registry[capability].provider for capability in expectations} == expectations
     index = KanbanStateStore(state_root).load_index()
     expected_task_ids = [f"task-{capability.replace('_', '-')}" for capability in expectations]
-    assert sorted(index["gates"]["dispatched"]) == sorted(expected_task_ids)
+    assert sorted(index["columns"]["dispatched"]) == sorted(expected_task_ids)
     assert index["cards"]["task-visual-implementation"]["display_status"] == "已派发"
 
 def test_task_envelope_is_capability_first_and_bounded(tmp_path: Path) -> None:
@@ -547,11 +549,11 @@ def test_task_envelope_is_capability_first_and_bounded(tmp_path: Path) -> None:
     assert envelope["active_slice"]["page"] == "/mall"
     assert envelope["input_artifact_refs"] == ["project-state/design/mall-handoff.json"]
     assert envelope["allowed_side_effects"] == ["write output_root only"]
-    assert envelope["review_policy"]["route_review_required_to"] == "review"
-    assert envelope["blocking_policy"]["blocked_only_for_missing_or_unsafe_input"] is True
+    assert envelope["kanban_contract"]["status_routing"]["review_required_to"] == "review"
+    assert envelope["kanban_contract"]["status_routing"]["blocked_only_for_missing_or_unsafe_input"] is True
 
 
-def test_result_manifest_validation_and_gate_decision_review(tmp_path: Path) -> None:
+def test_result_manifest_validation_and_kanban_decision_review(tmp_path: Path) -> None:
     manifest = {
         "schema": "kanban-capability-result/v1",
         "task_id": "task-001",
@@ -564,21 +566,21 @@ def test_result_manifest_validation_and_gate_decision_review(tmp_path: Path) -> 
         "blockers": [],
         "debts": ["minor icon mismatch"],
         "review_required": True,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     }
 
     validated = validate_result_manifest(manifest, expected_task_id="task-001", expected_capability="visual_implementation")
 
     assert validated["provider"] == "design-to-code"
-    assert decide_gate_status(validated) == "review"
+    assert decide_kanban_status(validated) == "review"
 
 
-def test_gate_decision_keeps_real_blockers_separate_from_review() -> None:
-    assert decide_gate_status({"result": "blocked", "review_required": True, "blockers": ["missing auth token"]}) == "blocked"
-    assert decide_gate_status({"result": "partial", "review_required": False, "blockers": []}) == "partial"
-    assert decide_gate_status({"result": "completed", "review_required": False, "blockers": []}) == "completed"
-    assert decide_gate_status({"result": "failed", "review_required": False, "blockers": []}) == "failed"
+def test_kanban_decision_keeps_real_blockers_separate_from_review() -> None:
+    assert decide_kanban_status({"result": "blocked", "review_required": True, "blockers": ["missing auth token"]}) == "blocked"
+    assert decide_kanban_status({"result": "partial", "review_required": False, "blockers": []}) == "partial"
+    assert decide_kanban_status({"result": "completed", "review_required": False, "blockers": []}) == "completed"
+    assert decide_kanban_status({"result": "failed", "review_required": False, "blockers": []}) == "failed"
 
 
 def test_result_manifest_rejects_missing_required_fields() -> None:
@@ -599,7 +601,7 @@ def test_result_manifest_rejects_task_or_capability_mismatch() -> None:
         "blockers": [],
         "debts": [],
         "review_required": False,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     }
 
@@ -607,7 +609,7 @@ def test_result_manifest_rejects_task_or_capability_mismatch() -> None:
         validate_result_manifest(manifest, expected_task_id="task-001", expected_capability="technical_blueprint")
 
 
-def test_state_store_persists_task_result_and_gate_index(tmp_path: Path) -> None:
+def test_state_store_persists_task_result_and_kanban_index(tmp_path: Path) -> None:
     store = KanbanStateStore(tmp_path / "project-state" / "kanban")
     envelope = create_task_envelope(
         task_id="task-001",
@@ -626,7 +628,7 @@ def test_state_store_persists_task_result_and_gate_index(tmp_path: Path) -> None
     assert task_path == tmp_path / "project-state" / "kanban" / "tasks" / "task-001" / "task-envelope.json"
     assert json.loads(task_path.read_text(encoding="utf-8"))["capability"] == "visual_implementation"
     assert store.load_task("task-001")["active_slice"]["page"] == "/mall"
-    assert store.load_index()["tasks"]["task-001"]["gate_status"] == "dispatched"
+    assert store.load_index()["tasks"]["task-001"]["kanban_status"] == "dispatched"
 
     result_manifest = {
         "schema": "kanban-capability-result/v1",
@@ -640,7 +642,7 @@ def test_state_store_persists_task_result_and_gate_index(tmp_path: Path) -> None
         "blockers": [],
         "debts": [],
         "review_required": True,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     }
 
@@ -650,8 +652,8 @@ def test_state_store_persists_task_result_and_gate_index(tmp_path: Path) -> None
     index = store.load_index()
     assert index["schema"] == "plantodelivery-kanban-state/v1"
     assert index["tasks"]["task-001"]["result"] == "completed"
-    assert index["tasks"]["task-001"]["gate_status"] == "review"
-    assert index["gates"]["review"] == ["task-001"]
+    assert index["tasks"]["task-001"]["kanban_status"] == "review"
+    assert index["columns"]["review"] == ["task-001"]
     assert store.load_result("task-001")["provider"] == "design-to-code"
 
 
@@ -689,7 +691,7 @@ def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path, m
         "blockers": [],
         "debts": [],
         "review_required": True,
-        "suggested_gate_updates": [],
+        "suggested_kanban_updates": [],
         "next_recommended_task": None,
     }
 
@@ -697,17 +699,17 @@ def test_orchestrator_dispatch_ingest_and_review_approval_flow(tmp_path: Path, m
     orchestrator.store.claim_task("task-002", ttl_seconds=30)
     ingest = orchestrator.ingest_result(result_manifest)
 
-    assert ingest.gate_status == "review"
+    assert ingest.kanban_status == "review"
     assert ingest.result_path.exists()
-    assert orchestrator.store.load_index()["gates"]["review"] == ["task-002"]
+    assert orchestrator.store.load_index()["columns"]["review"] == ["task-002"]
 
     review = orchestrator.approve_review("task-002", evidence=["manual visual review approved"])
 
-    assert review.gate_status == "completed"
+    assert review.kanban_status == "completed"
     task = orchestrator.store.load_index()["tasks"]["task-002"]
     assert task["review"]["status"] == "approved"
     assert task["review"]["evidence"] == ["manual visual review approved"]
-    assert orchestrator.store.load_index()["gates"]["completed"] == ["task-002"]
+    assert orchestrator.store.load_index()["columns"]["completed"] == ["task-002"]
 
 
 def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_path: Path) -> None:
@@ -717,7 +719,7 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
         capability="visual_implementation",
         project_root=tmp_path,
         active_slice={"page": "/mall", "goal": "canonical kanban 状态"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=tmp_path / "project-state" / "kanban" / "tasks" / "task-canonical",
         expected_outputs=["result-manifest.json"],
         verification_expectations=[],
@@ -727,12 +729,12 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
     store.record_task(envelope)
     index = store.load_index()
     task = index["tasks"]["task-canonical"]
-    assert task["gate_status"] == "dispatched"
+    assert task["kanban_status"] == "dispatched"
     assert task["display_status"] == "已派发"
     assert index["cards"]["task-canonical"]["display_status"] == "已派发"
     assert index["events"][-1] == {
         "task_id": "task-canonical",
-        "gate_status": "dispatched",
+        "kanban_status": "dispatched",
         "display_status": "已派发",
         "action": "dispatch",
     }
@@ -750,12 +752,12 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
             "blockers": [],
             "debts": [],
             "review_required": True,
-            "suggested_gate_updates": [],
+            "suggested_kanban_updates": [],
             "next_recommended_task": None,
         }
     )
     index = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
-    assert index["tasks"]["task-canonical"]["gate_status"] == "review"
+    assert index["tasks"]["task-canonical"]["kanban_status"] == "review"
     assert index["tasks"]["task-canonical"]["display_status"] == "待审查"
     assert index["cards"]["task-canonical"]["result"] == "completed"
     assert index["cards"]["task-canonical"]["display_status"] == "待审查"
@@ -763,7 +765,7 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
 
     store.approve_review("task-canonical", ["人工审查通过"])
     index = store.load_index()
-    assert index["tasks"]["task-canonical"]["gate_status"] == "completed"
+    assert index["tasks"]["task-canonical"]["kanban_status"] == "completed"
     assert index["tasks"]["task-canonical"]["display_status"] == "已完成"
     assert index["cards"]["task-canonical"]["review"]["evidence"] == ["人工审查通过"]
     assert index["events"][-1]["action"] == "approve_review"
@@ -779,13 +781,13 @@ def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_pa
         task_id="task-db-board",
         capability="visual_implementation",
         active_slice={"page": "/mall", "goal": "持久化中文看板状态"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         expected_outputs=["result-manifest.json"],
         verification_expectations=[],
         allowed_side_effects=["write output_root only"],
     )
     reloaded = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
-    assert reloaded["cards"]["task-db-board"]["gate_status"] == "dispatched"
+    assert reloaded["cards"]["task-db-board"]["kanban_status"] == "dispatched"
     assert reloaded["cards"]["task-db-board"]["display_status"] == "已派发"
 
     assert isinstance(orchestrator.store, HermesKanbanBackend)
@@ -803,12 +805,12 @@ def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_pa
             "blockers": ["等待设计冻结"],
             "debts": [],
             "review_required": False,
-            "suggested_gate_updates": [],
+            "suggested_kanban_updates": [],
             "next_recommended_task": None,
         }
     )
     reloaded = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
-    assert reloaded["cards"]["task-db-board"]["gate_status"] == "blocked"
+    assert reloaded["cards"]["task-db-board"]["kanban_status"] == "blocked"
     assert reloaded["cards"]["task-db-board"]["display_status"] == "已阻塞"
     assert reloaded["events"][-1]["action"] == "ingest_result"
 
@@ -837,7 +839,7 @@ def test_project_state_store_remains_json_artifact_overlay_not_sqlite(tmp_path: 
         capability="visual_implementation",
         project_root=tmp_path,
         active_slice={"page": "/mall", "goal": "artifact overlay only"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=tmp_path / "project-state" / "kanban" / "tasks" / "task-json-overlay",
         expected_outputs=["result-manifest.json"],
         verification_expectations=["json artifacts only"],
@@ -858,7 +860,7 @@ def test_provider_recommendations_are_json_overlay_only_until_hermes_board_backe
         capability="technical_blueprint",
         project_root=tmp_path,
         active_slice={"feature": "provider driven task DAG"},
-        input_artifact_refs=[],
+        input_artifact_refs=["project-state/design/approved-design-source.json"],
         output_root=tmp_path / "project-state" / "kanban" / "tasks" / "task-json-dag-source",
         expected_outputs=["result-manifest.json"],
         verification_expectations=["recommendations remain artifact metadata"],
@@ -879,8 +881,8 @@ def test_provider_recommendations_are_json_overlay_only_until_hermes_board_backe
             "blockers": [],
             "debts": [],
             "review_required": False,
-            "suggested_gate_updates": [
-                {"task_id": "visual-pass", "gate_status": "ready", "reason": "blueprint complete"},
+            "suggested_kanban_updates": [
+                {"task_id": "visual-pass", "kanban_status": "ready", "reason": "blueprint complete"},
             ],
             "next_recommended_task": {
                 "task_id": "visual-pass",
@@ -893,8 +895,8 @@ def test_provider_recommendations_are_json_overlay_only_until_hermes_board_backe
 
     index = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
     source = index["tasks"]["task-json-dag-source"]
-    assert source["suggested_gate_updates"] == [
-        {"task_id": "visual-pass", "gate_status": "ready", "reason": "blueprint complete"},
+    assert source["suggested_kanban_updates"] == [
+        {"task_id": "visual-pass", "kanban_status": "ready", "reason": "blueprint complete"},
     ]
     assert source["next_recommended_task"]["task_id"] == "visual-pass"
     assert "visual-pass" not in index["tasks"]
@@ -959,9 +961,9 @@ def test_fixture_provider_e2e_flow_uses_registry_config(tmp_path: Path, monkeypa
     assert isinstance(orchestrator.store, HermesKanbanBackend)
     orchestrator.store.claim_task("task-e2e", ttl_seconds=30)
     ingest = orchestrator.ingest_result_path(result_path)
-    assert ingest.gate_status == "review"
-    assert orchestrator.store.load_index()["gates"]["review"] == ["task-e2e"]
+    assert ingest.kanban_status == "review"
+    assert orchestrator.store.load_index()["columns"]["review"] == ["task-e2e"]
 
     review = orchestrator.approve_review("task-e2e", evidence=["fixture review approved"])
-    assert review.gate_status == "completed"
-    assert orchestrator.store.load_index()["gates"]["completed"] == ["task-e2e"]
+    assert review.kanban_status == "completed"
+    assert orchestrator.store.load_index()["columns"]["completed"] == ["task-e2e"]
