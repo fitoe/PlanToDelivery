@@ -20,6 +20,9 @@ from plantodelivery.kanban_runtime import (
     decide_kanban_run_policy,
     decide_kanban_status,
     display_kanban_status,
+    display_kanban_status_group,
+    display_kanban_status_group_label,
+    display_kanban_status_groups,
     extract_p2d_meta_marker,
     load_provider_registry,
     load_provider_registry_config,
@@ -45,6 +48,45 @@ def test_display_kanban_status_uses_human_workflow_labels() -> None:
     assert display_kanban_status("failed") == "未通过"
     assert display_kanban_status("cancelled") == "已取消"
     assert display_kanban_status("custom-status") == "custom-status"
+
+
+def test_display_kanban_groups_fit_six_columns_by_collapsing_low_signal_statuses() -> None:
+    groups = display_kanban_status_groups()
+
+    assert len(groups) == 6
+    assert [group["id"] for group in groups] == ["inbox", "todo", "active", "review", "blocked", "done"]
+    assert [group["label"] for group in groups] == ["待梳理", "待开工", "进行中", "待确认", "卡住了", "已完成"]
+    assert groups[0]["statuses"] == ["backlog"]
+    assert groups[1]["statuses"] == ["ready"]
+    assert groups[2]["statuses"] == ["dispatched", "running"]
+    assert groups[3]["statuses"] == ["review"]
+    assert groups[4]["statuses"] == ["blocked", "failed"]
+    assert groups[5]["statuses"] == ["partial", "completed", "cancelled"]
+
+
+@pytest.mark.parametrize(
+    ("status", "group_id", "group_label"),
+    [
+        ("backlog", "inbox", "待梳理"),
+        ("ready", "todo", "待开工"),
+        ("dispatched", "active", "进行中"),
+        ("running", "active", "进行中"),
+        ("review", "review", "待确认"),
+        ("blocked", "blocked", "卡住了"),
+        ("failed", "blocked", "卡住了"),
+        ("partial", "done", "已完成"),
+        ("completed", "done", "已完成"),
+        ("cancelled", "done", "已完成"),
+    ],
+)
+def test_display_kanban_status_group_maps_machine_states_without_changing_contract(status: str, group_id: str, group_label: str) -> None:
+    assert display_kanban_status_group(status) == group_id
+    assert display_kanban_status_group_label(status) == group_label
+
+
+def test_display_kanban_status_group_falls_back_for_unknown_status() -> None:
+    assert display_kanban_status_group("custom-status") == "custom-status"
+    assert display_kanban_status_group_label("custom-status") == "custom-status"
 
 
 def test_active_slice_digest_validator_and_builder_exclude_chat_history(tmp_path: Path) -> None:
@@ -543,7 +585,11 @@ def test_bootstrap_real_provider_manifests_into_json_artifact_store(tmp_path: Pa
     index = KanbanStateStore(state_root).load_index()
     expected_task_ids = [f"task-{capability.replace('_', '-')}" for capability in expectations]
     assert sorted(index["columns"]["dispatched"]) == sorted(expected_task_ids)
+    assert sorted(index["display_columns"]["active"]["tasks"]) == sorted(expected_task_ids)
+    assert index["display_columns"]["active"]["label"] == "进行中"
     assert index["cards"]["task-visual-implementation"]["display_status"] == "已分配"
+    assert index["cards"]["task-visual-implementation"]["display_group"] == "active"
+    assert index["cards"]["task-visual-implementation"]["display_group_label"] == "进行中"
 
 def test_task_envelope_is_capability_first_and_bounded(tmp_path: Path) -> None:
     envelope = create_task_envelope(
@@ -737,6 +783,9 @@ def test_state_store_persists_task_result_and_kanban_index(tmp_path: Path) -> No
     assert index["tasks"]["task-001"]["run_policy"]["stop_reason"] == "human_review_required"
     assert index["tasks"]["task-001"]["run_policy"]["safe_to_continue_other_cards"] is True
     assert index["columns"]["review"] == ["task-001"]
+    assert index["display_columns"]["review"]["tasks"] == ["task-001"]
+    assert index["tasks"]["task-001"]["display_group"] == "review"
+    assert index["tasks"]["task-001"]["display_group_label"] == "待确认"
     assert store.load_result("task-001")["provider"] == "design-to-code"
 
 
@@ -819,6 +868,8 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
         "task_id": "task-canonical",
         "kanban_status": "dispatched",
         "display_status": "已分配",
+        "display_group": "active",
+        "display_group_label": "进行中",
         "action": "dispatch",
     }
 

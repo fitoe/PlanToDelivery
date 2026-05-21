@@ -34,6 +34,20 @@ DISPLAY_KANBAN_STATUSES = {
     "failed": "未通过",
     "cancelled": "已取消",
 }
+DISPLAY_KANBAN_GROUPS = [
+    {"id": "inbox", "label": "待梳理", "statuses": ["backlog"]},
+    {"id": "todo", "label": "待开工", "statuses": ["ready"]},
+    {"id": "active", "label": "进行中", "statuses": ["dispatched", "running"]},
+    {"id": "review", "label": "待确认", "statuses": ["review"]},
+    {"id": "blocked", "label": "卡住了", "statuses": ["blocked", "failed"]},
+    {"id": "done", "label": "已完成", "statuses": ["partial", "completed", "cancelled"]},
+]
+DISPLAY_KANBAN_STATUS_GROUPS = {
+    status: group["id"]
+    for group in DISPLAY_KANBAN_GROUPS
+    for status in group["statuses"]
+}
+DISPLAY_KANBAN_GROUP_LABELS = {group["id"]: group["label"] for group in DISPLAY_KANBAN_GROUPS}
 
 
 class KanbanContractError(ValueError):
@@ -151,7 +165,7 @@ class KanbanStateStore:
 
     def load_index(self) -> dict[str, Any]:
         if not self.index_path.exists():
-            return {"schema": STATE_SCHEMA, "tasks": {}, "columns": {}, "cards": {}, "events": []}
+            return {"schema": STATE_SCHEMA, "tasks": {}, "columns": {}, "display_columns": {}, "cards": {}, "events": []}
         index = _load_json(self.index_path)
         if index.get("schema") != STATE_SCHEMA:
             raise KanbanContractError(f"unsupported state schema: {index.get('schema')}")
@@ -234,6 +248,8 @@ class KanbanStateStore:
                 "result": validated["result"],
                 "kanban_status": decide_kanban_status(validated),
                 "display_status": display_kanban_status(decide_kanban_status(validated)),
+                "display_group": display_kanban_status_group(decide_kanban_status(validated)),
+                "display_group_label": display_kanban_status_group_label(decide_kanban_status(validated)),
                 "suggested_kanban_updates": list(validated.get("suggested_kanban_updates") or []),
                 "next_recommended_task": validated.get("next_recommended_task"),
                 "run_policy": decide_kanban_run_policy(validated),
@@ -256,6 +272,8 @@ class KanbanStateStore:
             raise KanbanContractError(f"task is not in review: {task_id}")
         task_entry["kanban_status"] = "completed"
         task_entry["display_status"] = display_kanban_status("completed")
+        task_entry["display_group"] = display_kanban_status_group("completed")
+        task_entry["display_group_label"] = display_kanban_status_group_label("completed")
         task_entry["review"] = {"status": "approved", "evidence": list(evidence)}
         self._sync_card(index, task_id, action="approve_review")
         self._record_dependency_unlock_events(index, completed_task_id=task_id)
@@ -271,15 +289,21 @@ class KanbanStateStore:
         task = index["tasks"][task_id]
         kanban_status = task.get("kanban_status", "dispatched")
         task["display_status"] = display_kanban_status(kanban_status)
+        task["display_group"] = display_kanban_status_group(kanban_status)
+        task["display_group_label"] = display_kanban_status_group_label(kanban_status)
         card = dict(index.setdefault("cards", {}).get(task_id, {}))
         card.update(task)
         card["display_status"] = task["display_status"]
+        card["display_group"] = task["display_group"]
+        card["display_group_label"] = task["display_group_label"]
         index["cards"][task_id] = card
         index.setdefault("events", []).append(
             {
                 "task_id": task_id,
                 "kanban_status": kanban_status,
                 "display_status": task["display_status"],
+                "display_group": task["display_group"],
+                "display_group_label": task["display_group_label"],
                 "action": action,
             }
         )
@@ -299,11 +323,15 @@ class KanbanStateStore:
                 continue
             display_status = display_kanban_status("ready")
             task["display_status"] = display_status
+            task["display_group"] = display_kanban_status_group("ready")
+            task["display_group_label"] = display_kanban_status_group_label("ready")
             events.append(
                 {
                     "task_id": task_id,
                     "kanban_status": "ready",
                     "display_status": display_status,
+                    "display_group": display_kanban_status_group("ready"),
+                    "display_group_label": display_kanban_status_group_label("ready"),
                     "action": "dependency_unlocked",
                 }
             )
@@ -311,11 +339,22 @@ class KanbanStateStore:
     @staticmethod
     def _rebuild_columns(index: dict[str, Any]) -> None:
         columns: dict[str, list[str]] = {}
+        display_columns: dict[str, dict[str, Any]] = {
+            group["id"]: {"id": group["id"], "label": group["label"], "statuses": list(group["statuses"]), "tasks": []}
+            for group in DISPLAY_KANBAN_GROUPS
+        }
         for task_id, task in sorted(index.get("tasks", {}).items()):
             kanban_status = task.get("kanban_status")
             if kanban_status:
                 columns.setdefault(kanban_status, []).append(task_id)
+                group_id = display_kanban_status_group(kanban_status)
+                group_label = display_kanban_status_group_label(kanban_status)
+                display_columns.setdefault(
+                    group_id,
+                    {"id": group_id, "label": group_label, "statuses": [kanban_status], "tasks": []},
+                )["tasks"].append(task_id)
         index["columns"] = columns
+        index["display_columns"] = display_columns
 
 
 
@@ -969,6 +1008,19 @@ def _has_dependency_unlock_event(events: list[dict[str, Any]], *, task_id: str) 
 
 def display_kanban_status(kanban_status: str) -> str:
     return DISPLAY_KANBAN_STATUSES.get(kanban_status, kanban_status)
+
+
+def display_kanban_status_groups() -> list[dict[str, Any]]:
+    return [{"id": group["id"], "label": group["label"], "statuses": list(group["statuses"])} for group in DISPLAY_KANBAN_GROUPS]
+
+
+def display_kanban_status_group(kanban_status: str) -> str:
+    return DISPLAY_KANBAN_STATUS_GROUPS.get(kanban_status, kanban_status)
+
+
+def display_kanban_status_group_label(kanban_status: str) -> str:
+    group_id = display_kanban_status_group(kanban_status)
+    return DISPLAY_KANBAN_GROUP_LABELS.get(group_id, display_kanban_status(kanban_status))
 
 
 
