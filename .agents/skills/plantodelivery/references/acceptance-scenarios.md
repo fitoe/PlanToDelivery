@@ -30,7 +30,7 @@ Input:
 - no approved design artifact exists
 
 Expected:
-- gate decision is `blocked`
+- Kanban state is `blocked`
 - next owner is `idea-to-design`
 - no code implementation starts
 
@@ -51,7 +51,7 @@ Input:
 - no approval record exists
 
 Expected:
-- gate decision is `blocked`
+- Kanban state is `blocked`
 - next action requests explicit approval
 
 ## Scenario 6: Implementation feedback loop

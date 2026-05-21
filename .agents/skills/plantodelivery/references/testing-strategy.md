@@ -42,7 +42,7 @@ The development loop should preserve flow:
 - use code review, editor diagnostics, and cheap sanity checks during active editing
 - defer broad verification until a meaningful checkpoint
 
-Full lint, full type-check, and full build are stage-gate tools, not routine edit-loop tools.
+Full lint, full type-check, and full build are Kanban checkpoint/review tools, not routine edit-loop tools.
 
 Meaningful checkpoints are:
 - visual slice completion

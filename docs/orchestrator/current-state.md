@@ -23,17 +23,17 @@
 - The repository now contains initial orchestrator durable state files.
 - The immediate work target is the local orchestrator skill package itself.
 - The core references, templates, and basic agents metadata required for a first-pass package are present.
-- Visible-first delivery flow has been added to the orchestrator skill and must be kept consistent across README, skill registry, workflow, gate, testing, and task-state artifacts.
+- Visible-first delivery flow has been added to the orchestrator skill and must be kept consistent across README, skill registry, workflow, Kanban constraint, testing, and task-state artifacts.
 
 ## Product Definition Status
 - `product_definition_status`: `draft`
 - Allowed values: `draft | approved`
-- Execution gate: only `approved` may feed `ui_definition`, `system_definition`, `roadmap`, and `execution`
+- Kanban execution constraint: only `approved` may feed `ui_definition`, `system_definition`, `roadmap`, and `execution`
 
 ## UI Design Status
 - `ui_design_status`: `draft`
 - Allowed values: `draft | rendered | approved`
-- Execution gate: only `approved` may transition into `execution` for UI-bearing work
+- Kanban execution constraint: only `approved` may transition into `execution` for UI-bearing work
 
 ## Known Gaps
 - Durable state docs now reflect the landed package at a basic level

@@ -15,7 +15,7 @@ PlanToDelivery is a workflow product, not only a file collection. Good contribut
 High-value contributions usually fall into one of these categories:
 
 - fix contradictions between `SKILL.md`, `references/`, `templates/`, and `docs/orchestrator/`
-- improve stage gates or routing logic
+- improve Hermes Kanban constraints or routing logic
 - improve durable-state or recovery behavior
 - improve template usefulness in real project work
 - add evidence-backed improvements from trial runs

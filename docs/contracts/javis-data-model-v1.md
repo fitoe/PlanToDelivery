@@ -40,7 +40,7 @@ title
 type: page | feature | flow | module | acceptance
 goal_summary
 route_or_entry
-gate_status
+kanban_status
 priority
 owner_provider
 depends_on_slice_ids
@@ -55,17 +55,17 @@ created_at
 updated_at
 ```
 
-## 4. Gate
+## 4. KanbanDependency
 
-Controls project/slice progression.
+Represents the dependency, review, blocker, or acceptance evidence that Hermes Kanban uses to constrain project/slice progression. This is not a separate execution state machine; downstream work is unlocked only through canonical Kanban state plus recorded evidence.
 
 Fields:
 
 ```text
-gate_id
+kanban_dependency_id
 project_id
 slice_id nullable
-gate_type
+dependency_type
 status
 required_artifact_ids
 required_decision_ids
@@ -77,7 +77,7 @@ created_at
 updated_at
 ```
 
-Gate status values:
+Kanban dependency status values:
 
 ```text
 missing
@@ -89,7 +89,7 @@ waived
 failed
 ```
 
-Only `approved` and explicit `waived` can unlock downstream work.
+Only `approved` and explicit `waived` evidence can unlock downstream Kanban cards.
 
 ## 5. CapabilityTask
 
@@ -221,7 +221,7 @@ decided_at
 
 ## 9. Waiver
 
-Explicitly skips a required gate while preserving risk.
+Explicitly waives a required Kanban dependency while preserving risk.
 
 Fields:
 
@@ -365,8 +365,8 @@ next_recommended_actions
 slice_id
 title
 goal_summary
-gate_status
-required_gates
+kanban_status
+required_kanban_dependencies
 approved_design_refs
 approved_asset_refs
 approved_tech_spec

@@ -9,7 +9,7 @@
 
 PlanToDelivery 是一个面向 skill 用户的 Codex 项目总控产品。
 
-它不是普通的提示词集合，也不是单次对话脚本，而是一套可复用的项目交付系统。  
+它不是普通的提示词集合，也不是单次对话脚本，而是一套可复用的项目交付系统。
 它帮助你把一个软件项目从需求澄清、规划、设计、实施、测试、验证，到交付收尾，稳定地推进成可恢复、可审计、可持续迭代的流程。
 
 ## 为什么需要它
@@ -118,7 +118,7 @@ PlanToDelivery 是 Javis/Kanban V2 的 canonical orchestrator。它按 capabilit
 - `idea-to-design`：`product_visual_design`、`visual_source_creation`，负责产品/设计 artifact、视觉源和 Level-3 handoff
 - `IdeaToTech`：`technical_blueprint`、`implementation_planning`、`verification_strategy`，负责技术决策、实施计划和验证矩阵
 - `design-to-code`：`visual_implementation`，负责从 approved visual/design handoff 生成代码、截图和 parity evidence
-- `PlanToDelivery`：负责 provider registry、task envelope、result manifest ingestion、canonical gates、状态、验收和交付闭环
+- `PlanToDelivery`：负责 provider registry、task envelope、result manifest ingestion、canonical Kanban lifecycle/constraint state、状态、验收和交付闭环
 
 详细协作边界见 [docs/contracts/provider-collaboration-v2.md](./docs/contracts/provider-collaboration-v2.md)。
 

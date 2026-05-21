@@ -22,7 +22,7 @@ Files:
 docs/requirements/javis-ai-delivery-os-requirements.md
 docs/architecture/javis-ai-delivery-os-architecture.md
 docs/contracts/javis-data-model-v1.md
-docs/contracts/javis-gate-model-v1.md
+docs/contracts/javis-kanban-constraint-model-v1.md
 docs/contracts/javis-artifact-model-v1.md
 docs/contracts/javis-provider-runtime-v1.md
 docs/plans/javis-b-implementation-roadmap.md
@@ -39,7 +39,7 @@ Acceptance:
 Implement DB-backed state for:
 
 ```text
-Project / Slice / Gate / CapabilityTask / Artifact / Decision / Waiver / ChangeRequest / Event
+Project / Slice / KanbanDependency / CapabilityTask / Artifact / Decision / Waiver / ChangeRequest / Event
 ```
 
 Minimum API:
@@ -47,7 +47,7 @@ Minimum API:
 ```text
 create_project
 create_slice
-set_gate_status
+set_kanban_status
 create_artifact_ref
 approve_artifact
 create_task
@@ -60,7 +60,7 @@ load_slice_snapshot
 Tests:
 
 - project and slices recover from DB;
-- gate approval unlocks downstream only when allowed;
+- Kanban dependency/review completion unlocks downstream only when allowed;
 - artifact refs are indexed in DB;
 - event log is append-only;
 - snapshots avoid full artifact bodies.
@@ -69,7 +69,7 @@ Tests:
 
 Implement:
 
-- user gate status enum;
+- user-facing Kanban status enum;
 - internal engine status enum;
 - Slice Status Board projection;
 - Provider Task Board projection;
@@ -82,11 +82,11 @@ Tests:
 - missing tech spec => 待技术说明;
 - blocker priority => 已阻塞;
 - review_required => 待审查;
-- all gates passed => 已完成.
+- all required Kanban dependencies/reviews completed => 已完成.
 
-## 5. Phase 3 — Gate Controller
+## 5. Phase 3 — Kanban Constraint Controller
 
-Implement project and slice gate unlock logic.
+Implement project and slice Kanban dependency/review unlock logic.
 
 API:
 
@@ -194,7 +194,7 @@ Tests:
 
 - capability routes to provider;
 - task envelope includes artifact summaries;
-- result manifest updates task/gate/artifact/event state;
+- result manifest updates task/Kanban/artifact/event state;
 - review_required enters review;
 - blocker only blocks affected slice unless project-level.
 
@@ -278,7 +278,7 @@ generate Slice Board
 generate ProjectControlSnapshot
 ```
 
-This proves DB state, gate enforcement, artifact refs, task/result lifecycle, board projection, and snapshot recovery.
+This proves DB state, Kanban constraint enforcement, artifact refs, task/result lifecycle, board projection, and snapshot recovery.
 
 ## 14. Checkpoint rhythm
 
@@ -287,7 +287,7 @@ Suggested commits:
 ```text
 docs: specify javis ai delivery os
 feat: add kanban db project and slice state
-feat: add gate controller
+feat: add Kanban constraint controller
 feat: add artifact index
 feat: add board projections
 feat: add provider task lifecycle

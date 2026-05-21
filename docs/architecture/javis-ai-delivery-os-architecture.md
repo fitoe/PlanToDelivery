@@ -5,7 +5,7 @@
 
 ## 1. Overview
 
-PlanToDelivery is the Javis orchestration kernel. It owns state recovery, gate policy, capability routing, provider dispatch, result ingestion, review/block decisions, progress rollup, and checkpoint handoff.
+PlanToDelivery is the Javis orchestration kernel. It owns state recovery, Kanban constraint policy, capability routing, provider dispatch, result ingestion, review/block decisions, progress rollup, and checkpoint handoff.
 
 Specialist providers own bounded capabilities:
 
@@ -24,7 +24,7 @@ Canonical state includes:
 
 - Project
 - Slice
-- Gate
+- KanbanDependency
 - CapabilityTask
 - Provider
 - Artifact
@@ -49,7 +49,7 @@ Project Intake
   -> Verification & Delivery
 ```
 
-Every stage produces artifacts and updates DB gates/events.
+Every stage produces artifacts and updates Hermes Kanban cards/dependencies/events.
 
 ## 4. Board projections
 
@@ -73,13 +73,13 @@ backlog / ready / dispatched / running / review / blocked / retrying / partial /
 
 The approval board contains Decisions, Reviews, Waivers, and ChangeRequests grouped by review state.
 
-## 5. Gate Controller
+## 5. Kanban Constraint Controller
 
-Gate Controller owns unlock rules. Providers MAY recommend gate changes, but PlanToDelivery records canonical gate transitions.
+Kanban Constraint Controller owns unlock rules. Providers MAY recommend Kanban constraint changes, but PlanToDelivery records canonical Kanban transitions.
 
-Project gates include brainstorming, requirements, blueprint, decision clearance, execution plan, and final delivery approval.
+Project-level Kanban dependencies include brainstorming, requirements, blueprint, decision clearance, execution plan, and final delivery approval.
 
-Slice gates include requirements, design reference, asset plan, tech spec, implementation readiness, implementation done, verification passed, and delivery approval.
+Slice-level Kanban dependencies include requirements, design reference, asset plan, tech spec, implementation readiness, implementation done, verification passed, and delivery approval.
 
 ## 6. Artifact Index
 
@@ -105,7 +105,7 @@ Provider runtime is capability-first:
 3. Dispatch manual/subagent/command/builtin provider.
 4. Ingest `kanban-capability-result/v1` result manifest.
 5. Validate schema and artifact refs.
-6. Update task status, gates, events, boards, blockers, debts, and review items.
+6. Update task status, Kanban dependencies, events, boards, blockers, debts, and review items.
 
 ## 8. Context control
 
@@ -144,9 +144,9 @@ Independent slices can run in parallel only when resource locks and dependencies
 Verification levels:
 
 - `dev_loop`: targeted developer checks; no routine full build/lint.
-- `slice_gate`: route smoke, screenshot or local confirmation, visual deviation report.
-- `stage_gate`: stage-level lint/type/test/build as needed.
-- `final_gate`: complete build/test/evidence/acceptance report.
+- `slice_checkpoint`: route smoke, screenshot or local confirmation, visual deviation report.
+- `stage_checkpoint`: stage-level lint/type/test/build as needed.
+- `final_checkpoint`: complete build/test/evidence/acceptance report.
 
 ## 12. Reporting and resume
 

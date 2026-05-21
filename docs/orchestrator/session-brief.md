@@ -29,7 +29,7 @@
 - Task status:
   - `in-progress`
 - Why this task is current: visible-first delivery flow has been added and now needs consistency cleanup before trial-use validation.
-- Exact next action: verify stage naming, gate/routing references, durable docs, and templates before choosing a trial-use scenario.
+- Exact next action: verify stage naming, Kanban constraint/routing references, durable docs, and templates before choosing a trial-use scenario.
 
 ## Trusted Documents
 - Primary:

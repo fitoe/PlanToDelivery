@@ -23,7 +23,7 @@
   - `yes/no`
 - Section-by-section code generation support:
   - `yes/no`
-- Section boundary confirmation gate:
+- Section boundary confirmation / Kanban review:
   - `yes/no`
 - Related skill:
   - `design-to-code / imagegen / not-applicable`

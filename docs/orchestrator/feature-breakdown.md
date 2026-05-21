@@ -16,7 +16,7 @@
 
 #### Core behaviors
 - Determine the current stage before acting
-- Enforce stage gates
+- Enforce Hermes Kanban constraints
 - Route to the correct underlying skills
 - Keep durable state in repository docs
 

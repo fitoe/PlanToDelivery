@@ -38,7 +38,7 @@
 | Page | Section order | Section name | Generation mode | Notes |
 | --- | --- | --- | --- | --- |
 
-## Section Confirmation Gate
+## Section Confirmation / Kanban Review
 - Boundary review completed:
   - `yes/no`
 - Section artifacts written to disk:

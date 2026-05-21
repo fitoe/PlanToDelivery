@@ -4,7 +4,7 @@
   "records": [
     {
       "decision_id": "DEC-001",
-      "decision_type": "project-goal|visual-direction|design-source|implementation-brief|acceptance|gate-bypass",
+      "decision_type": "project-goal|visual-direction|design-source|implementation-brief|acceptance|kanban-constraint-waiver",
       "status": "approved|rejected|deferred|superseded",
       "approved_by": "user",
       "evidence": "",

@@ -3,11 +3,11 @@
 Use this file when `PlanToDelivery` coordinates `idea-to-design`, `IdeaToTech`, and `design-to-code`.
 
 Main rule:
-- `PlanToDelivery` owns orchestration, stage gates, milestone state, and completion claims.
+- `PlanToDelivery` owns orchestration, Hermes Kanban constraints, milestone state, and completion claims.
 - `idea-to-design` owns product design, visual design, and implementation-ready design handoff artifacts.
 - `IdeaToTech` owns functional/technical implementation blueprints, dependency decisions, feature recipes, API/state/mock plans, and verification matrix.
 - `design-to-code` owns blueprint-driven UI implementation and targeted fidelity verification.
-- orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
+- orchestration depends on artifacts and Kanban evidence, not on a specific skill implementation.
 - `idea-to-design`, `IdeaToTech`, and `design-to-code` are recommended owners, not the only valid sources of equivalent artifacts.
 
 Do not duplicate a downstream skill's workflow inside `PlanToDelivery`. Route to the owning skill, then verify required artifacts.
@@ -23,7 +23,7 @@ Owns:
 - project state
 - decision closure
 - roadmap and milestone planning
-- gate checks
+- Kanban evidence checks
 - verification and handoff discipline
 - routing to specialized skills
 - mapping design/code states into milestone completion layers
@@ -208,7 +208,7 @@ If documents disagree:
 3. `idea-to-design` `Design-Spec.md` and Level 3 blueprint package win for product, visual, and implementation intent
 4. `design-to-code` implementation report wins for actual code state, maturity, and debt
 
-Do not silently merge contradictions. Write the conflict into `decision-log.md` or current gate check.
+Do not silently merge contradictions. Write the conflict into `decision-log.md` or current Kanban evidence record.
 
 ---
 

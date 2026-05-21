@@ -6,10 +6,10 @@ This document is the PlanToDelivery-side map for the V2 provider ecosystem. It k
 
 | Role | Owner | Owns | Does not own |
 |---|---|---|---|
-| Orchestrator | PlanToDelivery / Javis | canonical state, provider registry, task envelopes, result ingestion, gates, progress, checkpoint handoff | provider implementation details, visual design authority, technical architecture internals, coding details |
-| Design provider | IdeaToDesign | `product_visual_design`, `visual_source_creation`, design artifacts, visual source contracts, Visual IR / Level-3 handoff | canonical gates, coding, technical architecture |
-| Technical provider | IdeaToTech | `technical_blueprint`, `implementation_planning`, `verification_strategy`, decisions/recipes/matrices | canonical gates, visual direction, final code changes |
-| Visual implementation provider | DesignToCode | `visual_implementation`, code from approved sources, screenshots, parity reports, implementation debts | design decisions, architecture decisions, canonical gates |
+| Orchestrator | PlanToDelivery / Javis | canonical state, provider registry, task envelopes, result ingestion, Kanban review/block/complete constraints, progress, checkpoint handoff | provider implementation details, visual design authority, technical architecture internals, coding details |
+| Design provider | IdeaToDesign | `product_visual_design`, `visual_source_creation`, design artifacts, visual source contracts, Visual IR / Level-3 handoff | canonical Kanban lifecycle, coding, technical architecture |
+| Technical provider | IdeaToTech | `technical_blueprint`, `implementation_planning`, `verification_strategy`, decisions/recipes/matrices | canonical Kanban lifecycle, visual direction, final code changes |
+| Visual implementation provider | DesignToCode | `visual_implementation`, code from approved sources, screenshots, parity reports, implementation debts | design decisions, architecture decisions, canonical Kanban lifecycle |
 
 ## Canonical capability flow
 
@@ -63,10 +63,10 @@ Rules:
 1. Select by requested capability from `provider-registry/v1`.
 2. Load the selected provider's `provider-manifest/v1` snapshot or compact manifest.
 3. Create a `kanban-capability-task/v1` envelope with active-slice artifacts, expected outputs, allowed side effects, review policy, and blocking policy.
-4. Dispatch exactly one bounded provider task unless a gate explicitly calls for conflict resolution.
+4. Dispatch exactly one bounded provider task unless Kanban review/conflict resolution explicitly calls for comparison.
 5. Require a `kanban-capability-result/v1` manifest before updating canonical state.
-6. Ingest produced artifacts, evidence, blockers, debts, `suggested_gate_updates`, and `next_recommended_task`.
-7. Decide canonical gate state from evidence and policy, not from provider prose alone.
+6. Ingest produced artifacts, evidence, blockers, debts, `suggested_kanban_updates`, and `next_recommended_task`.
+7. Decide canonical Kanban lifecycle state from evidence and policy, not from provider prose alone.
 
 ## Review and blocker semantics
 
@@ -74,7 +74,7 @@ Rules:
 - `blocked` is reserved for missing/contradictory inputs, inaccessible systems, auth/permission/secrets, unsafe/destructive side effects, or unavailable required tools/dependencies.
 - `partial` preserves usable artifacts and routes only the missing follow-up capability.
 - Skipped or waived verification remains `skipped` / `waived`; it is never converted to `passed`.
-- Providers may recommend gate changes, but only PlanToDelivery records canonical gates and progress.
+- Providers may recommend outcomes and evidence, but only PlanToDelivery moves canonical Hermes Kanban lifecycle and progress forward.
 
 ## Registry alignment
 

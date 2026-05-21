@@ -10,9 +10,9 @@ Use this index before opening individual templates. Load only the template neede
 - `gap-analysis-template.md` - required when current state has missing or stale planning
 - `session-brief-template.md` - recommended for cross-session recovery and token saving
 
-## Gate And Coordination
+## Kanban Review And Coordination
 
-- `gate-check-template.md` - required before stage advancement
+- `kanban-constraint-template.md` - required before stage advancement
 - `artifact-manifest-template.json` - required when multiple artifacts must remain traceable
 - `approval-records-template.json` - required when user approval gates design or scope
 - `handoff-manifest-template.json` - required for cross-skill or milestone handoff

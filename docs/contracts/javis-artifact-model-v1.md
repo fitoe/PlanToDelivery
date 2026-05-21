@@ -250,4 +250,4 @@ Final report MUST summarize completed slices, deferred scope, design versions, t
 
 ## 14. Context usage
 
-Main orchestrator SHOULD read artifact metadata and summaries by default. Full artifact bodies are read only for the active gate, active slice, active decision, or active blocker.
+Main orchestrator SHOULD read artifact metadata and summaries by default. Full artifact bodies are read only for the active Kanban card/dependency, active slice, active decision, or active blocker.

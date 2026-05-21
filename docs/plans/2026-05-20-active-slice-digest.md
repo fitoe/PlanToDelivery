@@ -77,7 +77,7 @@ Schema:
 Rules:
 
 - The digest is an execution hint, not canonical state.
-- The task envelope and Hermes Kanban card remain canonical for dispatch/gate.
+- The task envelope and Hermes Kanban card remain canonical for dispatch/constraint.
 - The digest must prefer paths over inline content.
 - Large artifact content must never be copied into the digest.
 - If required context cannot fit, list the artifact path under `read_first` instead of embedding it.
@@ -365,7 +365,7 @@ git rev-parse HEAD origin/kanban
 - [ ] Provider handoff can be expressed as digest path + task envelope path.
 - [ ] Digest schema is validated by tests.
 - [ ] Digest size is bounded and excludes chat history.
-- [ ] Hermes Kanban remains the canonical execution gate.
+- [ ] Hermes Kanban remains the canonical execution constraint.
 - [ ] Result manifests still drive ingestion and review.
 - [ ] Runtime PlanToDelivery skill documents the short-context workflow.
 - [ ] Strict audit can flag missing digest artifacts when enabled.

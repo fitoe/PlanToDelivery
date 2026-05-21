@@ -1,10 +1,12 @@
-# Stage Gates
+> Legacy reference only. V2 execution is constrained by Hermes Kanban; do not use this file as an independent execution authority.
+
+# Legacy Stage Evidence Matrix
 
 This file defines entry conditions, prohibited actions, and exit conditions for each orchestrator stage.
 
 Use it when deciding whether a project may move forward.
 
-## Global Gate Rules
+## Legacy Global Evidence Rules
 
 ### Rule 1: No silent stage skipping
 A stage may be skipped only when repository state proves its outputs already exist and are still valid.
@@ -22,7 +24,7 @@ Once in `milestone-plan` or `execution`, scope is frozen by default.
 No milestone or project completion without fresh verification evidence.
 
 ### Rule 6: Gate report before transition
-Before every major stage transition, write a gate check using `templates/gate-check-template.md`.
+Before every major stage transition, write a gate check using `templates/kanban-constraint-template.md`.
 Every required item must be marked `pass`, `fail`, or `n/a`.
 If any required item is `fail`, the transition is blocked.
 When the gate depends on design, implementation, or verification artifacts, consult artifact manifests and approval records.
@@ -437,7 +439,7 @@ Enter when:
 - updated `session-brief.md`
 - updated `milestones/Mx-task-state.md`
 - `final-handoff.md` when closing milestone or project
-- latest gate check or next-step gate status if the next session will transition stages
+- latest Kanban evidence record or next-step Kanban state if the next session will transition stages
 
 ### Prohibited
 - ending session with stale next-step info

@@ -3,7 +3,7 @@
 
 This script is intentionally standalone-friendly: it imports the in-project
 runtime when available and drives the public Hermes Kanban CLI through
-HermesKanbanBackend. Use it as the mandatory gate wrapper instead of calling
+HermesKanbanBackend. Use it as the mandatory Kanban constraint wrapper instead of calling
 `hermes kanban complete` directly for P2D cards.
 """
 from __future__ import annotations
@@ -41,7 +41,7 @@ def _json(data: object) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="P2D Hermes Kanban enforcement gate")
+    parser = argparse.ArgumentParser(description="P2D Hermes Kanban constraint enforcement")
     parser.add_argument("--project-root", default=os.getcwd(), help="Project root containing project-state/kanban")
     parser.add_argument("--board", default="plantodelivery", help="Hermes Kanban board slug")
     parser.add_argument("--hermes-home", default=None, help="Optional HERMES_HOME override")
@@ -85,11 +85,11 @@ def main() -> int:
         if args.command == "ingest":
             manifest = json.loads(Path(args.result_manifest).read_text(encoding="utf-8"))
             path = backend.record_result(manifest)
-            _json({"ok": True, "result_path": str(path), "gate_status": backend.load_index()["tasks"][manifest["task_id"]]["gate_status"]})
+            _json({"ok": True, "result_path": str(path), "kanban_status": backend.load_index()["tasks"][manifest["task_id"]]["kanban_status"]})
             return 0
         if args.command == "approve":
             backend.approve_review(args.task_id, list(args.evidence))
-            _json({"ok": True, "task_id": args.task_id, "gate_status": "completed", "evidence": list(args.evidence)})
+            _json({"ok": True, "task_id": args.task_id, "kanban_status": "completed", "evidence": list(args.evidence)})
             return 0
         if args.command == "audit":
             report = backend.audit_enforcement(strict_digest=args.strict_digest, strict_provenance=args.strict_provenance)

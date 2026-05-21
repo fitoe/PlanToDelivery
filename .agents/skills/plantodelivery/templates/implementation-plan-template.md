@@ -314,7 +314,7 @@ Capture plan-local execution risks.
 - [ ] Update task state
 - [ ] Update session brief if stopping here
 
-## Completion Gate
+## Completion Constraint
 This plan is complete only when all are true:
 
 - [ ] All in-scope slices implemented

@@ -8,7 +8,7 @@
 - Reference image path:
 - Last updated:
 
-## Gate
+## Kanban Review
 - Small inspiration direction approved:
   - `yes/no`
 - Large implementation reference approved:

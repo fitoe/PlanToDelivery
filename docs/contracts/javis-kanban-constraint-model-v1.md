@@ -1,33 +1,32 @@
-# Javis Gate Model v1
+# Javis Kanban Constraint Model v1
 
 ## 1. Purpose
 
-The Gate Model prevents PlanToDelivery from dispatching downstream work before required requirements, design, assets, technical specifications, decisions, and verification evidence exist.
+PlanToDelivery V2 uses Hermes Kanban as the only executable constraint system. Requirements, design references, asset plans, technical specifications, decisions, waivers, reviews, blockers, verification evidence, and final acceptance are represented as Kanban cards, dependencies, lifecycle states, comments, and result-manifest evidence.
 
-Providers MAY recommend gate updates. Only PlanToDelivery records canonical gate transitions.
+Provider outputs are recommendations until PlanToDelivery ingests a valid `kanban-capability-result/v1` manifest and records the corresponding Hermes Kanban transition. Providers must not directly bypass claim/review/block/complete transitions.
 
-## 2. Gate status
+Legacy note: older documents used the term "kanban_constraint" for these checkpoints. In V2 that term is semantic only; it is not a separate state machine or authority.
+
+## 2. Canonical lifecycle
 
 ```text
-missing
-drafting
-ready_for_review
-approved
-blocked
-waived
-failed
+todo / ready -> running -> review -> done
+running -> blocked
+running -> failed / partial -> review or follow-up
+blocked -> ready/cancelled after evidence repair
 ```
 
 Rules:
 
-- `approved` unlocks downstream work.
-- `waived` unlocks downstream work only when a Waiver record exists.
-- `blocked`, `missing`, `drafting`, and `failed` do not unlock downstream work.
-- skipped verification is `waived` or `skipped`, never `passed`.
+- `done` unlocks downstream cards only when dependencies are satisfied.
+- `review` holds downstream work until explicit review/approval evidence is recorded.
+- `blocked` is only for missing input, external dependency, contradictory requirement, unsafe/destructive action, auth/permission, secret issue, or impossible prerequisite.
+- skipped verification is `waived`/`skipped` evidence, never silently treated as passed.
 
-## 3. Project gates
+## 3. Project-level Kanban constraints
 
-Project-level gates:
+Project-level cards/dependencies should cover:
 
 ```text
 project_intake_created
@@ -39,15 +38,14 @@ execution_plan_approved
 final_delivery_approved
 ```
 
+They are not an independent project state system. They exist as Hermes Kanban cards/dependencies/evidence.
+
 ### 3.1 Brainstorming completed
 
-Required artifacts:
+Required artifacts/evidence:
 
 - brainstorm summary
 - requirements draft
-
-Required facts:
-
 - project goal
 - user/scenario summary
 - success criteria
@@ -68,23 +66,23 @@ The blueprint MUST include product goals, scope, tech stack rationale, page/rout
 
 ### 3.3 Decision list cleared
 
-All blocking decisions MUST have selected outcomes, explicit rejection/deferment, or waiver.
+All blocking decisions MUST have selected outcomes, explicit rejection/deferment, or waiver evidence.
 
 ### 3.4 Execution plan approved
 
 Required:
 
 - complete initial Slice list
-- required gates per Slice
+- required Kanban dependencies per Slice
 - acceptance criteria per Slice
 - dependency graph
 - provider routing plan
 - resource lock plan
 - verification plan
 
-## 4. Slice gates
+## 4. Slice-level Kanban constraints
 
-Slice-level gates:
+Slice-level cards/dependencies should cover:
 
 ```text
 slice_requirements_approved
@@ -117,7 +115,7 @@ Required:
 - approved Page Design Crop for key layout-changing states
 - source Design Board linkage and crop metadata
 
-MUST NOT implement a page from text-only design unless an explicit waiver exists.
+MUST NOT implement a page from text-only design unless an explicit waiver exists as Kanban evidence.
 
 ### 4.3 Asset plan approved
 
@@ -235,15 +233,15 @@ Priority order when multiple conditions apply:
 
 Waivers MUST record:
 
-- gate id
+- affected Kanban card/dependency id
 - reason
 - risk
 - approver
 - approval time
 - compensation requirement if any
 
-A waiver does not delete a gate. It records explicit risk acceptance and may unlock downstream work.
+A waiver does not delete the card/dependency. It records explicit risk acceptance and may unlock downstream work only through Hermes Kanban state/evidence.
 
 ## 8. Change control
 
-New requirements during execution MUST enter ChangeRequest analysis before being inserted into active implementation. Major changes may return affected slices to blueprint, design, asset, or tech spec gates.
+New requirements during execution MUST enter ChangeRequest analysis before being inserted into active implementation. Major changes may return affected slices to blueprint, design, asset, or tech spec Kanban cards.

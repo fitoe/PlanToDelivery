@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Provider Runtime dispatches bounded capability work to manual, subagent, command, or builtin providers and ingests results into canonical Kanban DB state.
+Provider Runtime dispatches bounded capability work to manual, subagent, command, or builtin providers and ingests results into canonical Hermes Kanban state plus P2D evidence overlays.
 
 PlanToDelivery matches by capability, not by provider identity.
 
@@ -18,7 +18,7 @@ builtin
 - `manual`: create task envelope for human/main-agent execution.
 - `subagent`: dispatch bounded TaskExecutionContext to a worker agent.
 - `command`: run declared command for deterministic work such as crop, screenshot, build, or test.
-- `builtin`: internal PlanToDelivery runtime such as gate projection, artifact indexing, snapshot generation.
+- `builtin`: internal PlanToDelivery runtime such as Kanban evidence projection, artifact indexing, snapshot generation.
 
 ## 3. Provider registry
 
@@ -76,7 +76,7 @@ Task envelope describes need and boundaries, not provider internals.
 
 A task can become `ready` only when:
 
-- upstream gates are approved or waived;
+- upstream Hermes Kanban dependencies/reviews are approved or waived;
 - required artifact refs exist;
 - provider is available;
 - allowed and forbidden files are explicit;
@@ -122,7 +122,7 @@ Minimum fields:
   "blockers": [],
   "debts": [],
   "review_required": false,
-  "suggested_gate_updates": [],
+  "suggested_kanban_updates": [],
   "next_recommended_task": null
 }
 ```
@@ -145,12 +145,12 @@ Ingest MUST:
 3. Record produced artifact refs.
 4. Record changed files and evidence.
 5. Update task engine status.
-6. Apply or queue suggested gate updates.
+6. Apply or queue suggested Kanban lifecycle/evidence updates.
 7. Create review, blocker, debt, or next-task records as needed.
 8. Append events.
 9. Update board projections.
 
-Providers MUST NOT directly mark global gates passed.
+Providers MUST NOT bypass Hermes Kanban claim/review/block/complete transitions.
 
 ## 9. Review handling
 
@@ -180,7 +180,7 @@ Before retry, record:
 - changed retry strategy;
 - provider selection decision;
 - whether task should be split;
-- whether affected gate should roll back.
+- whether the affected Kanban card/dependency should roll back.
 
 No infinite retries.
 
@@ -206,7 +206,7 @@ Allowed parallel work:
 - different slices;
 - non-overlapping files;
 - no shared resource conflicts;
-- no dependency on the same pending gate;
+- no dependency on the same pending Kanban dependency/review;
 - read-only shared artifacts.
 
 Disallowed parallel work:

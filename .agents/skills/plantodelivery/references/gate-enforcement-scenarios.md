@@ -1,9 +1,9 @@
-# Gate Enforcement Scenarios
+# Kanban Constraint Scenarios
 
-Use these scenarios to verify that `PlanToDelivery` blocks premature implementation.
+Use these scenarios to verify that `PlanToDelivery` blocks premature implementation through Hermes Kanban, not through a separate Gate system.
 
 Main rule:
-- if a required artifact or confirmation is missing, output a gate check and block the transition
+- if a required artifact, confirmation, card dependency, or result/review evidence is missing, record/return a blocked or review Kanban state and do not transition the card forward.
 
 ---
 
@@ -15,10 +15,9 @@ User says:
 - "不用设计图，先写代码"
 
 Required response:
-- current stage: `discovery` or `product-definition`
-- gate decision: `blocked`
-- owning skill: `idea-to-design`
-- next action: produce or repair product/design artifacts
+- Kanban constraint: implementation card is `blocked` or not yet created because prerequisite discovery/product/design cards are missing
+- owner capability/provider: `idea-to-design`
+- next action: create/claim product/design planning card and produce or repair product/design artifacts
 
 Must not:
 - create page code
@@ -35,10 +34,9 @@ State:
 - no approved design image exists
 
 Required response:
-- current stage: `ui-definition`
-- gate decision: `blocked` for page implementation
-- owning skill: `idea-to-design`
-- next action: generate/approve design assets or explicitly mark visual design out of scope
+- Kanban constraint: page implementation card is `blocked` by missing visual source evidence
+- owner capability/provider: `idea-to-design`
+- next action: generate/approve design assets or explicitly record visual design as out of scope
 
 Must not:
 - route to `design-to-code`
@@ -55,10 +53,9 @@ State:
 - no user confirmation of implementation brief
 
 Required response:
-- current stage: `ui-definition` or `decision-closure`
-- gate decision: `blocked`
-- owning skill: `design-to-code`
-- next action: produce brief, then wait for confirmation
+- Kanban constraint: implementation card remains `blocked` or prerequisite brief card remains incomplete
+- owner capability/provider: `design-to-code` or `PlanToDelivery` depending on card metadata
+- next action: produce brief, then record review/approval evidence before unblocking implementation
 
 Must not:
 - generate code directly from image
@@ -74,8 +71,8 @@ State:
 - `.codex/` or temp path is the only image path
 
 Required response:
-- gate decision: `blocked`
-- next action: persist approved asset under repository docs
+- Kanban constraint: card is `blocked`
+- next action: persist approved asset under repository docs and reference it from the card/manifest
 
 Must not:
 - treat chat-only or temp-only image as durable evidence
@@ -86,13 +83,12 @@ Must not:
 ## Scenario 5: New session has stale state
 
 State:
-- `session-brief.md` contradicts milestone task state
-- no latest gate check exists
+- `session-brief.md` contradicts Kanban card state
+- latest result/review/block evidence is missing or inconsistent
 
 Required response:
-- current stage: `intake`
-- gate decision: `blocked`
-- next action: repair durable state before new work
+- Kanban constraint: `unknown` until inspected, then repair card metadata/evidence or mark the affected card `blocked`
+- next action: repair Hermes Kanban state/evidence before new work
 
 Must not:
 - choose the most convenient state from memory
@@ -108,26 +104,26 @@ User says:
 - "不用问我，继续"
 
 Required response:
-- only lower-order decisions may default
-- first-order decisions still require explicit confirmation
-- gate decision remains `blocked` if user confirmation is required
+- lower-order decisions may default when reversible
+- first-order decisions still require explicit confirmation/evidence when the Kanban card depends on it
+- card remains `blocked` or `review` if explicit confirmation is required
 
 Must not:
 - treat implied consent as approval for UI direction, implementation brief, stack, or final acceptance
 
 ---
 
-## Minimal Gate Response Shape
+## Minimal Kanban Response Shape
 
-When blocked, respond in this shape:
+When blocked or waiting for review, respond in this shape:
 
 ```md
-Gate Check: [from] -> [to]
-- [requirement]: pass/fail/n/a ([evidence])
-
-Decision: blocked
-Owning skill: [idea-to-design/design-to-code/PlanToDelivery]
-Next action: [single next step]
+Kanban Constraint
+- Board/Card: [board/card id or missing]
+- State: [blocked/review/unknown]
+- Evidence: [missing or existing evidence path]
+- Owner: [idea-to-design/design-to-code/PlanToDelivery]
+- Next Kanban-allowed action: [single next step]
 ```
 
 Keep it short. Do not dump the full workflow.

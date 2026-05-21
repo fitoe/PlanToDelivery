@@ -43,14 +43,14 @@ This skill is a project governor, not a universal implementation brain. Control 
 - No completion claims without fresh verification evidence.
 - `PlanToDelivery` owns orchestration and gates; specialized skills own their domain workflow.
 - Do not duplicate `idea-to-design` or `design-to-code` workflows inside orchestration logic.
-- Visual parity gate: if the user reports low visual fidelity, unlike the design, no visible change, or repeated mismatch on an L4/core UI region, pause broad delivery progress. Route the slice back through `design-to-code` with a binding crop/source, `section_visual_anatomy`, section-first mismatch notes, and an asset strategy before more code is written. Treat this as a parity gate, not ordinary implementation debt.
-- Orchestration depends on artifacts and gate evidence, not on a specific skill implementation.
+- Visual parity Kanban review constraint: if the user reports low visual fidelity, unlike the design, no visible change, or repeated mismatch on an L4/core UI region, pause broad delivery progress. Route the slice back through `design-to-code` with a binding crop/source, `section_visual_anatomy`, section-first mismatch notes, and an asset strategy before more code is written. Treat this as a parity review constraint, not ordinary implementation debt.
+- Orchestration depends on artifacts and Kanban evidence, not on a specific skill implementation.
 - `idea-to-design` and `design-to-code` are recommended owners, not exclusive dependencies.
 - `IdeaToTech` is the recommended owner for implementation-ready technical blueprints: dependency decisions, feature recipes, API/state/mock plans, and verification matrix.
 - For UI implementation, prefer the new post-visual blueprint handoff: `idea-to-design` produces `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, and `debt-ledger.json` only after Visual Freeze and Post-Visual Extraction; `IdeaToTech` produces `technical-decisions.json`, `feature-recipes.json`, and `verification-matrix.json`; `design-to-code` consumes both packages before coding.
 - Handoff ownership boundary: once the user-approved visual source has Visual Freeze, Post-Visual Extraction, and an implementation-ready handoff package or equivalent binding inputs, route routine implementation, visual repair, screenshot comparison, and fidelity/deviation reporting to `design-to-code`. Route back to `idea-to-design` only when the design source is missing, stale, contradicted by product changes, lacks post-visual extraction, or the user requests a new/changed design.
 - For flat PNG/GPT Image 2 design sources, prefer Visual IR plus section-diff evidence over prose-only design-to-code: route/page type, ordered sections, section anchors, first-screen density, card/list anatomy, must-not-do drift rules, and Playwright section screenshot PASS/WARN/FAIL should be available for fidelity claims when practical.
-- Prefer artifact-driven coordination: manifests, approval records, gate checks, and handoff manifests.
+- Prefer artifact-driven coordination: manifests, approval records, Kanban evidence records, and handoff manifests.
 
 ## First-Order Decisions
 
@@ -170,7 +170,7 @@ Auto-enable the overlay on first eligible use:
 
 At the start of every session, run `quick-start.md`.
 Use `references/session-start-protocol.md` only when startup recovery, conflicting state, or resume rules need detail.
-Do not act on the user's latest request until current stage, owner skill, gate status, and next allowed action are known.
+Do not act on the user's latest request until current Kanban card state, owner capability/provider, constraint state, and next Kanban-allowed action are known.
 
 ### 1. Intake
 
@@ -409,7 +409,7 @@ Mark done only when:
 - state files are current
 - remaining backlog is explicitly categorized
 
-## Hard Gates
+## Kanban Hard Constraints
 
 Do not allow implementation when any of these are missing:
 
@@ -420,8 +420,8 @@ Do not allow implementation when any of these are missing:
 - current milestone spec
 - current milestone implementation plan
 - current milestone test plan
-- current gate check allows the transition
-- artifact manifest and approval records satisfy any UI or implementation-specific gate
+- current Kanban state/evidence allows the transition
+- artifact manifest and approval records satisfy any UI or implementation-specific Kanban evidence requirement
 
 For UI-bearing projects, also require all of these before `roadmap` or `execution`:
 
@@ -450,7 +450,7 @@ Do not treat `.codex/`-only artifacts as produced/persisted; required UI evidenc
 If UI is not yet confirmed, do not enter execution for page implementation; return to `ui-definition` / `decision-closure` instead.
 Do not use the text brief to reinterpret or replace the confirmed image design during implementation or acceptance.
 
-Before moving from `ui-definition` toward `execution`, complete a gate check using `templates/gate-check-template.md`.
+Before moving from `ui-definition` toward `execution`, complete a Kanban evidence record using `templates/kanban-constraint-template.md` if legacy template compatibility is required.
 
 Do not mark work complete when any of these are missing:
 
@@ -512,7 +512,7 @@ Example sequence for a confirmed UI project:
 2. user confirms one direction for expansion
 3. generate larger implementation-reference images or equivalent visual sources and save them to repository docs
 4. route to `idea-to-design` for Level 3 handoff: `implementation-blueprint.json`, `page-matrix.json`, `component-blueprint.json`, `debt-ledger.json`, visual contracts, and design-to-code input manifest
-5. run/record the handoff checker or equivalent gate evidence
+5. run/record the handoff checker or equivalent Kanban evidence
 6. route to `design-to-code` for Blueprint Intake -> Foundation -> Coverage -> Refinement -> Fidelity
 7. use section slicing and detailed briefs only where required for complex/high-fidelity pages, then claim `L4 core-fidelity` only for verified core pages
 
@@ -670,7 +670,7 @@ For stage transitions, read:
 - `references/cross-skill-contracts.md` when routing between skills
 - `references/artifact-driven-workflow.md` when checking equivalent artifacts, approval evidence, or handoff manifests
 - `references/vue-progress-overlay.md` when enabling or updating the Vue progress overlay
-- `templates/gate-check-template.md` before allowing the transition
+- `templates/kanban-constraint-template.md` before allowing the transition
 - `references/gate-enforcement-scenarios.md` when pressure exists to skip required planning, design, confirmation, or verification
 
 ## Repository State
@@ -720,7 +720,7 @@ When guiding execution:
 - say why next action is allowed
 - say which skill to use next
 - say which durable files must be updated
-- show the gate decision when moving between major stages
-- cite artifact manifest or approval evidence when a gate depends on design or implementation readiness
+- show the Kanban decision when moving between major lifecycle states
+- cite artifact manifest or approval evidence when a Kanban transition depends on design or implementation readiness
 
 Do not dump all process theory each time. Stay stage-specific and concise.

@@ -23,12 +23,12 @@
   "selection_policy": {
     "mode": "dependency_priority_order",
     "rules": [
-      "establish startup gate before acting",
+      "establish startup Kanban constraint before acting",
       "continue eligible in_progress current task first",
       "eligible tasks have status ready, pending, or needs_rework",
       "all dependencies are completed/skipped/waived with evidence",
       "no unresolved blockers",
-      "required gates are passed/waived",
+      "required Kanban dependencies are done/waived with evidence",
       "required user confirmations are approved/waived/not_required",
       "sort by priority then order"
     ]
@@ -39,10 +39,10 @@
       "order": 10,
       "priority": 1,
       "title": "Inspect or initialize durable state",
-      "objective": "Establish project root, current stage, gate status, blockers, and next allowed action before implementation.",
+      "objective": "Establish project root, current Kanban card state, constraint, blockers, and next Kanban-allowed action before implementation.",
       "success_criteria": [
         "Authoritative durable state is present or a missing-state action is recorded.",
-        "Current stage, owner, latest gate, blockers, and next allowed action are known."
+        "Current stage, owner, latest Kanban state/evidence, blockers, and next Kanban-allowed action are known."
       ],
       "milestone": "M1",
       "phase": "foundation",
@@ -56,7 +56,7 @@
       "commit_status": "not_committed",
       "user_confirmation_status": "not_required",
       "depends_on": [],
-      "required_gates": [],
+      "required_kanban_dependencies": [],
       "blocked_by": [],
       "expected_files": [],
       "artifact_refs": [],
@@ -66,7 +66,7 @@
         ],
         "input_artifact_refs": [],
         "expected_output_artifacts": [],
-        "gate_owner": "PlanToDelivery",
+        "kanban_owner": "PlanToDelivery",
         "handoff_to": null
       },
       "verification": [],
@@ -87,7 +87,7 @@
       ]
     }
   ],
-  "gates": [],
+  "kanban_constraints": [],
   "blockers": [],
   "checkpoints": [],
   "events": [
@@ -95,7 +95,7 @@
       "id": "event-001",
       "type": "progress_initialized",
       "actor": "PlanToDelivery",
-      "summary": "Execution progress initialized at startup/intake gate.",
+      "summary": "Execution progress initialized at startup/intake Kanban constraint.",
       "refs": [
         "task-01"
       ],

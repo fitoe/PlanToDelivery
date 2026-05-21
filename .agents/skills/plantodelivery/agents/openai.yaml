@@ -1,4 +1,4 @@
 version: 1
 display_name: PlanToDelivery
 short_description: Govern a software project from planning through implementation, verification, and handoff with durable state and strong process control.
-default_prompt: Use the local PlanToDelivery skill to manage this project end to end with stage gates, milestone-based planning, durable docs, controlled skill routing, and minimal interruption.
+default_prompt: Use the local PlanToDelivery skill to manage this project end to end with Hermes Kanban constraints, milestone-based planning, durable docs, controlled provider routing, and minimal interruption.

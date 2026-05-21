@@ -78,7 +78,7 @@ completes it, and checks that the final Hermes Kanban status is `done`.
 
 For real PlanToDelivery execution, do not let providers call `hermes kanban complete`
 directly. Use the skill wrapper so claim/result/review/audit are enforced before a
-card can move forward:
+card can move forward through Hermes Kanban:
 
 ```bash
 # Provider must claim/start before writing a result
@@ -89,7 +89,7 @@ python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
 python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
   --project-root . --board plantodelivery ingest project-state/kanban/tasks/<p2d-task-id>/result-manifest.json
 
-# Review-required results stay blocked at the Hermes card level until approved
+# Review-required results stay in the Hermes Kanban review/block flow until approved
 python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
   --project-root . --board plantodelivery approve <p2d-task-id> \
   --evidence "reviewed screenshot/parity report"
@@ -103,14 +103,14 @@ python ~/.hermes/skills/PlanToDelivery/scripts/p2d_enforce.py \
   --project-root . --board plantodelivery audit --strict-digest --strict-provenance --fail-on-violation
 ```
 
-Current strict gates:
+Current strict Kanban constraints:
 
 - missing or conflicting `P2D_META` markers are audit violations;
 - dispatch/record-task writes `active-slice-digest.json` beside `task-envelope.json`; `audit --strict-digest` reports missing, invalid, or mismatched digests;
 - active-slice digest provenance records the sha256 of `task-envelope.json`; result ingest records digest sha256 and every produced artifact sha256 in `result-manifest.json`; `audit --strict-provenance` reports tampered envelope/digest/result/artifact links;
 - result ingest is rejected unless the Hermes card status is `running`;
-- provider-side P2D mode should call `plantodelivery.provider_guard.validate_provider_execution_context(...)` before any provider implementation work; this validates `task-envelope.json`, `active-slice-digest.json`, expected capability, `output_root/result-manifest.json`, and the Hermes card `running` gate;
-- `review_required=true` writes the result manifest and comments `P2D RESULT READY FOR REVIEW`, then blocks the card as a review gate instead of completing it;
+- provider-side P2D mode should call `plantodelivery.provider_guard.validate_provider_execution_context(...)` before any provider implementation work; this validates `task-envelope.json`, `active-slice-digest.json`, expected capability, `output_root/result-manifest.json`, and the Hermes card `running` state;
+- `review_required=true` writes the result manifest and comments `P2D RESULT READY FOR REVIEW`, then moves the card into Kanban review/block flow instead of completing it;
 - review approval requires non-empty evidence and comments `P2D REVIEW APPROVED` before completing the Hermes card;
 - manually completed cards without result manifests are audit violations.
 
@@ -118,7 +118,7 @@ Current strict gates:
 
 Real PlanToDelivery/Javis execution has one supported backend:
 
-- `state_backend="hermes"`: mandatory execution gate. Hermes Kanban owns lifecycle;
+- `state_backend="hermes"`: mandatory execution constraint. Hermes Kanban owns lifecycle;
   P2D JSON files are semantic overlays, task envelopes, result manifests, and
   evidence/debug exports.
 
@@ -141,7 +141,7 @@ Do not:
 - Import private Hermes Agent modules from the skill runtime.
 - Modify Hermes Agent source code during install.
 - Add custom Hermes Kanban columns or project-local lifecycle DB fields.
-- Treat P2D JSON status as the authority for execution gates.
+- Treat P2D JSON status as the authority for execution constraints.
 
 ## Troubleshooting
 

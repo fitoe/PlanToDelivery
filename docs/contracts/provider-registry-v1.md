@@ -69,4 +69,4 @@ Default registry entries must stay aligned with provider-side manifests and coll
 | `idea-to-tech` | `IdeaToTech/contracts/provider-manifest.json` | `IdeaToTech/docs/provider-collaboration-v2.md` |
 | `design-to-code` | `DesignToCode/contracts/provider-manifest.json` | `DesignToCode/docs/provider-collaboration-v2.md` |
 
-PlanToDelivery owns only the normalized registry snapshot and canonical gate decisions. Provider repositories own their own task/result contract details. When a provider changes capability names, review semantics, or result fields, update both the provider manifest and this registry contract before dispatching new tasks.
+PlanToDelivery owns only the normalized registry snapshot and canonical Hermes Kanban lifecycle decisions. Provider repositories own their own task/result contract details. When a provider changes capability names, review semantics, or result fields, update both the provider manifest and this registry contract before dispatching new tasks.

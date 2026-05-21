@@ -72,7 +72,7 @@ As the user, I want progress reports generated from durable state so that I can 
 
 As Javis, PlanToDelivery needs a short ProjectControlSnapshot and SliceControlSnapshot so that it can recover state without loading every artifact.
 
-As Javis, PlanToDelivery needs gate rules so that it cannot dispatch implementation before requirements, design references, asset plans, tech specs, and blocking decisions are cleared.
+As Javis, PlanToDelivery needs Hermes Kanban constraints so that it cannot dispatch implementation before requirements, design references, asset plans, tech specs, and blocking decisions are cleared.
 
 ### 5.3 Provider / subagent
 
@@ -85,8 +85,8 @@ As a provider, I want to return a result manifest so that the orchestrator can i
 The B implementation is successful when:
 
 1. A single project and single slice can complete an end-to-end flow from requirements artifact to verification evidence.
-2. DB state, not JSON files or chat history, determines the current board status.
-3. Implementation tasks cannot be unlocked without required gates or explicit waivers.
+2. Hermes Kanban state, not JSON files, SQLite, or chat history, determines the current executable board status.
+3. Implementation tasks cannot be unlocked without required Hermes Kanban dependencies, review evidence, or explicit waivers recorded as Kanban evidence.
 4. `review_required` routes to review, not blocked.
 5. Artifact refs can identify the approved design crop, asset crop, tech spec, screenshot, comparison, and acceptance report.
 6. A project can resume from ProjectControlSnapshot after context loss.
@@ -96,8 +96,8 @@ The B implementation is successful when:
 
 The first implementation priority is:
 
-1. Kanban DB canonical state.
-2. Gate Controller.
+1. Hermes Kanban canonical state.
+2. Kanban constraint compiler/review controller.
 3. Artifact Index.
 4. Board projections.
 5. Provider runtime integration.

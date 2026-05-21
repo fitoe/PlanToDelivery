@@ -63,7 +63,7 @@ Use only when relevant.
 
 ## Tier 6: Specialized Project Delivery Layer
 
-Use only through explicit stage gates. These are on-demand stage tools, not always-on context:
+Use only through explicit Hermes Kanban dependencies/review constraints. These are on-demand stage tools, not always-on context:
 
 - `idea-to-design`
 - `IdeaToTech`
@@ -302,18 +302,18 @@ Read:
 
 ## Decision Closure
 Read:
-- `references/stage-gates.md`
+- `references/stage-gates.md` (legacy only; prefer Hermes Kanban constraints)
 - `references/cross-skill-contracts.md` when checking specialized skill handoff readiness
 - `references/gate-enforcement-scenarios.md` when user pressure or ambiguity may skip gates
 - `references/artifact-driven-workflow.md`
 - `templates/decision-log-template.md`
-- `templates/gate-check-template.md` before any major stage transition
+- `templates/kanban-constraint-template.md` before any major stage transition
 - `templates/project-state-template.json`
 
 ## Roadmap
 Read:
 - `references/workflow.md`
-- `templates/gate-check-template.md` before advancing from definition into roadmap
+- `templates/kanban-constraint-template.md` before advancing from definition into roadmap
 - `templates/roadmap-template.md`
 
 ## Milestone Spec
@@ -359,5 +359,5 @@ Read:
 - `templates/task-state-template.md`
 - `templates/session-brief-template.md`
 - `templates/final-handoff-template.md` when closing milestone or project
-- latest gate check when the next session may transition stages
+- latest Kanban state/evidence check when the next session may transition stages
 - `templates/handoff-manifest-template.json` when transferring work between skills or sessions

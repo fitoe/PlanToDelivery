@@ -4,7 +4,7 @@
 
 **Goal:** Turn PlanToDelivery into the canonical kanban-aware orchestration layer that routes project work by capability contract rather than by hard-coded skill identity.
 
-**Architecture:** PlanToDelivery owns project stage, task graph, gate policy, worker assignment, and progress reporting. It talks to providers through a neutral capability envelope and result manifest. Provider-specific implementation details stay outside PlanToDelivery.
+**Architecture:** PlanToDelivery owns project stage, task graph, Kanban constraint policy, worker assignment, and progress reporting. It talks to providers through a neutral capability envelope and result manifest. Provider-specific implementation details stay outside PlanToDelivery.
 
 **Tech Stack:** Markdown skill docs, JSON-schema-like contract files, Hermes kanban states, provider manifests from IdeaToDesign / IdeaToTech / DesignToCode.
 
@@ -16,7 +16,7 @@
 - PlanToDelivery must not import, vendor, or hard-code DesignToCode, IdeaToDesign, or IdeaToTech internals.
 - Tasks describe the needed capability, not the preferred tool.
 - Providers advertise capabilities through manifests.
-- `review_required` is a review gate, not a generic blocker.
+- `review_required` maps to the Hermes Kanban review flow, not a generic blocker.
 - `blocked` is reserved for missing prerequisite, credential, impossible input, or external dependency.
 
 ## Capability Envelope v1
@@ -129,12 +129,12 @@ git add docs/contracts/provider-registry-v1.md
 git commit -m "docs: design kanban provider registry"
 ```
 
-### Task 3: Add gate policy documentation
+### Task 3: Add Kanban constraint policy documentation
 
 **Objective:** Encode how P2D handles review, blocker, stage, and progress gates.
 
 **Files:**
-- Create: `docs/contracts/kanban-gate-policy-v1.md`
+- Create: `docs/contracts/kanban-constraint-policy-v1.md`
 
 **Verification:**
 - Includes pre-flight, revision, escalation, and abort gates.
@@ -144,8 +144,8 @@ git commit -m "docs: design kanban provider registry"
 
 **Commit:**
 ```bash
-git add docs/contracts/kanban-gate-policy-v1.md
-git commit -m "docs: define kanban gate policy"
+git add docs/contracts/kanban-constraint-policy-v1.md
+git commit -m "docs: define kanban Kanban constraint policy"
 ```
 
 ### Task 4: Add orchestration handoff checklist

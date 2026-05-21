@@ -9,7 +9,7 @@
     "current",
     "selection_policy",
     "tasks",
-    "gates",
+    "kanban_constraints",
     "blockers",
     "checkpoints",
     "events"
@@ -163,7 +163,7 @@
           "commit_status",
           "user_confirmation_status",
           "depends_on",
-          "required_gates",
+          "required_kanban_dependencies",
           "blocked_by",
           "routing",
           "source_ref"
@@ -265,7 +265,7 @@
               "type": "string"
             }
           },
-          "required_gates": {
+          "required_kanban_dependencies": {
             "type": "array",
             "items": {
               "type": "string"
@@ -295,7 +295,7 @@
               "required_skills",
               "input_artifact_refs",
               "expected_output_artifacts",
-              "gate_owner",
+              "kanban_owner",
               "handoff_to"
             ],
             "properties": {
@@ -317,7 +317,7 @@
                   "type": "object"
                 }
               },
-              "gate_owner": {
+              "kanban_owner": {
                 "type": [
                   "string",
                   "null"
@@ -383,7 +383,7 @@
         "additionalProperties": true
       }
     },
-    "gates": {
+    "kanban_constraints": {
       "type": "array",
       "items": {
         "type": "object",
@@ -656,7 +656,7 @@
               "progress_initialized",
               "task_status_changed",
               "verification_status_changed",
-              "gate_status_changed",
+              "kanban_status_changed",
               "blocker_opened",
               "blocker_resolved",
               "checkpoint_created",

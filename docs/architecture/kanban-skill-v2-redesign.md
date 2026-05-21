@@ -22,7 +22,7 @@ Redesign PlanToDelivery as the Javis/Kanban orchestrator kernel and treat specia
 ```text
 Javis / PlanToDelivery
   = orchestrator kernel
-  = state machine + registry + dispatch + gate/review + progress rollup
+  = Hermes Kanban constraints + registry + dispatch + review/block/complete + progress rollup
 
 IdeaToDesign
   = design provider
@@ -43,7 +43,6 @@ The orchestrator talks to providers only through contract files and manifests:
 - `provider-registry/v1`
 - `kanban-capability-task/v1`
 - `kanban-capability-result/v1`
-- `kanban-gate-decision/v1`
 
 ## Role boundaries
 
@@ -57,7 +56,7 @@ Owns:
 - task envelope creation
 - provider dispatch instructions
 - result manifest ingestion
-- review/block/gate decisions
+- Kanban review/block/complete decisions
 - progress reporting
 - checkpoint and handoff summaries
 
@@ -67,13 +66,13 @@ Does not own:
 - technical architecture internals
 - implementation details
 - provider-specific playbooks
-- provider global gate closure
+- provider-side lifecycle closure or Kanban bypass
 
 ### Provider skills
 
 Providers own one bounded capability invocation. They consume a task envelope and return a result manifest.
 
-Providers may recommend gate changes, but they must not mark global gates passed themselves.
+Providers may recommend outcomes and evidence, but they must not move work forward outside Hermes Kanban claim/review/block/complete transitions.
 
 ## Runtime skill shape
 
@@ -86,7 +85,7 @@ Target sections:
 3. Inputs
 4. Outputs
 5. Contract rules
-6. State/gate semantics
+6. Kanban constraint semantics
 7. Failure semantics
 8. Review semantics
 9. Progressive references
@@ -141,18 +140,18 @@ A `kanban-capability-result/v1` result must include:
 - `blockers`
 - `debts`
 - `review_required`
-- `suggested_gate_updates`
+- `suggested_kanban_updates`
 - `next_recommended_task`
 
 Long reasoning, screenshots, diffs, visual analysis, spike notes, and detailed repair notes should live in files referenced by the manifest.
 
-## Gate semantics
+## Kanban constraint semantics
 
 - `review_required` / `review-required` routes to `review`.
 - `blocked` is reserved for missing input, external dependency, contradictory requirements, unsafe/destructive action, permission/auth issues, or secrets.
 - `partial` should preserve usable artifacts and route only the missing capability.
 - Review completion is the point where downstream children may be unlocked.
-- Providers recommend; the orchestrator records canonical project-state and gate status.
+- Providers recommend; the orchestrator records canonical Hermes Kanban lifecycle state and evidence overlays.
 
 ## V2 migration plan
 
@@ -171,7 +170,7 @@ Add or normalize templates:
 - `templates/kanban-capability-task.template.json`
 - `templates/kanban-capability-result.template.json`
 - `templates/provider-registry.template.json`
-- `templates/gate-decision.template.json`
+- `templates/kanban-decision.template.json`
 
 ### Phase 4 — End-to-end dry run
 
@@ -184,7 +183,7 @@ Run a sample flow:
 5. IdeaToTech returns result manifests.
 6. Javis creates a `visual_implementation` task.
 7. DesignToCode returns changed files and evidence.
-8. Javis records gate decision and progress rollup.
+8. Javis records the Kanban lifecycle decision and progress rollup.
 
 ## Acceptance criteria
 

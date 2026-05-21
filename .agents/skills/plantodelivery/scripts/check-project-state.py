@@ -6,7 +6,7 @@ from pathlib import Path
 
 TASK_DONE = {"completed", "skipped"}
 RESOLVED_BLOCKER = {"resolved", "waived"}
-PASSED_GATE = {"passed", "waived"}
+PASSED_CONSTRAINT = {"passed", "waived"}
 CONTINUEABLE = {"in_progress", "ready", "pending", "needs_rework"}
 ELIGIBLE = {"ready", "pending", "needs_rework"}
 BLOCKING_CONFIRMATION = {"required", "requested", "changes_requested"}
@@ -67,16 +67,16 @@ def main() -> int:
         errors.append("artifact-manifest schema_version must be 1.0.0")
 
     tasks = {t.get("id"): t for t in progress.get("tasks", []) if t.get("id")}
-    gates = {g.get("id"): g for g in progress.get("gates", []) if g.get("id")}
+    constraints = {c.get("id"): c for c in progress.get("kanban_constraints", []) if c.get("id")}
     blockers = {b.get("id"): b for b in progress.get("blockers", []) if b.get("id")}
     artifacts = {a.get("id"): a for a in manifest.get("artifacts", []) if a.get("id")}
 
     def require_task(ref, where):
         if ref is not None and ref not in tasks:
             errors.append(f"{where} references missing task: {ref}")
-    def require_gate(ref, where):
-        if ref not in gates:
-            errors.append(f"{where} references missing gate: {ref}")
+    def require_constraint(ref, where):
+        if ref not in constraints:
+            errors.append(f"{where} references missing Kanban constraint: {ref}")
     def require_blocker(ref, where):
         if ref not in blockers:
             errors.append(f"{where} references missing blocker: {ref}")
@@ -94,7 +94,7 @@ def main() -> int:
     for tid, t in tasks.items():
         for dep in t.get("depends_on", []): require_task(dep, f"task {tid}.depends_on")
         for bid in t.get("blocked_by", []): require_blocker(bid, f"task {tid}.blocked_by")
-        for gid in t.get("required_gates", []): require_gate(gid, f"task {tid}.required_gates")
+        for gid in t.get("required_kanban_dependencies", []): require_constraint(gid, f"task {tid}.required_kanban_dependencies")
         for aid in t.get("artifact_refs", []): require_artifact(aid, f"task {tid}.artifact_refs")
         for aid in t.get("routing", {}).get("input_artifact_refs", []): require_artifact(aid, f"task {tid}.routing.input_artifact_refs")
 
@@ -112,12 +112,12 @@ def main() -> int:
                 if not (root / f).exists():
                     errors.append(f"completed task {tid} expected file missing: {f}")
 
-        # Task-local gate readiness for active/executable tasks.
+        # Task-local Kanban dependency readiness for active/executable tasks.
         if status in {"in_progress", "completed"}:
-            for gid in t.get("required_gates", []):
-                g = gates.get(gid)
-                if g and g.get("status") not in PASSED_GATE:
-                    errors.append(f"task {tid} is {status} but required gate {gid} status={g.get('status')}")
+            for gid in t.get("required_kanban_dependencies", []):
+                c = constraints.get(gid)
+                if c and c.get("status") not in PASSED_CONSTRAINT:
+                    errors.append(f"task {tid} is {status} but required Kanban dependency {gid} status={c.get('status')}")
             for bid in t.get("blocked_by", []):
                 b = blockers.get(bid)
                 if b and b.get("status") not in RESOLVED_BLOCKER:
@@ -130,18 +130,18 @@ def main() -> int:
             if not visual_refs:
                 errors.append(f"completed UI task {tid} fidelity_target={t.get('fidelity_target')} has no visual/parity artifact refs")
 
-    for gid, g in gates.items():
-        for aid in g.get("required_artifact_refs", []): require_artifact(aid, f"gate {gid}.required_artifact_refs")
-        for bid in g.get("blocked_by", []): require_blocker(bid, f"gate {gid}.blocked_by")
-        if g.get("status") == "passed":
-            if g.get("blocked_by"):
-                unresolved = [bid for bid in g.get("blocked_by", []) if blockers.get(bid, {}).get("status") not in RESOLVED_BLOCKER]
+    for gid, c in constraints.items():
+        for aid in c.get("required_artifact_refs", []): require_artifact(aid, f"Kanban constraint {gid}.required_artifact_refs")
+        for bid in c.get("blocked_by", []): require_blocker(bid, f"Kanban constraint {gid}.blocked_by")
+        if c.get("status") == "passed":
+            if c.get("blocked_by"):
+                unresolved = [bid for bid in c.get("blocked_by", []) if blockers.get(bid, {}).get("status") not in RESOLVED_BLOCKER]
                 if unresolved:
-                    errors.append(f"passed gate {gid} still has unresolved blockers: {', '.join(unresolved)}")
-            for aid in g.get("required_artifact_refs", []):
+                    errors.append(f"passed Kanban constraint {gid} still has unresolved blockers: {', '.join(unresolved)}")
+            for aid in c.get("required_artifact_refs", []):
                 a = artifacts.get(aid)
                 if a and a.get("status") not in READY_ARTIFACT_STATUS:
-                    errors.append(f"passed gate {gid} requires non-ready artifact {aid} status={a.get('status')}")
+                    errors.append(f"passed Kanban constraint {gid} requires non-ready artifact {aid} status={a.get('status')}")
 
     for bid, b in blockers.items():
         for tid in b.get("unblocks_task_ids", []): require_task(tid, f"blocker {bid}.unblocks_task_ids")
@@ -169,29 +169,29 @@ def main() -> int:
         if ct.get("user_confirmation_status") in BLOCKING_CONFIRMATION:
             warnings.append(f"current task {current_task_id} is waiting on user confirmation; next action should resolve confirmation")
 
-    # Execution-stage gate guard. This catches the common accidental skip from intake/planning to execution.
+    # Execution-stage Kanban constraint guard. This catches the common accidental skip from intake/planning to execution.
     if current_stage in EXECUTION_STAGES:
-        execution_gates = [g for g in gates.values() if current_stage in g.get("required_for_stages", []) or g.get("id") in {"execution-entry", "gate-execution-entry"}]
-        if not execution_gates:
-            errors.append(f"current.stage={current_stage} requires an execution-entry gate in project-state.gates")
-        elif not any(g.get("status") in PASSED_GATE for g in execution_gates):
-            statuses = ", ".join(f"{g.get('id')}={g.get('status')}" for g in execution_gates)
-            errors.append(f"current.stage={current_stage} has no passed/waived execution-entry gate ({statuses})")
+        execution_constraints = [g for g in constraints.values() if current_stage in g.get("required_for_stages", []) or g.get("id") in {"execution-entry", "constraint-execution-entry"}]
+        if not execution_constraints:
+            errors.append(f"current.stage={current_stage} requires an execution-entry Kanban constraint in project-state.kanban_constraints")
+        elif not any(c.get("status") in PASSED_CONSTRAINT for c in execution_constraints):
+            statuses = ", ".join(f"{c.get('id')}={c.get('status')}" for c in execution_constraints)
+            errors.append(f"current.stage={current_stage} has no passed/waived execution-entry Kanban constraint ({statuses})")
 
         if current_task_id:
             ct = tasks.get(current_task_id, {})
-            if current_task_id and not ct.get("required_gates") and not execution_gates:
-                errors.append(f"execution current task {current_task_id} has no required_gates and no execution gate exists")
+            if current_task_id and not ct.get("required_kanban_dependencies") and not execution_constraints:
+                errors.append(f"execution current task {current_task_id} has no required_kanban_dependencies and no execution Kanban constraint exists")
 
     # Eligible next task sanity check.
     if next_task_id in tasks:
         nt = tasks[next_task_id]
         if nt.get("task_status") not in ELIGIBLE and nt.get("task_status") != "in_progress":
             warnings.append(f"next_task_id {next_task_id} status={nt.get('task_status')} is not normally eligible")
-        for gid in nt.get("required_gates", []):
-            g = gates.get(gid)
-            if g and g.get("status") not in PASSED_GATE:
-                warnings.append(f"next_task_id {next_task_id} waits for gate {gid} status={g.get('status')}")
+        for gid in nt.get("required_kanban_dependencies", []):
+            c = constraints.get(gid)
+            if c and c.get("status") not in PASSED_CONSTRAINT:
+                warnings.append(f"next_task_id {next_task_id} waits for Kanban dependency {gid} status={c.get('status')}")
         for bid in nt.get("blocked_by", []):
             b = blockers.get(bid)
             if b and b.get("status") not in RESOLVED_BLOCKER:
@@ -204,7 +204,7 @@ def main() -> int:
     if errors:
         print(f"project-state validation failed: {len(errors)} error(s), {len(warnings)} warning(s)")
         return 1
-    print(f"project-state validation passed: {len(tasks)} task(s), {len(gates)} gate(s), {len(blockers)} blocker(s), {len(artifacts)} artifact(s), {len(warnings)} warning(s)")
+    print(f"project-state validation passed: {len(tasks)} task(s), {len(constraints)} Kanban constraint(s), {len(blockers)} blocker(s), {len(artifacts)} artifact(s), {len(warnings)} warning(s)")
     return 0
 
 if __name__ == "__main__":

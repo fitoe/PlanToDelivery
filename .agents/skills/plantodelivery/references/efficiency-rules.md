@@ -31,7 +31,7 @@ Match verification to the current layer:
 
 Do not run full suites after every small visual edit. Historical lint/type/test failures and third-party type issues should be recorded as baseline blockers unless touched code introduced them.
 
-Full lint, full type-check, and full build are stage-gate commands. Run them at slice closure, milestone hardening, merge readiness, release readiness, or when a high-risk foundation changes.
+Full lint, full type-check, and full build are Kanban checkpoint/review commands. Run them at slice closure, milestone hardening, merge readiness, release readiness, or when a high-risk foundation changes.
 
 High-risk foundation changes include:
 - dependency manifests or lockfiles
@@ -66,7 +66,7 @@ If two consecutive attempts at lint, test, type-check, visual polish, or non-blo
 
 Do not let full-suite failures hijack a visual-shell or interaction-shell slice when touched code is not responsible. Record baseline failures and keep the current layer moving.
 
-When a deferred stage-gate check fails, classify the failure before fixing:
+When a deferred Kanban constraint/evidence check fails, classify the failure before fixing:
 - blocker: caused by current scope and prevents the current stage goal
 - baseline: pre-existing or unrelated project debt
 - environment: local setup, network, tool, or third-party issue

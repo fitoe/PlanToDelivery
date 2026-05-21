@@ -1,4 +1,4 @@
-# Gate Check
+# Kanban Constraint Check
 
 ## Transition
 

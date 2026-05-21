@@ -3,7 +3,7 @@
 Use this reference to coordinate skills without creating hard skill-to-skill dependencies.
 
 Main rule:
-- route by artifact readiness, approval evidence, and gate status
+- route by artifact readiness, approval evidence, and Hermes Kanban state
 - do not require artifacts to come from one specific skill when an equivalent source exists
 
 ---
@@ -108,7 +108,7 @@ User may intentionally bypass a gate only if all are recorded:
 - accepted risk
 - rollback or correction path
 
-Record this as `decision_type: gate-bypass` in approval records.
+Record this as `decision_type: kanban-constraint-waiver` in approval records.
 
 ---
 
@@ -117,7 +117,7 @@ Record this as `decision_type: gate-bypass` in approval records.
 Default loading order:
 1. quick-start or current stage summary
 2. `project-state.json`
-3. latest gate check
+3. latest Kanban state/evidence check
 4. current artifact manifest
 5. current handoff manifest
 6. detailed references only if gate fails or ambiguity remains

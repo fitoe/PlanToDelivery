@@ -15,7 +15,7 @@
     "artifact_inputs": [],
     "artifact_outputs": []
   },
-  "gate": {
+  "kanban_constraint": {
     "latest": null,
     "decision": "unknown",
     "blockers": []

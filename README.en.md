@@ -53,7 +53,7 @@ PlanToDelivery can orchestrate the broader workflow:
 - `design-to-code`: turns approved persisted design sources into implementation and can plan missing image assets
 - `PlanToDelivery`: owns stages, gates, durable state, verification, and handoff
 
-These skills remain independently usable. PlanToDelivery accepts equivalent artifacts when gate evidence is sufficient, such as an equivalent design document, resumable state, approved visual source, or implementation brief.
+These skills remain independently usable. PlanToDelivery accepts equivalent artifacts when Kanban evidence is sufficient, such as an equivalent design document, resumable state, approved visual source, or implementation brief.
 
 ## Lightweight Startup
 

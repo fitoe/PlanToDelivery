@@ -93,7 +93,7 @@
 - Why:
 - Tradeoffs accepted:
 
-## Expansion Gate
+## Expansion Review
 - Inspiration direction approved:
   - `pending / confirmed`
 - Approved direction for large references:
