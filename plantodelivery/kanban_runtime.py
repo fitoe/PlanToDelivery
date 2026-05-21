@@ -21,15 +21,15 @@ P2D_META_END = "P2D_META -->"
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
 STATE_SCHEMA = "plantodelivery-kanban-state/v1"
 DISPLAY_KANBAN_STATUSES = {
-    "backlog": "待办",
-    "ready": "待派发",
-    "dispatched": "已派发",
-    "running": "进行中",
-    "review": "待审查",
-    "blocked": "已阻塞",
+    "backlog": "待梳理",
+    "ready": "待开工",
+    "dispatched": "已分配",
+    "running": "执行中",
+    "review": "待确认",
+    "blocked": "卡住了",
     "partial": "部分完成",
     "completed": "已完成",
-    "failed": "失败",
+    "failed": "未通过",
     "cancelled": "已取消",
 }
 

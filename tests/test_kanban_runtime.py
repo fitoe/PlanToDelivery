@@ -32,6 +32,20 @@ from plantodelivery.kanban_runtime import (
 )
 
 
+def test_display_kanban_status_uses_human_workflow_labels() -> None:
+    assert display_kanban_status("backlog") == "待梳理"
+    assert display_kanban_status("ready") == "待开工"
+    assert display_kanban_status("dispatched") == "已分配"
+    assert display_kanban_status("running") == "执行中"
+    assert display_kanban_status("review") == "待确认"
+    assert display_kanban_status("blocked") == "卡住了"
+    assert display_kanban_status("partial") == "部分完成"
+    assert display_kanban_status("completed") == "已完成"
+    assert display_kanban_status("failed") == "未通过"
+    assert display_kanban_status("cancelled") == "已取消"
+    assert display_kanban_status("custom-status") == "custom-status"
+
+
 def test_active_slice_digest_validator_and_builder_exclude_chat_history(tmp_path: Path) -> None:
     envelope = create_task_envelope(
         task_id="digest-001",
@@ -528,7 +542,7 @@ def test_bootstrap_real_provider_manifests_into_json_artifact_store(tmp_path: Pa
     index = KanbanStateStore(state_root).load_index()
     expected_task_ids = [f"task-{capability.replace('_', '-')}" for capability in expectations]
     assert sorted(index["columns"]["dispatched"]) == sorted(expected_task_ids)
-    assert index["cards"]["task-visual-implementation"]["display_status"] == "已派发"
+    assert index["cards"]["task-visual-implementation"]["display_status"] == "已分配"
 
 def test_task_envelope_is_capability_first_and_bounded(tmp_path: Path) -> None:
     envelope = create_task_envelope(
@@ -730,12 +744,12 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
     index = store.load_index()
     task = index["tasks"]["task-canonical"]
     assert task["kanban_status"] == "dispatched"
-    assert task["display_status"] == "已派发"
-    assert index["cards"]["task-canonical"]["display_status"] == "已派发"
+    assert task["display_status"] == "已分配"
+    assert index["cards"]["task-canonical"]["display_status"] == "已分配"
     assert index["events"][-1] == {
         "task_id": "task-canonical",
         "kanban_status": "dispatched",
-        "display_status": "已派发",
+        "display_status": "已分配",
         "action": "dispatch",
     }
 
@@ -758,9 +772,9 @@ def test_state_store_is_canonical_kanban_state_with_chinese_display_status(tmp_p
     )
     index = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
     assert index["tasks"]["task-canonical"]["kanban_status"] == "review"
-    assert index["tasks"]["task-canonical"]["display_status"] == "待审查"
+    assert index["tasks"]["task-canonical"]["display_status"] == "待确认"
     assert index["cards"]["task-canonical"]["result"] == "completed"
-    assert index["cards"]["task-canonical"]["display_status"] == "待审查"
+    assert index["cards"]["task-canonical"]["display_status"] == "待确认"
     assert index["events"][-1]["action"] == "ingest_result"
 
     store.approve_review("task-canonical", ["人工审查通过"])
@@ -788,7 +802,7 @@ def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_pa
     )
     reloaded = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
     assert reloaded["cards"]["task-db-board"]["kanban_status"] == "dispatched"
-    assert reloaded["cards"]["task-db-board"]["display_status"] == "已派发"
+    assert reloaded["cards"]["task-db-board"]["display_status"] == "已分配"
 
     assert isinstance(orchestrator.store, HermesKanbanBackend)
     orchestrator.store.claim_task("task-db-board", ttl_seconds=30)
@@ -811,7 +825,7 @@ def test_orchestrator_writes_canonical_kanban_state_without_board_adapter(tmp_pa
     )
     reloaded = KanbanStateStore(tmp_path / "project-state" / "kanban").load_index()
     assert reloaded["cards"]["task-db-board"]["kanban_status"] == "blocked"
-    assert reloaded["cards"]["task-db-board"]["display_status"] == "已阻塞"
+    assert reloaded["cards"]["task-db-board"]["display_status"] == "卡住了"
     assert reloaded["events"][-1]["action"] == "ingest_result"
 
 
