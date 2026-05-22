@@ -189,6 +189,32 @@ Batch updates. Do not send noisy micro-progress. A checkpoint is a visibility ar
 - After a user approves a direction-level review gate, do not stop at acknowledgement; immediately record the approval and advance the next eligible Kanban card.
 - For approved visual/design freeze gates, acknowledgement is only a checkpoint. If the next implementation card is already planned and unblocked, claim/run it immediately after recording approval; do not wait for a second `继续` unless the user explicitly pauses or changes scope.
 
+## No-bypass provider execution guard
+
+When the active project is being run as `贾维斯` / PlanToDelivery / P2D / Hermes Kanban, provider work is not allowed to start from chat context, restored TODOs, or local confidence alone.
+
+Before any provider-side code edit, design generation, visual implementation, API integration, or verification slice, Javis must establish all of the following:
+
+1. a real Hermes Kanban card exists for the active slice and capability;
+2. the card is claimed/running through the P2D/Hermes path, not only represented in the session `todo` tool;
+3. a `kanban-capability-task/v1` task envelope exists and names `project_root`, `active_slice`, `input_artifact_refs`, `output_root`, expected outputs, side-effect limits, and review policy;
+4. an `active-slice-digest/v1` exists beside the envelope;
+5. the provider can run its admission check against the envelope/digest or an equivalent `p2d_enforce.py claim`/backend claim has succeeded.
+
+If any item is missing, do not proceed with provider edits. Create/repair the Kanban card/envelope/digest first, or report the slice as blocked with the missing enforcement artifact. A session `todo` entry may summarize progress for the chat, but it must never substitute for Hermes Kanban lifecycle enforcement.
+
+### Visual implementation hard gate
+
+For `visual_implementation` cards, Javis must pass the D2C provider an approved visual source and require DesignToCode evidence before allowing review or downstream work:
+
+- approved design-source artifact path, not just prose or a previous chat statement;
+- page contract and pass criteria in the envelope/digest;
+- expected Visual IR or extraction artifact before implementation edits;
+- expected screenshot/parity evidence and `kanban-capability-result/v1` manifest;
+- `review_required: true` unless the user explicitly waived visual review.
+
+If a user asks `继续` after approving a visual direction, Javis should continue automatically, but only by claiming/running the next eligible Hermes Kanban card and dispatching the provider with the envelope/digest. It must not jump straight into file edits from the main chat.
+
 ## Hard stops
 
 Stop and ask/record a blocker when the next step requires:
