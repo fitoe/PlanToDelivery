@@ -148,6 +148,7 @@ Long reasoning, screenshots, diffs, prompt logs, Visual IR, spikes, parity repor
 ## Kanban constraint semantics
 
 - Any Gate that decides whether a downstream stage/card may start must be represented as a Hermes Kanban constraint: a real review/approval card plus explicit dependency/link from the downstream card. A markdown manifest, local JSON status, provider recommendation, or prose checkpoint may document the Gate, but must not be the authority that unlocks work.
+- Gate holds must be lifecycle-enforced, not only described. For user/design/content approval Gates, ensure downstream implementation cards depend on an unfinished approval/review parent, or keep the Gate in a real non-dispatchable hold (`blocked`/review-required) and verify with a dispatcher pass that `spawned: []` for downstream cards. Do not rely on `--initial-status blocked` alone when all parents are already done; dispatch may promote/spawn it. If that happens, immediately reclaim the accidental worker, block the Gate with an explicit review-required reason, and re-run dispatch to prove children remain `todo`.
 - Stage-admission Gates include product/content direction approval, visual/design-source freeze, architecture/API decision approval, implementation-readiness approval, release/deploy approval, and any user-confirmed scope freeze. If the answer to “can the next phase start?” changes, encode that answer in Kanban.
 - Provider `suggested_kanban_updates` / `next_recommended_task` are advisory only. Javis must translate accepted suggestions into concrete Hermes Kanban cards, links, review states, comments, and completion events before treating them as canonical.
 - `review_required` / `review-required` routes to `review`, not generic `blocked`.
@@ -158,6 +159,7 @@ Long reasoning, screenshots, diffs, prompt logs, Visual IR, spikes, parity repor
 - When a user says a visual/design direction is `定稿`, `可以`, `通过`, or otherwise approved, do **not** stop after recording/unblocking. Treat the approval as permission to continue the already-planned downstream implementation. Immediately resume the next ready Kanban child using the approved artifact as the design source, unless the user explicitly says `暂停/先别做/等一下` or the next action hits a hard stop.
 - Visual implementation tasks require explicit approved design-source evidence at the level the user expects for the project. For UI/website rebuilds, a text handoff/tokens/page briefs package is not enough unless the user explicitly waives visual mockup/preview confirmation. The Kanban dependency must name the required visual approval artifact (for example homepage visual preview, Figma/GPT image board, or approved screenshot-as-design-source) and downstream implementation cards must depend on that approval card, not only on a structured D2 handoff.
 - For multi-page UI/website rebuilds, homepage approval only releases the homepage/global-shell implementation slice. Before implementing other page families/templates, Javis must create explicit visual-source review Gate card(s) for those page families/templates, such as `other core pages visual confirmation`, `departments/doctors visual confirmation`, `guide/contact/appointment visual confirmation`, or `news/detail visual confirmation`. The downstream implementation cards for those page families must depend on the corresponding approved visual Gate, not merely on homepage approval, global tokens, page briefs, or a single D2 handoff. If the user explicitly approves a reduced Gate (for example one combined board covering all remaining templates), record that approval artifact and make the implementation card depend on it.
+- Homepage approval must not be silently widened later. When rebasing or recovering a project from a homepage-finalization point, record an approval anchor card/artifact whose released scope is homepage/global shell only, then model every non-homepage page family behind its own unfinished or review-held Gate. A downstream card is valid only if its real Hermes parent chain includes the corresponding visual-source Gate; prose `depends_on`, local JSON, or chat memory is not enough.
 - A project-level UI rebuild DAG should separate design-source confirmation from implementation at the granularity that can affect visual layout. Use the smallest practical Gate set: one combined Gate is acceptable for simple/static sites; split Gates are required when page families have materially different layouts, states, or conversion tasks. Do not silently broaden implementation scope beyond the approved visual-source coverage.
 - `blocked` is only for missing input, external dependency, contradictory requirements, unsafe/destructive action, auth/permission, or secret issues.
 - `partial` preserves usable artifacts and routes only the missing capability.
@@ -214,6 +216,41 @@ For `visual_implementation` cards, Javis must pass the D2C provider an approved 
 - `review_required: true` unless the user explicitly waived visual review.
 
 If a user asks `继续` after approving a visual direction, Javis should continue automatically, but only by claiming/running the next eligible Hermes Kanban card and dispatching the provider with the envelope/digest. It must not jump straight into file edits from the main chat.
+
+## Kanban state-machine enforcement
+
+Every Javis step must be represented as an explicit state-machine transition, not as an informal checklist item.
+
+Required model:
+
+```text
+intake
+  -> normalized
+  -> planned
+  -> gated
+  -> ready
+  -> dispatched
+  -> claimed/running
+  -> provider-admitted
+  -> executing
+  -> result-produced
+  -> manifest-validated
+  -> review-required | blocked | failed | completed
+  -> approval-recorded | blocker-recorded | done
+  -> downstream-unlocked | handoff
+```
+
+Rules:
+
+- No orchestration step may advance by prose, chat memory, session `todo`, or local JSON status alone. Each advance must map to a Hermes Kanban task event, dependency edge, review/approval event, block event, completion event, or an evidence artifact referenced by such an event.
+- State changes must be guarded by preconditions and evidence. Example: `ready -> running` requires dependency satisfaction plus `claim`; `running -> provider-admitted` requires envelope/digest validation; `result-produced -> manifest-validated` requires a valid result manifest; `review-required -> completed` requires approval evidence.
+- A provider cannot skip directly from task receipt to done. It must pass through admission, execution, result manifest, validation, and Kanban lifecycle update.
+- Gate decisions are state-machine nodes. Product direction, visual freeze, architecture approval, implementation readiness, release/deploy approval, and user scope freeze must be explicit review/approval states with downstream dependencies.
+- Dispatcher/resume logic must be state-derived: compute next actions from current Kanban state and dependency graph, not from past conversation. Recovery must rebuild the same state-machine position from Kanban events and evidence.
+- If a required state or transition is missing, Javis must create/repair the Kanban card, edge, envelope, digest, approval packet, or result manifest before continuing; otherwise mark the slice blocked with the missing transition as evidence.
+- Runtime enforcement lives in `plantodelivery/kanban_runtime.py`: every `_sync_card(...)` event must carry a `state_machine` transition and the canonical `state_machine` log must validate as `p2d-state-machine-transition/v1`.
+- `p2d_enforce.py audit --fail-on-violation` must fail when Kanban events have no transition object, a transition has an unknown action/state, or guarded transitions (`dispatch`, `claim`, `provider_admitted`, `ingest_result`, `review_required`, `approve_review`, `dependency_unlocked`) have no evidence.
+- Tests or smoke checks must exercise at least dispatch -> ingest_result -> approve_review and assert both the event log and the state-machine log contain matching validated transitions.
 
 ## Hard stops
 

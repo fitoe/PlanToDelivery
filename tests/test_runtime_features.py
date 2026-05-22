@@ -9,10 +9,12 @@ from plantodelivery.kanban_runtime import (
     APPROVAL_PACKET_SCHEMA,
     PROVIDER_DOCTOR_SCHEMA,
     RESUME_SNAPSHOT_SCHEMA,
+    P2D_STATE_MACHINE_SCHEMA,
     KanbanContractError,
     KanbanStateStore,
     build_approval_packet,
     build_resume_snapshot,
+    build_state_machine_transition,
     create_task_envelope,
     diagnose_provider_registry,
     load_project_alias_registry,
@@ -118,6 +120,36 @@ def test_project_alias_registry_resolves_aliases_and_real_paths(tmp_path: Path) 
     assert resolve_project_alias(str(ruoshui), registry_paths=[registry_path]) == ruoshui.resolve()
     with pytest.raises(KanbanContractError, match="unknown project alias"):
         resolve_project_alias("missing-project", registry_paths=[registry_path])
+
+
+def test_state_machine_transition_requires_evidence_for_guarded_actions() -> None:
+    transition = build_state_machine_transition(
+        task_id="homepage-implementation",
+        action="dispatch",
+        kanban_status="dispatched",
+        evidence=["project-state/kanban/tasks/homepage-implementation/task-envelope.json"],
+    )
+
+    assert transition["schema"] == P2D_STATE_MACHINE_SCHEMA
+    assert transition["from_state"] == "planned"
+    assert transition["to_state"] == "dispatched"
+
+    with pytest.raises(KanbanContractError, match="requires evidence"):
+        build_state_machine_transition(task_id="homepage-implementation", action="claim", kanban_status="running")
+
+
+def test_store_records_state_machine_transitions_for_dispatch_ingest_and_approval(tmp_path: Path) -> None:
+    store, _, _ = make_review_task(tmp_path)
+    store.approve_review("review-homepage", ["user approved mobile screenshot"])
+
+    index = store.load_index()
+    actions = [event["action"] for event in index["events"]]
+    transitions = index["state_machine"]
+
+    assert actions == ["dispatch", "ingest_result", "approve_review"]
+    assert [transition["action"] for transition in transitions] == actions
+    assert all(transition["schema"] == P2D_STATE_MACHINE_SCHEMA for transition in transitions)
+    assert all(transition["evidence"] for transition in transitions)
 
 
 def test_approval_packet_is_review_ready_and_schema_valid(tmp_path: Path) -> None:

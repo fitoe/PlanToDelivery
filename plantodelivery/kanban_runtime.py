@@ -22,6 +22,44 @@ RESUME_SNAPSHOT_SCHEMA = "p2d-resume-snapshot/v1"
 P2D_META_SCHEMA = "p2d-meta/v1"
 P2D_META_BEGIN = "<!-- P2D_META"
 P2D_META_END = "P2D_META -->"
+P2D_STATE_MACHINE_SCHEMA = "p2d-state-machine-transition/v1"
+P2D_STATE_MACHINE_STATES = {
+    "intake",
+    "normalized",
+    "planned",
+    "gated",
+    "ready",
+    "dispatched",
+    "claimed/running",
+    "provider-admitted",
+    "executing",
+    "result-produced",
+    "manifest-validated",
+    "review-required",
+    "blocked",
+    "failed",
+    "completed",
+    "approval-recorded",
+    "blocker-recorded",
+    "done",
+    "downstream-unlocked",
+    "handoff",
+}
+P2D_STATE_MACHINE_ACTIONS = {
+    "dispatch",
+    "manual_ready",
+    "claim",
+    "provider_admitted",
+    "execution_started",
+    "ingest_result",
+    "review_required",
+    "block",
+    "fail",
+    "complete",
+    "approve_review",
+    "dependency_unlocked",
+    "handoff",
+}
 VALID_RESULTS = {"completed", "partial", "blocked", "failed"}
 GLOBAL_STOP_RULES = {"direction_decision", "human_acceptance", "credential_required", "destructive_action", "external_side_effect", "high_risk_uncertainty", "user_pause"}
 LOCAL_STOP_RULES = {"hard_blocker", "blocked", "human_review_required"}
@@ -154,6 +192,98 @@ class KanbanEvent:
     display_status: str
     action: str
 
+
+def _state_for_action(action: str, kanban_status: str) -> tuple[str, str]:
+    if action == "dispatch":
+        return "planned", "dispatched"
+    if action == "manual_ready":
+        return "gated", "ready"
+    if action == "claim":
+        return "dispatched", "claimed/running"
+    if action == "provider_admitted":
+        return "claimed/running", "provider-admitted"
+    if action == "execution_started":
+        return "provider-admitted", "executing"
+    if action == "ingest_result":
+        target = {
+            "review": "review-required",
+            "blocked": "blocked",
+            "failed": "failed",
+            "completed": "completed",
+            "partial": "completed",
+        }.get(kanban_status, "manifest-validated")
+        return "result-produced", target
+    if action == "review_required":
+        return "manifest-validated", "review-required"
+    if action == "approve_review":
+        return "review-required", "approval-recorded"
+    if action == "dependency_unlocked":
+        return "done", "downstream-unlocked"
+    if action == "block":
+        return "executing", "blocker-recorded"
+    if action == "fail":
+        return "executing", "failed"
+    if action == "complete":
+        return "manifest-validated", "done"
+    if action == "handoff":
+        return "downstream-unlocked", "handoff"
+    return "planned", "planned"
+
+
+def build_state_machine_transition(
+    *,
+    task_id: str,
+    action: str,
+    kanban_status: str,
+    evidence: list[str] | None = None,
+    from_state: str | None = None,
+    to_state: str | None = None,
+) -> dict[str, Any]:
+    if action not in P2D_STATE_MACHINE_ACTIONS:
+        raise KanbanContractError(f"invalid state-machine action: {action}")
+    default_from, default_to = _state_for_action(action, kanban_status)
+    transition = {
+        "schema": P2D_STATE_MACHINE_SCHEMA,
+        "task_id": task_id,
+        "action": action,
+        "from_state": from_state or default_from,
+        "to_state": to_state or default_to,
+        "kanban_status": kanban_status,
+        "evidence": list(evidence or []),
+    }
+    return validate_state_machine_transition(transition)
+
+
+def validate_state_machine_transition(transition: dict[str, Any]) -> dict[str, Any]:
+    _require_fields(transition, {"schema", "task_id", "action", "from_state", "to_state", "kanban_status", "evidence"})
+    if transition["schema"] != P2D_STATE_MACHINE_SCHEMA:
+        raise KanbanContractError(f"unsupported state-machine transition schema: {transition['schema']}")
+    if transition["action"] not in P2D_STATE_MACHINE_ACTIONS:
+        raise KanbanContractError(f"invalid state-machine action: {transition['action']}")
+    if transition["from_state"] not in P2D_STATE_MACHINE_STATES:
+        raise KanbanContractError(f"invalid from_state: {transition['from_state']}")
+    if transition["to_state"] not in P2D_STATE_MACHINE_STATES:
+        raise KanbanContractError(f"invalid to_state: {transition['to_state']}")
+    if not isinstance(transition["evidence"], list) or not all(isinstance(item, str) for item in transition["evidence"]):
+        raise KanbanContractError("state-machine transition evidence must be a list of strings")
+    guarded_actions = {"dispatch", "claim", "provider_admitted", "ingest_result", "review_required", "approve_review", "dependency_unlocked"}
+    if transition["action"] in guarded_actions and not transition["evidence"]:
+        raise KanbanContractError(f"state-machine transition requires evidence: {transition['action']}")
+    return transition
+
+
+def _default_transition_evidence(task: dict[str, Any], *, action: str) -> list[str]:
+    candidates = [
+        task.get("task_path"),
+        task.get("digest_path"),
+        task.get("result_path"),
+    ]
+    if action == "approve_review":
+        review = task.get("review")
+        if isinstance(review, dict):
+            candidates.extend(review.get("evidence") or [])
+    return [str(item) for item in candidates if isinstance(item, str) and item]
+
 class KanbanStateStore:
     """JSON artifact overlay for PlanToDelivery provider contracts.
 
@@ -169,7 +299,7 @@ class KanbanStateStore:
 
     def load_index(self) -> dict[str, Any]:
         if not self.index_path.exists():
-            return {"schema": STATE_SCHEMA, "tasks": {}, "columns": {}, "display_columns": {}, "cards": {}, "events": []}
+            return {"schema": STATE_SCHEMA, "tasks": {}, "columns": {}, "display_columns": {}, "cards": {}, "events": [], "state_machine": []}
         index = _load_json(self.index_path)
         if index.get("schema") != STATE_SCHEMA:
             raise KanbanContractError(f"unsupported state schema: {index.get('schema')}")
@@ -177,6 +307,7 @@ class KanbanStateStore:
         index.setdefault("columns", {})
         index.setdefault("cards", {})
         index.setdefault("events", [])
+        index.setdefault("state_machine", [])
         return index
 
     def record_task(self, envelope: dict[str, Any]) -> Path:
@@ -206,7 +337,7 @@ class KanbanStateStore:
             "depends_on": list(envelope.get("depends_on") or []),
             "kanban_contract": dict(envelope.get("kanban_contract") or {}),
         }
-        self._sync_card(index, task_id, action="dispatch")
+        self._sync_card(index, task_id, action="dispatch", evidence=[str(task_path), str(digest_path)])
         self._rebuild_columns(index)
         self._write_index(index)
         return task_path
@@ -289,7 +420,7 @@ class KanbanStateStore:
         _write_json(self.index_path, index)
 
     @staticmethod
-    def _sync_card(index: dict[str, Any], task_id: str, *, action: str) -> None:
+    def _sync_card(index: dict[str, Any], task_id: str, *, action: str, evidence: list[str] | None = None) -> None:
         task = index["tasks"][task_id]
         kanban_status = task.get("kanban_status", "dispatched")
         task["display_status"] = display_kanban_status(kanban_status)
@@ -301,6 +432,12 @@ class KanbanStateStore:
         card["display_group"] = task["display_group"]
         card["display_group_label"] = task["display_group_label"]
         index["cards"][task_id] = card
+        transition = build_state_machine_transition(
+            task_id=task_id,
+            action=action,
+            kanban_status=kanban_status,
+            evidence=evidence or _default_transition_evidence(task, action=action),
+        )
         index.setdefault("events", []).append(
             {
                 "task_id": task_id,
@@ -309,8 +446,10 @@ class KanbanStateStore:
                 "display_group": task["display_group"],
                 "display_group_label": task["display_group_label"],
                 "action": action,
+                "state_machine": transition,
             }
         )
+        index.setdefault("state_machine", []).append(transition)
 
     @staticmethod
     def _record_dependency_unlock_events(index: dict[str, Any], *, completed_task_id: str) -> None:
@@ -329,6 +468,12 @@ class KanbanStateStore:
             task["display_status"] = display_status
             task["display_group"] = display_kanban_status_group("ready")
             task["display_group_label"] = display_kanban_status_group_label("ready")
+            transition = build_state_machine_transition(
+                task_id=task_id,
+                action="dependency_unlocked",
+                kanban_status="ready",
+                evidence=[str(task.get("task_path") or task_id)],
+            )
             events.append(
                 {
                     "task_id": task_id,
@@ -337,8 +482,10 @@ class KanbanStateStore:
                     "display_group": display_kanban_status_group("ready"),
                     "display_group_label": display_kanban_status_group_label("ready"),
                     "action": "dependency_unlocked",
+                    "state_machine": transition,
                 }
             )
+            index.setdefault("state_machine", []).append(transition)
 
     @staticmethod
     def _rebuild_columns(index: dict[str, Any]) -> None:
@@ -498,7 +645,15 @@ class HermesKanbanBackend(KanbanStateStore):
         if ttl_seconds is not None:
             args.extend(["--ttl", str(ttl_seconds)])
         self._run(*args)
-        return self.show_card(task_id)["task"]
+        card = self.show_card(task_id)["task"]
+        index = self.load_index()
+        task_entry = index.get("tasks", {}).get(task_id)
+        if task_entry is not None:
+            task_entry["kanban_status"] = "running"
+            self._sync_card(index, task_id, action="claim")
+            self._rebuild_columns(index)
+            self._write_index(index)
+        return card
 
     def _p2d_task_status(self, task_id: str) -> str:
         card = self.show_card(task_id)
@@ -639,6 +794,41 @@ class HermesKanbanBackend(KanbanStateStore):
                     violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "missing_review_approval", "message": "review-required task is done without P2D REVIEW APPROVED comment"})
                 if kanban_status != "review" and status == "blocked" and result.get("result") != "blocked":
                     violations.append({"task_id": meta.task_id, "hermes_task_id": hermes_id, "code": "unexpected_blocked_status", "message": "card is blocked but result is not blocked/review"})
+        local_index = self.load_index()
+        state_machine = local_index.get("state_machine")
+        events = local_index.get("events")
+        if not isinstance(state_machine, list):
+            violations.append({"code": "missing_state_machine_log", "message": "kanban index has no state_machine transition log"})
+            state_machine = []
+        if isinstance(events, list):
+            transition_count = 0
+            for event in events:
+                if not isinstance(event, dict):
+                    violations.append({"code": "invalid_kanban_event", "message": "event must be an object"})
+                    continue
+                if event.get("action") in P2D_STATE_MACHINE_ACTIONS:
+                    transition = event.get("state_machine")
+                    if not isinstance(transition, dict):
+                        violations.append({"task_id": event.get("task_id"), "code": "missing_event_transition", "message": f"event action has no state_machine transition: {event.get('action')}"})
+                        continue
+                    try:
+                        validate_state_machine_transition(transition)
+                    except KanbanContractError as exc:
+                        violations.append({"task_id": event.get("task_id"), "code": "invalid_event_transition", "message": str(exc)})
+                    else:
+                        transition_count += 1
+            if transition_count == 0 and events:
+                violations.append({"code": "no_valid_state_machine_transitions", "message": "kanban events exist but none carry valid state-machine transitions"})
+        else:
+            violations.append({"code": "invalid_kanban_events", "message": "kanban index events must be a list"})
+        for transition in state_machine:
+            if not isinstance(transition, dict):
+                violations.append({"code": "invalid_state_machine_transition", "message": "state_machine entry must be an object"})
+                continue
+            try:
+                validate_state_machine_transition(transition)
+            except KanbanContractError as exc:
+                violations.append({"task_id": transition.get("task_id"), "code": "invalid_state_machine_transition", "message": str(exc)})
         return {"schema": "p2d-enforcement-audit/v1", "ok": not violations, "board": self.board, "violations": violations}
 
 
