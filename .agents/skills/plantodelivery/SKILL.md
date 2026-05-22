@@ -182,6 +182,7 @@ Batch updates. Do not send noisy micro-progress. A checkpoint is a visibility ar
 
 - Keep only one persistent orchestrator context.
 - Load at most one provider skill per dispatch unless Kanban review/conflict resolution explicitly needs cross-provider comparison.
+- For implementation/coding cards dispatched by Javis, also load and apply `karpathy-coder` as a coding-discipline constraint. This is an explicit exception to the one-provider-skill limit because `karpathy-coder` is not a provider; it is a cross-cutting guard. It requires: surface assumptions before coding, keep the solution simple, make surgical changes only, avoid speculative abstractions/refactors, and define verifiable success checks before claiming completion.
 - Prefer manifest paths over chat history.
 - Use parallel or delegated work only for independent slices.
 - After answering routine user questions or sending routine checkpoints, continue the active orchestration loop unless the user pauses, changes direction, or a hard stop applies.
