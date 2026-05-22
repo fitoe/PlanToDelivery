@@ -14,7 +14,7 @@ It does **not** own specialist implementation details. Design, technical plannin
 Canonical project root for Javis work:
 
 ```text
-/mnt/c/Users/imjzq/Projects/PlanToDelivery
+/home/imjzq/Projects/PlanToDelivery
 ```
 
 The previous `JavisKanban` project is not canonical.
