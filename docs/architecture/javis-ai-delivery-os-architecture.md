@@ -1,7 +1,7 @@
 # Javis AI Delivery OS Architecture
 
 **Status:** Approved architecture direction
-**Canonical project:** `/mnt/c/Users/imjzq/Projects/PlanToDelivery`
+**Canonical project:** `/home/imjzq/Projects/PlanToDelivery`
 
 ## 1. Overview
 

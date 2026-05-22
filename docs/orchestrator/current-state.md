@@ -2,7 +2,7 @@
 
 ## Repository
 - Name: `PlanToDelivery`
-- Path: `/mnt/c/Users/imjzq/Projects/PlanToDelivery`
+- Path: `/home/imjzq/Projects/PlanToDelivery`
 - Intake date: 2026-05-02
 - Current branch: see `git branch --show-current`
 - Last verified: 2026-05-22

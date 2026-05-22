@@ -1,7 +1,7 @@
 # Javis AI Delivery OS Requirements
 
 **Status:** Approved direction for PlanToDelivery B implementation
-**Canonical project:** `/mnt/c/Users/imjzq/Projects/PlanToDelivery`
+**Canonical project:** `/home/imjzq/Projects/PlanToDelivery`
 **Primary branch:** `kanban`
 
 ## 1. Positioning

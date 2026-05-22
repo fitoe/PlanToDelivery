@@ -4,7 +4,7 @@
 
 **Status:** Accepted direction for the `kanban` branch.
 
-**Canonical project:** `/mnt/c/Users/imjzq/Projects/PlanToDelivery`
+**Canonical project:** `/home/imjzq/Projects/PlanToDelivery`
 
 ## Goal
 

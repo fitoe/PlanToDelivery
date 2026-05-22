@@ -1,7 +1,7 @@
 # Javis B Implementation Roadmap
 
 **Direction:** B — Kanban DB backed AI Delivery OS
-**Canonical project:** `/mnt/c/Users/imjzq/Projects/PlanToDelivery`
+**Canonical project:** `/home/imjzq/Projects/PlanToDelivery`
 
 ## 1. Principles
 
