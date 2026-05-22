@@ -19,6 +19,25 @@ from pathlib import Path
 DEFAULT_BOARD = "plantodelivery"
 
 
+def _repo_root() -> Path:
+    script = Path(__file__).resolve()
+    for parent in script.parents:
+        if (parent / "plantodelivery" / "kanban_runtime.py").exists():
+            return parent
+    return Path.cwd()
+
+
+def _load_runtime(project_root: Path | None = None) -> None:
+    candidates = []
+    if project_root is not None:
+        candidates.append(project_root.resolve())
+    candidates.append(_repo_root())
+    candidates.append(Path.cwd().resolve())
+    for root in candidates:
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+
+
 def run(cmd: list[str], *, cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, cwd=str(cwd), env=env, text=True, capture_output=True, check=False)
 
@@ -35,9 +54,11 @@ def main() -> int:
     parser.add_argument("--board", default=DEFAULT_BOARD, help="Hermes Kanban board slug to inspect/create in setup")
     parser.add_argument("--hermes-home", default=None, help="Optional isolated HERMES_HOME for the check")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON summary")
+    parser.add_argument("--required-capability", action="append", default=[], help="Provider capability that must be present; repeatable")
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
+    _load_runtime(project_root)
     project_root.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ)
     if args.hermes_home:
@@ -87,9 +108,22 @@ def main() -> int:
     provider_ok = any(path.exists() for path in provider_candidates) or bool(provider_dirs)
     record("provider contracts", provider_ok, "found provider registry/manifests" if provider_ok else "optional but recommended before dispatch")
 
+    provider_report = None
+    try:
+        from plantodelivery.kanban_runtime import diagnose_provider_registry
+
+        provider_report = diagnose_provider_registry(project_root, required_capabilities=list(args.required_capability))
+        detail = f"{len(provider_report['capabilities'])} capability(s); missing={provider_report['missing_capabilities']}"
+        record("provider registry doctor", bool(provider_report["ok"]), detail)
+    except Exception as exc:  # noqa: BLE001 - doctor must surface actionable diagnostics instead of crashing.
+        record("provider registry doctor", False, str(exc))
+
     overall = all(item["ok"] for item in results if item["name"] != "provider contracts")
     if args.json:
-        print(json.dumps({"ok": overall, "checks": results}, ensure_ascii=False, indent=2))
+        payload = {"ok": overall, "checks": results}
+        if provider_report is not None:
+            payload["provider_registry"] = provider_report
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0 if overall else 1
 
 

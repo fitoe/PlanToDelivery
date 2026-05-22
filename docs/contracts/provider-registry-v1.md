@@ -4,9 +4,11 @@ The provider registry maps requested capabilities to provider manifests without 
 
 ## Registry Shape
 
+`load_provider_registry(...)` accepts the canonical `schema` field and the legacy `schema_version` field for compatibility. Newly generated artifacts should prefer `schema`.
+
 ```json
 {
-  "schema_version": "provider-registry/v1",
+  "schema": "provider-registry/v1",
   "providers": [
     {
       "provider_id": "idea-to-design",
@@ -53,7 +55,7 @@ The provider registry maps requested capabilities to provider manifests without 
 
 A registry is valid when:
 
-- `schema_version` is `provider-registry/v1`.
+- `schema` is `provider-registry/v1` (`schema_version` is still accepted for legacy registries).
 - Every provider has `provider_id`, `manifest_path`, `capabilities`, and `enabled`.
 - Every capability is a non-empty string.
 - Duplicate provider IDs are rejected.

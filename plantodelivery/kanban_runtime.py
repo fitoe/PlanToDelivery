@@ -15,6 +15,10 @@ RESULT_SCHEMA = "kanban-capability-result/v1"
 ACTIVE_SLICE_DIGEST_SCHEMA = "active-slice-digest/v1"
 PROVIDER_SCHEMA = "provider-manifest/v1"
 PROVIDER_REGISTRY_SCHEMA = "provider-registry/v1"
+PROVIDER_DOCTOR_SCHEMA = "p2d-provider-doctor/v1"
+PROJECT_ALIAS_SCHEMA = "p2d-project-aliases/v1"
+APPROVAL_PACKET_SCHEMA = "p2d-approval-packet/v1"
+RESUME_SNAPSHOT_SCHEMA = "p2d-resume-snapshot/v1"
 P2D_META_SCHEMA = "p2d-meta/v1"
 P2D_META_BEGIN = "<!-- P2D_META"
 P2D_META_END = "P2D_META -->"
@@ -1161,6 +1165,216 @@ def load_provider_registry(root: str | Path) -> dict[str, ProviderCapability]:
             if existing.priority is None or entry.priority < existing.priority:
                 registry[capability] = entry
     return registry
+
+
+def diagnose_provider_registry(
+    root: str | Path,
+    *,
+    required_capabilities: list[str] | None = None,
+) -> dict[str, Any]:
+    """Return a structured provider registry health report.
+
+    This is intentionally non-throwing for registry contract failures so doctor
+    scripts can report actionable violations instead of crashing before the
+    user sees which capability/provider is missing.
+    """
+
+    required = sorted(set(required_capabilities or []))
+    report: dict[str, Any] = {
+        "schema": PROVIDER_DOCTOR_SCHEMA,
+        "ok": True,
+        "root": str(Path(root)),
+        "providers": [],
+        "capabilities": {},
+        "required_capabilities": required,
+        "missing_capabilities": [],
+        "violations": [],
+    }
+    try:
+        registry = load_provider_registry(root)
+    except KanbanContractError as exc:
+        report["ok"] = False
+        report["violations"].append({"code": "registry_error", "message": str(exc)})
+        return report
+
+    providers = sorted({entry.provider for entry in registry.values()})
+    report["providers"] = providers
+    report["capabilities"] = {
+        capability: {
+            "provider": entry.provider,
+            "manifest_path": str(entry.manifest_path),
+            "task_schema": entry.task_schema,
+            "result_schema": entry.result_schema,
+            **({"priority": entry.priority} if entry.priority is not None else {}),
+        }
+        for capability, entry in sorted(registry.items())
+    }
+    missing = [capability for capability in required if capability not in registry]
+    report["missing_capabilities"] = missing
+    for capability in missing:
+        report["violations"].append(
+            {
+                "code": "missing_required_capability",
+                "capability": capability,
+                "message": f"missing required capability: {capability}",
+            }
+        )
+    report["ok"] = not report["violations"]
+    return report
+
+
+def load_project_alias_registry(path: str | Path) -> dict[str, Any]:
+    registry_path = Path(path)
+    registry = _load_json(registry_path)
+    _require_fields(registry, {"schema", "aliases"})
+    if registry["schema"] != PROJECT_ALIAS_SCHEMA:
+        raise KanbanContractError(f"unsupported project alias schema: {registry['schema']}")
+    if not isinstance(registry["aliases"], dict):
+        raise KanbanContractError("aliases must be an object")
+    normalized: dict[str, str] = {}
+    for alias, target in registry["aliases"].items():
+        if not isinstance(alias, str) or not alias.strip():
+            raise KanbanContractError("alias keys must be non-empty strings")
+        if not isinstance(target, str) or not target.strip():
+            raise KanbanContractError(f"alias target must be a non-empty string: {alias}")
+        normalized[alias] = str(Path(target).expanduser().resolve())
+    return {"schema": PROJECT_ALIAS_SCHEMA, "aliases": normalized}
+
+
+def write_project_alias_registry(path: str | Path, *, aliases: dict[str, str | Path]) -> Path:
+    registry_path = Path(path)
+    registry = {
+        "schema": PROJECT_ALIAS_SCHEMA,
+        "aliases": {
+            alias: str(Path(target).expanduser().resolve())
+            for alias, target in sorted(aliases.items())
+        },
+    }
+    _write_json(registry_path, registry)
+    return registry_path
+
+
+def resolve_project_alias(
+    value: str | Path,
+    *,
+    registry_paths: list[str | Path] | None = None,
+) -> Path:
+    raw = str(value).strip()
+    if not raw:
+        raise KanbanContractError("project alias/path must be non-empty")
+    candidate = Path(raw).expanduser()
+    if candidate.exists():
+        return candidate.resolve()
+
+    for registry_path in registry_paths or []:
+        registry = load_project_alias_registry(registry_path)
+        aliases = registry.get("aliases", {})
+        if raw in aliases:
+            return Path(aliases[raw]).resolve()
+    raise KanbanContractError(f"unknown project alias: {raw}")
+
+
+def validate_approval_packet(packet: dict[str, Any]) -> dict[str, Any]:
+    raw = dict(packet)
+    _require_fields(
+        raw,
+        {
+            "schema",
+            "task_id",
+            "capability",
+            "status",
+            "requires_user_decision",
+            "review_prompt",
+            "changed_files",
+            "produced_artifacts",
+            "evidence",
+            "debts",
+            "approval_options",
+        },
+    )
+    if raw["schema"] != APPROVAL_PACKET_SCHEMA:
+        raise KanbanContractError(f"unsupported approval packet schema: {raw['schema']}")
+    if raw["status"] != "review":
+        raise KanbanContractError("approval packet status must be review")
+    if raw["requires_user_decision"] is not True:
+        raise KanbanContractError("approval packet must require user decision")
+    for field in ["changed_files", "produced_artifacts", "evidence", "debts", "approval_options"]:
+        if not isinstance(raw[field], list) or not all(isinstance(item, str) for item in raw[field]):
+            raise KanbanContractError(f"{field} must be a list of strings")
+    return raw
+
+
+def build_approval_packet(
+    *,
+    task_envelope_path: str | Path,
+    result_manifest_path: str | Path,
+    review_prompt: str | None = None,
+) -> dict[str, Any]:
+    task = _load_json(Path(task_envelope_path))
+    result = validate_result_manifest(_load_json(Path(result_manifest_path)))
+    if result["task_id"] != task.get("task_id"):
+        raise KanbanContractError(f"task_id mismatch: expected {task.get('task_id')}, got {result['task_id']}")
+    if result["capability"] != task.get("capability"):
+        raise KanbanContractError(f"capability mismatch: expected {task.get('capability')}, got {result['capability']}")
+    if decide_kanban_status(result) != "review":
+        raise KanbanContractError("approval packet requires a review-required result")
+    packet = {
+        "schema": APPROVAL_PACKET_SCHEMA,
+        "task_id": result["task_id"],
+        "capability": result["capability"],
+        "provider": result["provider"],
+        "status": "review",
+        "requires_user_decision": True,
+        "review_prompt": review_prompt or f"请确认任务 {result['task_id']} 的结果是否通过。",
+        "task_envelope_path": str(Path(task_envelope_path)),
+        "result_manifest_path": str(Path(result_manifest_path)),
+        "changed_files": list(result.get("changed_files") or []),
+        "produced_artifacts": list(result.get("produced_artifacts") or []),
+        "evidence": list(result.get("evidence") or []),
+        "debts": list(result.get("debts") or []),
+        "blockers": list(result.get("blockers") or []),
+        "approval_options": ["approve", "request_changes", "block"],
+    }
+    return validate_approval_packet(packet)
+
+
+def build_resume_snapshot(
+    *,
+    project_root: str | Path,
+    state_root: str | Path | None = None,
+) -> dict[str, Any]:
+    root = Path(project_root)
+    store = KanbanStateStore(state_root or root / "project-state" / "kanban")
+    index = store.load_index()
+    tasks = index.get("tasks", {})
+    counts: dict[str, int] = {}
+    for task in tasks.values():
+        status = str(task.get("kanban_status") or "unknown")
+        counts[status] = counts.get(status, 0) + 1
+    review_tasks = sorted(task_id for task_id, task in tasks.items() if task.get("kanban_status") == "review")
+    blocked_tasks = sorted(task_id for task_id, task in tasks.items() if task.get("kanban_status") in {"blocked", "failed"})
+    ready_tasks = sorted(task_id for task_id, task in tasks.items() if task.get("kanban_status") == "ready")
+    running_tasks = sorted(task_id for task_id, task in tasks.items() if task.get("kanban_status") == "running")
+    resume_actions: list[dict[str, Any]] = []
+    for task_id in review_tasks:
+        resume_actions.append({"action": "present_approval_packet", "task_id": task_id})
+    for task_id in blocked_tasks:
+        resume_actions.append({"action": "resolve_blocker", "task_id": task_id})
+    for task_id in running_tasks:
+        resume_actions.append({"action": "inspect_running_card", "task_id": task_id})
+    for task_id in ready_tasks:
+        resume_actions.append({"action": "dispatch_ready_task", "task_id": task_id})
+    return {
+        "schema": RESUME_SNAPSHOT_SCHEMA,
+        "project_root": str(root),
+        "state_root": str(store.root),
+        "counts_by_status": dict(sorted(counts.items())),
+        "review_tasks": review_tasks,
+        "blocked_tasks": blocked_tasks,
+        "running_tasks": running_tasks,
+        "next_ready_tasks": ready_tasks,
+        "resume_actions": resume_actions,
+    }
 
 
 def build_kanban_contract(

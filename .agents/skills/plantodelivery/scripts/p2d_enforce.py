@@ -62,6 +62,16 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--fail-on-violation", action="store_true", default=False)
     audit.add_argument("--strict-digest", action="store_true", default=False, help="Require active-slice-digest.json for every P2D card")
     audit.add_argument("--strict-provenance", action="store_true", default=False, help="Verify result provenance sha256 links for task envelope, active-slice digest, and produced artifacts")
+
+    approval_packet = sub.add_parser("approval-packet", help="Build a review packet from a task envelope and provider result")
+    approval_packet.add_argument("--task-envelope", required=True)
+    approval_packet.add_argument("--result-manifest", required=True)
+    approval_packet.add_argument("--output", required=True)
+    approval_packet.add_argument("--review-prompt", default=None)
+
+    resume = sub.add_parser("resume", help="Write a deterministic P2D resume snapshot")
+    resume.add_argument("--state-root", default=None)
+    resume.add_argument("--output", required=True)
     return parser
 
 
@@ -70,7 +80,12 @@ def main() -> int:
     pre_parser.add_argument("--project-root", default=os.getcwd())
     pre_args, _ = pre_parser.parse_known_args()
     _load_runtime(Path(pre_args.project_root))
-    from plantodelivery.kanban_runtime import HermesKanbanBackend, KanbanContractError
+    from plantodelivery.kanban_runtime import (
+        HermesKanbanBackend,
+        KanbanContractError,
+        build_approval_packet,
+        build_resume_snapshot,
+    )
 
     args = build_parser().parse_args()
     backend = HermesKanbanBackend(
@@ -95,6 +110,24 @@ def main() -> int:
             report = backend.audit_enforcement(strict_digest=args.strict_digest, strict_provenance=args.strict_provenance)
             _json(report)
             return 1 if args.fail_on_violation and not report["ok"] else 0
+        if args.command == "approval-packet":
+            packet = build_approval_packet(
+                task_envelope_path=args.task_envelope,
+                result_manifest_path=args.result_manifest,
+                review_prompt=args.review_prompt,
+            )
+            output = Path(args.output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(packet, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            _json({"ok": True, "approval_packet_path": str(output), "task_id": packet["task_id"]})
+            return 0
+        if args.command == "resume":
+            snapshot = build_resume_snapshot(project_root=Path(args.project_root), state_root=Path(args.state_root) if args.state_root else None)
+            output = Path(args.output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            _json({"ok": True, "resume_snapshot_path": str(output), "counts_by_status": snapshot["counts_by_status"]})
+            return 0
     except (KanbanContractError, OSError, json.JSONDecodeError) as exc:
         print(f"p2d_enforce: {exc}", file=sys.stderr)
         return 2
