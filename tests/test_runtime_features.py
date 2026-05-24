@@ -10,6 +10,7 @@ from plantodelivery.kanban_runtime import (
     PROVIDER_DOCTOR_SCHEMA,
     RESUME_SNAPSHOT_SCHEMA,
     P2D_STATE_MACHINE_SCHEMA,
+    HermesKanbanBackend,
     KanbanContractError,
     KanbanStateStore,
     build_approval_packet,
@@ -257,3 +258,75 @@ def test_p2d_enforce_cli_writes_approval_packet_and_resume_snapshot(tmp_path: Pa
     )
     assert resume_proc.returncode == 0, resume_proc.stderr
     assert json.loads(resume_path.read_text(encoding="utf-8"))["schema"] == RESUME_SNAPSHOT_SCHEMA
+
+
+def test_p2d_enforce_cli_prewrite_blocks_without_valid_scope(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    task_id = "prewrite-guard"
+    output_root = project_root / "project-state" / "kanban" / "tasks" / task_id
+    envelope = create_task_envelope(
+        task_id=task_id,
+        capability="technical_blueprint",
+        project_root=project_root,
+        active_slice={"goal": "guard writes before mutation"},
+        input_artifact_refs=[],
+        output_root=output_root,
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["prewrite guard passes"],
+        allowed_side_effects=["write project-state/kanban/tasks/prewrite-guard/**"],
+    )
+    backend = HermesKanbanBackend(project_root=project_root, board="prewrite-guard", hermes_home=tmp_path / "hermes-home")
+    backend.record_task(envelope)
+    backend.claim_task(task_id, ttl_seconds=30)
+    script = Path(__file__).resolve().parents[1] / ".agents" / "skills" / "plantodelivery" / "scripts" / "p2d_enforce.py"
+
+    allowed = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--project-root",
+            str(project_root),
+            "--board",
+            "prewrite-guard",
+            "--hermes-home",
+            str(tmp_path / "hermes-home"),
+            "prewrite",
+            "--task-envelope",
+            str(output_root / "task-envelope.json"),
+            "--active-slice-digest",
+            str(output_root / "active-slice-digest.json"),
+            "--changed-file",
+            "project-state/kanban/tasks/prewrite-guard/result-manifest.json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert allowed.returncode == 0, allowed.stderr
+    assert json.loads(allowed.stdout)["guard"] == "prewrite"
+
+    blocked = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--project-root",
+            str(project_root),
+            "--board",
+            "prewrite-guard",
+            "--hermes-home",
+            str(tmp_path / "hermes-home"),
+            "prewrite",
+            "--task-envelope",
+            str(output_root / "task-envelope.json"),
+            "--active-slice-digest",
+            str(output_root / "active-slice-digest.json"),
+            "--changed-file",
+            "src/pages/index.astro",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert blocked.returncode == 2
+    assert "not permitted by allowed_side_effects" in blocked.stderr

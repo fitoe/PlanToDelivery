@@ -68,7 +68,10 @@ Use it for deterministic contract work before/after provider dispatch:
 - `create_task_envelope(...)` builds capability-first `kanban-capability-task/v1` payloads without embedding provider identity.
 - `calculate_file_sha256(path)` returns the sha256 hex digest for a local file and is used by the provenance chain.
 - `build_active_slice_digest(...)`, `validate_active_slice_digest(...)`, and `render_provider_handoff_prompt(...)` create/validate the short `active-slice-digest/v1` execution context. The digest is written beside each task envelope as `active-slice-digest.json`, keeps only bounded active-slice/artifact/manifest/verification/stop-rule data, excludes chat history, and provider handoff prompts should reference paths instead of pasting long context. When the task envelope file already exists, the digest records `provenance.task_envelope_path` and `provenance.task_envelope_sha256` so later result/audit steps can detect drift.
-- `plantodelivery.provider_guard.validate_provider_execution_context(...)` is the provider-side P2D Kanban admission check. In P2D-dispatched provider mode, call it before implementation work starts with the task envelope path, active-slice digest path, expected capability, and Hermes backend. It rejects missing/invalid envelope or digest files, capability/digest mismatches, non-`output_root/result-manifest.json` handoffs, and cards that are not currently `running`. Providers may still be used standalone outside P2D, but P2D mode must not execute from chat history or unclaimed cards.
+- `plantodelivery.provider_guard.validate_provider_execution_context(...)` is the provider-side P2D Kanban admission check. In P2D-dispatched provider mode, call it before any provider work starts with the task envelope path, active-slice digest path, `execution-permit.json`, expected capability, and Hermes backend. It rejects missing/invalid envelope, digest, or permit files; capability/digest/permit scope mismatches; non-`output_root/result-manifest.json` handoffs; and cards that are not currently `running`. Providers may still be used standalone outside P2D, but P2D mode must not execute from chat history, unclaimed cards, or a copied artifact bundle without the matching `p2d-execution-permit/v1`.
+- `build_execution_permit(...)`, `validate_execution_permit(...)`, and `validate_execution_permit_for_envelope(...)` implement the execution-license layer. `claim_task(...)` writes `output_root/execution-permit.json` with `schema: p2d-execution-permit/v1`, task/capability/project/output/side-effect scope, and a `scope_hash`. Providers and workers must treat missing or mismatched permits as a hard stop before side effects. Runtime result ingestion also validates the same permit against the persisted task envelope before writing `result-manifest.json` or advancing review/blocked/completed lifecycle; a result manifest alone is not sufficient authority.
+- `plantodelivery.provider_guard.assert_provider_write_allowed(ctx, changed_files, review_required=...)` is the pre-write side-effect guard. Call it before file/code/evidence writes in P2D mode; result manifests and screenshots do not bypass this guard.
+- `scripts/p2d_enforce.py prewrite ...` is the mandatory public CLI wrapper for that guard. It validates task envelope, active-slice digest, `p2d-execution-permit/v1`, expected capability, current Hermes Kanban `running` status, and every intended changed file before any write happens. Provider instructions must use this command, or an equivalent runtime call through `plantodelivery.provider_guard`, before `write_file`, `patch`, code generation, screenshot/evidence writes, or result-manifest writes. A failure is a hard stop: return/record `blocked` instead of best-effort editing.
 - `P2DMeta`, `append_p2d_meta_marker(text, meta)`, `extract_p2d_meta_marker(body=..., comments=[...])`, `validate_p2d_meta(...)`, and `p2d_meta_to_task_envelope(...)` are the bridge from existing Hermes Kanban cards to P2D semantics. They store a base64url JSON `p2d-meta/v1` payload inside a Markdown-safe `<!-- P2D_META ... P2D_META -->` marker in the task body or a task comment. This avoids adding custom Hermes Kanban fields while preserving capability, active slice, artifact refs, expected outputs, side-effect limits, optional provider hints, and dependencies.
 - `validate_result_manifest(...)` checks `kanban-capability-result/v1` provider outputs before state updates.
 - `diagnose_provider_registry(project_root, required_capabilities=[...])` returns `p2d-provider-doctor/v1` with discovered providers/capabilities, required capabilities, missing capabilities, and violations. `scripts/p2d_doctor.py --required-capability ... --json` must be used before real dispatch when a milestone depends on specific provider capabilities.
@@ -202,6 +205,23 @@ Before any provider-side code edit, design generation, visual implementation, AP
 3. a `kanban-capability-task/v1` task envelope exists and names `project_root`, `active_slice`, `input_artifact_refs`, `output_root`, expected outputs, side-effect limits, and review policy;
 4. an `active-slice-digest/v1` exists beside the envelope;
 5. the provider can run its admission check against the envelope/digest or an equivalent `p2d_enforce.py claim`/backend claim has succeeded.
+
+Immediately before **each batch of side effects**, Javis or the worker must run the public pre-write guard with the exact files about to change:
+
+```bash
+PYTHONPATH=/home/imjzq/Projects/PlanToDelivery \
+python3 /home/imjzq/Projects/PlanToDelivery/.agents/skills/plantodelivery/scripts/p2d_enforce.py \
+  --project-root "$PROJECT_ROOT" \
+  --board "$BOARD" \
+  prewrite \
+  --task-envelope "$OUTPUT_ROOT/task-envelope.json" \
+  --active-slice-digest "$OUTPUT_ROOT/active-slice-digest.json" \
+  --execution-permit "$OUTPUT_ROOT/execution-permit.json" \
+  --expected-capability "$CAPABILITY" \
+  --changed-file "relative/path/about-to-change"
+```
+
+Run it before `write_file`, `patch`, generated code writes, design/evidence writes, screenshot/result-manifest writes, or any filesystem mutation. Repeat `--changed-file` for every intended file. If `prewrite` exits non-zero, do not write; mark the card/result `blocked` with the guard error.
 
 If any item is missing, do not proceed with provider edits. Create/repair the Kanban card/envelope/digest first, or report the slice as blocked with the missing enforcement artifact. A session `todo` entry may summarize progress for the chat, but it must never substitute for Hermes Kanban lifecycle enforcement.
 

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from plantodelivery.kanban_runtime import HermesKanbanBackend, KanbanContractError, create_task_envelope
-from plantodelivery.provider_guard import validate_provider_execution_context
+from plantodelivery.provider_guard import assert_provider_write_allowed, validate_provider_execution_context
 
 
 def _write_json(path: Path, data: dict) -> None:
@@ -91,3 +91,35 @@ def test_provider_guard_requires_running_card_and_matching_digest(tmp_path: Path
             active_slice_digest_path=digest_path,
             hermes_backend=backend,
         )
+
+
+def test_provider_write_guard_enforces_allowed_side_effects(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    task_id = "p2d-provider-write-guard"
+    output_root = project_root / "project-state" / "kanban" / "tasks" / task_id
+    envelope = create_task_envelope(
+        task_id=task_id,
+        capability="technical_blueprint",
+        project_root=project_root,
+        active_slice={"goal": "guard write scope"},
+        input_artifact_refs=[],
+        output_root=output_root,
+        expected_outputs=["result-manifest.json"],
+        verification_expectations=["prewrite guard"],
+        allowed_side_effects=[f"write project-state/kanban/tasks/{task_id}/**"],
+    )
+    backend = HermesKanbanBackend(project_root=project_root, board="p2d-provider-write-guard", hermes_home=tmp_path / "hermes-home")
+    backend.record_task(envelope)
+    backend.claim_task(task_id, ttl_seconds=30)
+    context = validate_provider_execution_context(
+        task_envelope_path=output_root / "task-envelope.json",
+        active_slice_digest_path=output_root / "active-slice-digest.json",
+        expected_capability="technical_blueprint",
+        hermes_backend=backend,
+    )
+
+    assert_provider_write_allowed(context, [f"project-state/kanban/tasks/{task_id}/result-manifest.json"])
+
+    with pytest.raises(KanbanContractError, match="not permitted by allowed_side_effects"):
+        assert_provider_write_allowed(context, ["src/pages/index.astro"])

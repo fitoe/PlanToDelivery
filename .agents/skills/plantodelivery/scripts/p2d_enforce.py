@@ -58,6 +58,14 @@ def build_parser() -> argparse.ArgumentParser:
     approve.add_argument("task_id")
     approve.add_argument("--evidence", action="append", required=True, help="Review evidence; repeatable")
 
+    prewrite = sub.add_parser("prewrite", help="Hard-stop guard before provider writes protected files")
+    prewrite.add_argument("--task-envelope", required=True, help="Path to task-envelope.json")
+    prewrite.add_argument("--active-slice-digest", required=True, help="Path to active-slice-digest.json")
+    prewrite.add_argument("--execution-permit", default=None, help="Path to execution-permit.json; defaults to output_root/execution-permit.json")
+    prewrite.add_argument("--expected-capability", default=None, help="Optional expected provider capability")
+    prewrite.add_argument("--changed-file", action="append", required=True, help="File the provider intends to mutate; repeatable")
+    prewrite.add_argument("--review-required", action=argparse.BooleanOptionalAction, default=True, help="Whether the provider result will require review before completion")
+
     audit = sub.add_parser("audit", help="Audit board for P2D bypasses")
     audit.add_argument("--fail-on-violation", action="store_true", default=False)
     audit.add_argument("--strict-digest", action="store_true", default=False, help="Require active-slice-digest.json for every P2D card")
@@ -105,6 +113,31 @@ def main() -> int:
         if args.command == "approve":
             backend.approve_review(args.task_id, list(args.evidence))
             _json({"ok": True, "task_id": args.task_id, "kanban_status": "completed", "evidence": list(args.evidence)})
+            return 0
+        if args.command == "prewrite":
+            from plantodelivery.provider_guard import assert_provider_write_allowed, validate_provider_execution_context
+
+            context = validate_provider_execution_context(
+                task_envelope_path=args.task_envelope,
+                active_slice_digest_path=args.active_slice_digest,
+                expected_capability=args.expected_capability,
+                hermes_backend=backend,
+                require_running=True,
+                execution_permit_path=args.execution_permit,
+            )
+            assert_provider_write_allowed(
+                context,
+                list(args.changed_file),
+                review_required=bool(args.review_required),
+            )
+            _json({
+                "ok": True,
+                "task_id": context.task_id,
+                "capability": context.capability,
+                "guard": "prewrite",
+                "changed_files": list(args.changed_file),
+                "execution_permit_path": str(context.execution_permit_path) if context.execution_permit_path else None,
+            })
             return 0
         if args.command == "audit":
             report = backend.audit_enforcement(strict_digest=args.strict_digest, strict_provenance=args.strict_provenance)
