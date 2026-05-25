@@ -90,9 +90,23 @@ Rules:
 
 - Put gates in Kanban as review/approval cards with dependencies.
 - Downstream cards must depend on the gate card, not on prose or local JSON.
+- Match dependency edges to the exact artifact being approved: a plan/document gate may unlock the next design/visual artifact, but must not unlock implementation unless the user explicitly approved an implementation-ready artifact.
+- For UI/visual work, implementation cards must depend on the final approved visual/source confirmation gate (for example `G3 visual approval`), not merely on D2 planning or implementation-document approval.
 - Approval is not a stop by itself: after explicit approval, record evidence, complete/unblock the gate, then continue the next ready card.
 - Homepage/global-shell approval releases only that scope unless the user explicitly approves a broader page-family gate.
 - If scope shrinks or expands, create/repair the corresponding gate instead of pretending the old gate covers it.
+
+## Visual-Draft Requests in Strong-Gate Projects
+
+For strong-gate projects, user requests such as “生成视觉稿”, “出设计稿”, “重新开始”, “范围收缩”, “只做首页/Hero”, or “换一个方向” must be converted into Kanban scope/gate updates before any provider generates assets.
+
+The orchestrator must:
+
+- record the restart, replacement, or scope-change decision as board evidence;
+- create or update the visual-source approval gate and dependency edges;
+- dispatch `idea-to-design` with a bounded design card instead of generating images directly in the main chat;
+- prevent D2C or implementation cards from depending on an unapproved generated draft;
+- treat generated drafts as pending-review evidence until explicit user approval is recorded.
 
 ## D2C Controlled Path
 
@@ -147,6 +161,7 @@ Routine checkpoints, completed approvals, and non-destructive next cards are not
 | Turning every card into a provider contract | Use fast card contract by default; strict only when justified |
 | Letting specialists update global progress | Specialists return evidence/suggestions; Javis updates board |
 | Treating a design artifact as approval | Approval must be a Kanban gate or explicit recorded evidence |
+| Treating D2 plan/document approval as implementation approval | Insert the visual/source confirmation task and gate first; implementation depends on that final gate, not D2 |
 | Stopping after user says “可以/定稿” | Record approval and immediately continue the next unblocked card |
 | Making D2C a second Javis | Allow local preflight/implementation/review cards only inside the visual slice |
 | Broadening scope silently | Create a new gate/dependency for the new scope |
