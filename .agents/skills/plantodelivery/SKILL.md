@@ -70,7 +70,7 @@ Main session owns mode, gates, and acceptance; subagents may own bounded pages/c
 When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or asks to continue a project, default to low-token orchestration:
 
 1. Keep `PlanToDelivery` as the only persistent owner until a gate requires a specialist.
-2. Restore durable state first; prefer `.hermes/project-state/current-state.md`, `.hermes/project-state/active-slice.json`, and an artifact/manifest index when present. If legacy `docs/orchestrator/*` state exists, use it as fallback.
+2. Restore durable state first; prefer `project-state/current-state.md`, `project-state/active-slice.json`, and `project-state/artifact-manifest.json` when present. If legacy `docs/orchestrator/*` state exists, use it as fallback.
 3. Route by current stage and active slice, not by habit. Specialist skills are stage tools, not persistent context.
 4. Load at most one specialist skill by default:
    - `idea-to-design` only for product/visual exploration, visual source approval, Visual Freeze, Post-Visual Extraction, or missing/stale design handoff.
@@ -83,6 +83,27 @@ When the user invokes "贾维斯", "贾维斯继续", "低 token 模式", or ask
 9. For GPT Image 2/mockup UI work, default to `standard-fidelity`: keep high-fidelity expectations, but scope each loop to the active page/section and use Visual IR/source/screenshot paths instead of long visual prose.
 10. Do not downgrade high-fidelity UI to a fast/loose mode just to save tokens. Escalate to `strict-fidelity` only for core screens, full-page regeneration, complex assets, final parity acceptance, or repeated parity failure.
 11. Load references/templates only when the current gate needs them. Read `templates/index.md` before opening templates, and open only the exact template needed.
+
+## Goal Orchestration
+
+Use when creating or resuming a Codex goal for a complex project.
+
+Core rule: a goal prompt is an execution contract, not full workflow storage. It should state the objective, scope, delivery mode, hard gates, skill routing boundaries, recovery paths, and completion rules. Detailed flow state must live in durable artifacts under `project-state/`.
+
+Guided start rule: when the user says "P2D，开始这个项目", "PlanToDelivery，开始", asks to generate a goal and start, or makes a similar simple-start request, enter Guided Goal Start. Ask only for the missing project objective or direction-level decisions, inspect the project, recommend 2-3 flow options, get user approval, generate goal/project-state artifacts, then continue into the first active slice.
+
+Recommended pattern:
+- `goal` sets direction and non-negotiable gates.
+- `project-state/` records current stage, active slice, artifacts, blockers, gates, decisions, and verification.
+- `idea-to-design`, `IdeaToTech`, and `design-to-code` produce compact handoff artifacts consumed through the manifest.
+- `PlanToDelivery` advances only when gate evidence supports the transition or a waiver is explicitly recorded.
+
+For UI work that depends on GPT Image 2/mockups:
+- No approved or user-waived visual source means no full-page design-to-code implementation.
+- Approved UI mockups are binding unless the user explicitly chooses directional-only implementation.
+- Visual Freeze and Post-Visual Extraction must complete before visual fidelity work.
+- `design-to-code` must consume post-visual blueprints, Visual IR, page matrix, and visual source refs when they exist.
+- Visual parity claims require screenshot-to-source or section-level evidence unless explicitly waived.
 
 ## Skill Routing
 
@@ -147,6 +168,8 @@ Load only when needed:
 - `references/stage-gates.md` — detailed gate matrix
 - `references/skill-routing.md` — routing details
 - `references/cross-skill-contracts.md` — contracts with IdeaToDesign/DesignToCode/IdeaToTech
+- `references/goal-orchestration.md` — goal contract, project-state, and gate artifact workflow
+- `references/guided-goal-start.md` — one-line P2D startup, brainstorming, goal generation, and first-slice execution
 - `references/testing-strategy.md` — verification strategy
 - `references/efficiency-rules.md` — low-token/low-cost execution rules
 - `references/vue-progress-overlay.md` — progress overlay implementation

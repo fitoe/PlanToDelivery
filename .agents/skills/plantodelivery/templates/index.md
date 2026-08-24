@@ -4,7 +4,11 @@ Use this index before opening individual templates. Load only the template neede
 
 ## Session And Intake
 
-- `active-slice-template.json` - recommended low-token state seed for `.hermes/project-state/active-slice.json`
+- `guided-goal-start.md` is a reference, not a template; load it when the user says "P2D，开始这个项目" or asks for a simple goal-to-execution startup
+- `goal-contract-template.md` - recommended when creating a Codex goal for complex or resumable work
+- `goal-prompt-template.md` - recommended compact prompt wrapper for a generated Codex goal
+- `flow-profile-template.json` - recommended when selecting the delivery flow and specialist routing line
+- `active-slice-template.json` - recommended low-token state seed for `project-state/active-slice.json`
 - `project-state-template.json` - required when creating durable orchestrator state
 - `current-state-template.md` - required for intake on existing or partial projects
 - `gap-analysis-template.md` - required when current state has missing or stale planning

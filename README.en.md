@@ -50,17 +50,21 @@ PlanToDelivery turns those problems into a structured workflow.
 PlanToDelivery can orchestrate the broader workflow:
 
 - `idea-to-design`: turns ideas into product structure, page planning, design docs, and visual assets
-- `design-to-code`: turns approved persisted design sources into implementation and can plan missing image assets
+- `IdeaToTech`: turns feature behavior, state, API, dependency, mock-to-real, and verification decisions into technical blueprints
+- `design-to-code`: turns approved persisted design sources, Visual IR, and implementation blueprints into high-fidelity implementation with screenshot evidence
 - `PlanToDelivery`: owns stages, gates, durable state, verification, and handoff
 
-These skills remain independently usable. PlanToDelivery accepts equivalent artifacts when gate evidence is sufficient, such as an equivalent design document, resumable state, approved visual source, or implementation brief.
+These skills remain independently usable. PlanToDelivery accepts equivalent artifacts when gate evidence is sufficient, such as an equivalent design document, resumable state, approved visual source, implementation brief, technical decisions, feature recipes, or verification matrix.
 
 ## Lightweight Startup
 
 Current startup is intentionally compact:
 
+- simplest entrypoint: `P2D，开始这个项目`
+- PlanToDelivery brainstorms with the user, proposes flow options, generates the goal and `project-state/` after key decisions, then starts the first active slice
 - start with `quick-start.md`
-- read project state or session brief first
+- read `project-state/current-state.md`, `project-state/active-slice.json`, and `project-state/artifact-manifest.json` first when present
+- fall back to legacy `docs/orchestrator/*` state only when portable `project-state/` files are absent
 - use `orchestration-core.md` for routing, gates, and handoff decisions
 - use `templates/index.md` before loading individual templates
 - avoid loading all references by default

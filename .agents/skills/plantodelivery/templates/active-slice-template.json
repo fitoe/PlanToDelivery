@@ -24,8 +24,8 @@
     "design_manifest": null,
     "tech_manifest": null,
     "implementation_manifest": null,
-    "verification_ledger": ".hermes/project-state/verification-ledger.md",
-    "decision_log": ".hermes/project-state/decision-log.md"
+    "verification_ledger": "project-state/verification-ledger.md",
+    "decision_log": "project-state/decision-log.md"
   },
   "next_allowed_action": "inspect or initialize durable state",
   "updated_at": null

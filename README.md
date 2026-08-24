@@ -9,7 +9,7 @@
 
 PlanToDelivery 是一个面向 skill 用户的 Codex 项目总控产品。
 
-它不是普通的提示词集合，也不是单次对话脚本，而是一套可复用的项目交付系统。  
+它不是普通的提示词集合，也不是单次对话脚本，而是一套可复用的项目交付系统。
 它帮助你把一个软件项目从需求澄清、规划、设计、实施、测试、验证，到交付收尾，稳定地推进成可恢复、可审计、可持续迭代的流程。
 
 ## 为什么需要它
@@ -79,7 +79,7 @@ PlanToDelivery 的目标，就是把这些问题收束成一套标准流程。
 ### 6. 可控扩展
 
 - 支持按阶段加载额外 skill
-- 支持 `idea-to-design`、`design-to-code`、`imagegen`、`Playwright`
+- 支持 `idea-to-design`、`IdeaToTech`、`design-to-code`、`imagegen`、`Playwright`
 - 支持渐进加载，不一次性塞满上下文
 - 依赖产物和门禁证据，不强依赖某个 skill 的具体实现
 
@@ -111,29 +111,34 @@ PlanToDelivery 以阶段状态机为核心：
 - 需要写模板时先查 `templates/index.md`
 - 再加载对应的 reference / template / skill
 
-## 三 Skill 协作方式
+## 关键 Skill 协作方式
 
 PlanToDelivery 可以作为总控，推荐这样协作：
 
 - `idea-to-design`：负责把想法整理成产品结构、页面规划、设计说明和视觉稿
-- `design-to-code`：负责把已批准设计源转成高还原代码，并处理缺图补足
+- `IdeaToTech`：负责把功能、状态、API、依赖、mock-to-real 和验证策略锁定成技术蓝图
+- `design-to-code`：负责把已批准设计源、Visual IR 和 implementation blueprint 转成高还原代码，并用截图证据修复偏差
 - `PlanToDelivery`：负责阶段、门禁、状态、验收和交付闭环
 
-三者不是硬耦合关系。PlanToDelivery 接受等价产物：
+这些技能不是硬耦合关系。PlanToDelivery 接受等价产物：
 
 - `Design-Spec.md` 或等价产品/设计文档
 - `state.json` 或等价可恢复设计状态
 - 已批准设计图，或等价持久化视觉来源
 - `Pre-Implementation Brief`，或等价代码实现 brief
+- `technical-decisions.json`、`feature-recipes.json`、`verification-matrix.json` 或等价技术蓝图
 
-这意味着 `idea-to-design` 和 `design-to-code` 可以独立使用；在端到端项目里再由 PlanToDelivery 编排。
+这意味着 `idea-to-design`、`IdeaToTech` 和 `design-to-code` 可以独立使用；在端到端项目里再由 PlanToDelivery 编排。
 
 ## 轻量启动与省 Token
 
 当前版本默认采用轻量启动：
 
+- 最简单入口是 `P2D，开始这个项目`
+- PlanToDelivery 会先一起 brainstorm，提出流程选项，等关键决策确认后自动生成 goal 和 `project-state/`，然后进入第一个 active slice
 - 先读 `quick-start.md`
-- 再读 `docs/orchestrator/project-state.json` 或 session brief
+- 再读 `project-state/current-state.md`、`project-state/active-slice.json`、`project-state/artifact-manifest.json`
+- 仅当 portable `project-state/` 不存在时，回退读取 `docs/orchestrator/project-state.json` 或 session brief
 - 只在门禁、路由或交接不清楚时读取 `orchestration-core.md`
 - 不默认加载全部 references 和 templates
 
@@ -147,9 +152,21 @@ PlanToDelivery 可以作为总控，推荐这样协作：
   quick-start.md
   agents/openai.yaml
   references/
+    guided-goal-start.md
+    goal-orchestration.md
     orchestration-core.md
   templates/
     index.md
+    goal-contract-template.md
+    goal-prompt-template.md
+    flow-profile-template.json
+
+project-state/
+  current-state.md
+  active-slice.json
+  artifact-manifest.json
+  gates.json
+  verification-ledger.md
 
 docs/orchestrator/
   session-brief.md
@@ -201,7 +218,7 @@ npx skills add .
 - 核心 references / templates 已建立
 - durable docs 协议已建立
 - GitHub 协作文件已补齐
-- `idea-to-design`、`design-to-code`、Playwright、imagegen 的路由已接入
+- `idea-to-design`、`IdeaToTech`、`design-to-code`、Playwright、imagegen 的路由已接入
 - 轻量启动、artifact 契约和模板索引已补齐
 
 下一步最重要的是：

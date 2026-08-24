@@ -265,7 +265,7 @@ When multiple skills could apply:
 
 ## Session Start
 Read the minimum state needed:
-- `.hermes/project-state/current-state.md` and `.hermes/project-state/active-slice.json` when present
+- `project-state/current-state.md`, `project-state/active-slice.json`, and `project-state/artifact-manifest.json` when present
 - `references/session-start-protocol.md` only if stage/owner/gate cannot be established from compact state
 - `references/artifact-driven-workflow.md` only when artifact state exists and needs interpretation
 - `templates/project-state-template.json` only when initializing artifact-driven state

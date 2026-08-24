@@ -1,0 +1,41 @@
+{
+  "schema_version": "flow-profile-v1",
+  "project_profile": {
+    "id": null,
+    "summary": null,
+    "ui_bearing": false,
+    "approved_design_source_exists": false,
+    "product_direction_clear": false,
+    "technical_uncertainty": "low|medium|high",
+    "integration_risk": "low|medium|high",
+    "visual_fidelity_required": false,
+    "long_running": false
+  },
+  "delivery_mode": {
+    "mode": "lightweight|standard|strict",
+    "reason": null
+  },
+  "selected_flow": {
+    "id": "p2d-only|p2d-itt|p2d-d2c|p2d-i2d-itt-d2c|p2d-strict-project-state",
+    "stages": [],
+    "first_deliverable_slice": null
+  },
+  "specialist_routing": [
+    {
+      "skill": "idea-to-design|IdeaToTech|design-to-code",
+      "use_when": null,
+      "required_inputs": [],
+      "required_outputs": [],
+      "gate_to_open": null
+    }
+  ],
+  "hard_gates": [
+    {
+      "id": null,
+      "description": null,
+      "required_evidence": [],
+      "waiver_allowed": true
+    }
+  ],
+  "updated_at": null
+}

@@ -22,11 +22,11 @@ Main rule:
 ## Files To Check
 
 Prefer low-token project state first:
-- `.hermes/project-state/current-state.md`
-- `.hermes/project-state/active-slice.json`
-- `.hermes/project-state/artifact-index.json` or equivalent manifest
-- `.hermes/project-state/decision-log.md`
-- `.hermes/project-state/verification-ledger.md`
+- `project-state/current-state.md`
+- `project-state/active-slice.json`
+- `project-state/artifact-manifest.json`
+- `project-state/decision-log.md`
+- `project-state/verification-ledger.md`
 
 Use legacy orchestrator state as fallback when present:
 - `docs/orchestrator/project-state.json`

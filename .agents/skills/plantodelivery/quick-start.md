@@ -17,12 +17,14 @@ Goal: restore control with the smallest possible context before doing work.
 Load only what is needed:
 
 1. `quick-start.md`
-2. `docs/orchestrator/project-state.json`, if present
-3. latest `docs/orchestrator/session-brief.md`, if present
-4. latest gate check or approval record, if present
-5. `references/orchestration-core.md`, only when routing, gates, or artifact validity must be decided
-6. one stage-specific reference, only after the stage is known
-7. one template, only when creating or updating that exact artifact
+2. `project-state/current-state.md`, if present
+3. `project-state/active-slice.json`, if present
+4. `project-state/artifact-manifest.json`, if present
+5. latest `docs/orchestrator/session-brief.md`, if present
+6. latest gate check or approval record, if present
+7. `references/orchestration-core.md`, only when routing, gates, or artifact validity must be decided
+8. one stage-specific reference, only after the stage is known
+9. one template, only when creating or updating that exact artifact
 
 Do not load all references or all templates during startup.
 
@@ -51,3 +53,5 @@ When state is missing:
 - create or repair only the smallest required artifact
 - prefer a session brief over reloading long historical documents
 - preserve existing decisions unless evidence shows they are obsolete
+
+Use legacy `docs/orchestrator/project-state.json` only when portable `project-state/` files are absent.
